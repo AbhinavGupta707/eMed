@@ -9,13 +9,13 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 
 ## Current checkpoint
 
-- Checkpoint: 1 — deterministic foundations
-- Status: lanes 1A and 1D active; lanes 1B and 1C integrated
+- Checkpoint: 2 — provider-neutral interaction, actions, API, and visual system
+- Status: shared dependency/package base tested; three isolated lanes ready to launch
 - Tested Checkpoint 0 commit: `b519010`
-- Tested Checkpoint 1 code base: `b4b8091` on `main`
-- Worker launch base: `7374d22` on `main` (code base plus orchestration-state commit)
-- Current integration head: `7b7c7af` (lanes 1B and 1C merged and independently gated)
-- Next gate: review and integrate the next clean completed lane; do not promote Checkpoint 1 until all four lanes and cross-lane gates pass
+- Tested Checkpoint 1 integration commit: `2116d4c` on `main`
+- Current integration head before Checkpoint 2 base commit: `fd79808`
+- Checkpoint 2 worker launch base: pending the tested shared-base commit
+- Next gate: launch lanes 2A, 2B, and 2C from the exact shared-base SHA with the explicit model/reasoning allocation below
 - Physical iPhone gate: `pending-physical` (does not block automated implementation)
 - Live ElevenLabs gate: `pending-credentials` (text/disabled provider required)
 - Live VitalLens gate: `pending-explicit-opt-in-and-credentials` (fixture adapter required)
@@ -24,17 +24,21 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 
 ## Checkpoint lane ledger
 
-| Checkpoint | Lane                       | Ownership                                                                                                      | Task/thread                            | Base      | Status                                                      | Integrated commit |
-| ---------- | -------------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------- | --------- | ----------------------------------------------------------- | ----------------- |
-| 1          | 1A data/domain/persistence | `packages/domain/**`, `packages/persistence/**`, `packages/clinical-records/**`, `data/fhir/**`, `infra/db/**` | `019f6d6f-b784-7882-af20-ac4d14cce6d4` | `7374d22` | active                                                      | —                 |
-| 1          | 1B protocol/planner        | `packages/protocols/**`, `packages/planner/**`, `data/protocols/**`                                            | `019f6d6f-b784-7882-af20-ac6a1e5afcef` | `7374d22` | integrated; 39 lane tests plus full integration gate passed | `ad419fe`         |
-| 1          | 1C local finger PPG        | `packages/assessments/providers/finger-ppg/**`                                                                 | `019f6d6f-b969-7180-9181-200678a737e5` | `7374d22` | integrated; 22 lane tests plus full integration gate passed | `7b7c7af`         |
-| 1          | 1D VitalLens               | `packages/assessments/providers/vitallens/**`                                                                  | `019f6d80-70a5-7733-89d1-44804892cb29` | `ad419fe` | active wave 2                                               | —                 |
+| Checkpoint | Lane                       | Ownership                                                                                                                 | Task/thread                            | Base      | Model/reasoning       | Status                                                      | Integrated commit |
+| ---------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | --------- | --------------------- | ----------------------------------------------------------- | ----------------- |
+| 1          | 1A data/domain/persistence | `packages/domain/**`, `packages/persistence/**`, `packages/clinical-records/**`, `data/fhir/**`, `infra/db/**`            | `019f6d6f-b784-7882-af20-ac4d14cce6d4` | `7374d22` | legacy/pre-policy     | integrated; lane and real PostgreSQL gate passed            | `148a3a3`         |
+| 1          | 1B protocol/planner        | `packages/protocols/**`, `packages/planner/**`, `data/protocols/**`                                                       | `019f6d6f-b784-7882-af20-ac6a1e5afcef` | `7374d22` | legacy/pre-policy     | integrated; 39 lane tests plus full integration gate passed | `ad419fe`         |
+| 1          | 1C local finger PPG        | `packages/assessments/providers/finger-ppg/**`                                                                            | `019f6d6f-b969-7180-9181-200678a737e5` | `7374d22` | legacy/pre-policy     | integrated; 22 lane tests plus full integration gate passed | `7b7c7af`         |
+| 1          | 1D VitalLens               | `packages/assessments/providers/vitallens/**`                                                                             | `019f6d80-70a5-7733-89d1-44804892cb29` | `ad419fe` | legacy/pre-policy     | integrated; 27 lane tests plus full integration gate passed | `e7873a9`         |
+| 2          | 2A voice/text              | `packages/voice/**`, `apps/web/src/features/voice/**`                                                                     | pending                                | pending   | `gpt-5.6-sol`/`xhigh` | ready to launch                                             | —                 |
+| 2          | 2B API/actions/audit       | `packages/actions/**`, `packages/audit/**`, `packages/api-client/**`, `apps/web/src/app/api/**`, `apps/web/src/server/**` | pending                                | pending   | `gpt-5.6-sol`/`xhigh` | ready to launch                                             | —                 |
+| 2          | 2C visual system           | `packages/ui/**`, `apps/web/src/app/globals.css`, `apps/web/src/app/styleguide/**`                                        | pending                                | pending   | `gpt-5.6-sol`/`high`  | ready to launch                                             | —                 |
 
 ## Integration invariants
 
 - At most three worker tasks active.
-- Checkpoint 1 runs `1A + 1B + 1C`, then `1D` when one slot returns.
+- Effective from Checkpoint 2, every isolated task is explicitly launched with `gpt-5.6-sol`; `high` is used for bounded lanes and `xhigh` for complex lanes according to the frozen matrix in the orchestration plan.
+- Checkpoint 2 runs `2A + 2B + 2C` concurrently because their file allowlists are exclusive.
 - Workers start from the exact tested checkpoint commit.
 - Integration owns root configuration, the lockfile, shared contracts, provider registry/barrels, cross-lane tests, checkpoint commits, pushes, deployments, and release claims.
 - No checkpoint advances on a failing gate. Human-only/live gates are marked pending and cannot be silently relabelled as passing fixture evidence.
@@ -54,3 +58,16 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 - Playwright Chromium and iPhone-sized WebKit E2E both pass the baseline disclosure and serious/critical axe gate.
 - `pnpm audit --audit-level moderate` reports no known vulnerabilities after pinning PostCSS 8.5.10 for CVE-2026-41305.
 - Secret-pattern, ignored-path, large-file, and Git whitespace audits pass; `.env.example` contains only local/example values.
+
+## Checkpoint 1 evidence
+
+- All four lanes were independently reviewed and integrated, followed by cross-lane provider-neutral snapshot-to-plan-to-protocol tests for both finger PPG and VitalLens fixtures.
+- The assessment package passes 57 tests; the protocol/planner, domain, clinical-record, and persistence suites also pass their deterministic fixtures and failure paths.
+- A disposable PostgreSQL 16 database accepted the migration and passed all 13 live repository tests; timestamp values are normalized centrally at the repository boundary.
+- Full formatting, lint, strict TypeScript, unit/integration tests, production build, Chromium and iPhone-sized WebKit Playwright, serious/critical axe, dependency audit, secret scan, raw-media persistence scan, and frame-network scan gates passed.
+- Live credentials, physical iPhone evidence, and hosted deployment remain explicitly pending and were not represented as fixture evidence.
+
+## Checkpoint 2 shared-base evidence
+
+- Integration pre-registered the five exclusive worker packages, internal workspace links, and exact `@elevenlabs/react` `1.10.1`; workers must not mutate manifests or the lockfile.
+- Frozen install, formatting, lint, strict TypeScript, all existing tests, production build, desktop Chromium and iPhone-sized WebKit E2E with accessibility checks, dependency audit, and Git whitespace checks pass before worker launch.

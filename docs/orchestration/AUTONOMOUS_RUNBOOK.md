@@ -9,6 +9,14 @@ The durable execution design is specified in `planning/02_WORKTREE_ORCHESTRATION
 3. Inspect active checkpoint task IDs before creating anything.
 4. If a worker completed, read its handoff, inspect its diff/commit and verify clean status.
 
+## Worker model policy
+
+- Launch every new worktree with explicit model `gpt-5.6-sol`.
+- Use `thinking: "high"` for bounded, straightforward implementation or evidence lanes.
+- Use `thinking: "xhigh"` for complex integration, provider, state-machine, concurrency, persistence, security, or clinical-safety lanes.
+- Record model and reasoning effort in `STATE.md`; do not rely on an inherited default.
+- Current allocation: 2A `xhigh`, 2B `xhigh`, 2C `high`; 3A `xhigh`, 3B `xhigh`; 4A `high`, 4B `high`, 4C `xhigh`, 4D `xhigh`; 5A `high`, 5B `high`.
+
 ## Integrate
 
 1. Reject edits outside the lane allowlist, root/lockfile edits, secret/real-data leakage, unsupported claims, missing tests, or dirty worktrees.

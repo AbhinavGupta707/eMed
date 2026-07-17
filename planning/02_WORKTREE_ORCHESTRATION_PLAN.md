@@ -39,6 +39,26 @@ After Checkpoint 0 creates a Git repository and baseline commit, the orchestrato
 
 Do not substitute hidden sub-agents or manually improvised `git worktree` directories for this workflow.
 
+### Worker model and reasoning policy
+
+Every managed worktree is created with an explicit `model: "gpt-5.6-sol"`; workers must not silently inherit a different configured default. Use `thinking: "high"` for bounded, straightforward implementation, visual-system, test-execution, documentation, and evidence-assembly lanes. Use `thinking: "xhigh"` (extra-high reasoning) for complex provider, API/orchestration, state-machine, persistence/concurrency, security, or clinical-safety lanes.
+
+| Checkpoint | Lane                              | Model         | Reasoning | Rationale                                                                                   |
+| ---------- | --------------------------------- | ------------- | --------- | ------------------------------------------------------------------------------------------- |
+| 2          | 2A voice/text                     | `gpt-5.6-sol` | `xhigh`   | provider session lifecycle, client-secret isolation, transcript confirmation, outage safety |
+| 2          | 2B API/actions/audit              | `gpt-5.6-sol` | `xhigh`   | transactions, concurrency, idempotency, redaction, provider proxies                         |
+| 2          | 2C visual system                  | `gpt-5.6-sol` | `high`    | bounded design-system and accessibility implementation                                      |
+| 3          | 3A patient experience             | `gpt-5.6-sol` | `xhigh`   | full state machine, sensors, cancellation, resume, safety recovery                          |
+| 3          | 3B clinician cockpit              | `gpt-5.6-sol` | `xhigh`   | evidence integrity, audited mutations, shared persisted workflow                            |
+| 4          | 4A patient E2E                    | `gpt-5.6-sol` | `high`    | bounded black-box automation against frozen product behavior                                |
+| 4          | 4B clinician E2E                  | `gpt-5.6-sol` | `high`    | bounded black-box automation against frozen product behavior                                |
+| 4          | 4C contract/integration expansion | `gpt-5.6-sol` | `xhigh`   | mutation, adversarial, transaction-failure, and deterministic replay coverage               |
+| 4          | 4D operations/security            | `gpt-5.6-sol` | `xhigh`   | CI, deployment, threat model, incident and rollback boundaries                              |
+| 5          | 5A submission/claim audit         | `gpt-5.6-sol` | `high`    | evidence-bound narrative and claim verification                                             |
+| 5          | 5B QA/recovery evidence           | `gpt-5.6-sol` | `high`    | bounded evidence assembly with explicit waivers                                             |
+
+The orchestrator records the selected model and reasoning effort alongside every worker task ID in the state ledger. A change to this allocation is a documented orchestration decision, not an implicit fallback.
+
 ## 2. Ownership rules
 
 ### Permanent integration-owned paths
@@ -543,6 +563,10 @@ Use this template when creating every worktree task:
 
 ```text
 You own <lane> for HomeRounds at base commit <hash>.
+
+Launch contract (recorded by the orchestrator):
+- model: gpt-5.6-sol
+- reasoning: <high|xhigh>
 
 Goal:
 <bounded outcome>

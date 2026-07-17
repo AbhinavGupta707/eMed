@@ -11,10 +11,11 @@ These instructions apply to every Codex task and managed worktree in this reposi
 
 ## Worktree ownership
 
+- Every managed worker must be launched with model `gpt-5.6-sol`. Use reasoning effort `high` for bounded/straightforward lanes and `xhigh` (extra-high) for complex integration, provider, concurrency, security, persistence, or clinical-safety lanes. Do not silently inherit another model or use lower reasoning.
 - Read `docs/orchestration/STATE.md` and your task prompt before editing.
 - Edit only the paths explicitly assigned to the task. One path has one owner per checkpoint, including tests, fixtures, barrels, migrations, manifests, and generated files.
 - Workers must not edit root manifests/configuration, `pnpm-lock.yaml`, `packages/contracts/**`, or `docs/orchestration/STATE.md` unless their prompt explicitly assigns them to integration work.
-- Do not install dependencies in a worker. Record the smallest exact dependency request in the handoff; the orchestrator owns all root installs and lockfile changes.
+- Do not add or update dependencies in a worker. A worker may restore the orchestrator-frozen dependency tree with `pnpm install --frozen-lockfile`, but it must not edit any manifest or lockfile. Record the smallest exact new dependency request in the handoff; the orchestrator owns all dependency changes.
 - If the frozen contract is insufficient, stop and report the smallest proposed contract change. Do not work around it with `any`, duplicate schemas, or provider-specific leakage.
 - Keep the worktree clean and commit the completed slice before handoff. Do not merge, rebase, cherry-pick, push, or edit another worker's branch.
 

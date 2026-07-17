@@ -9,10 +9,11 @@ Heartbeat: `homerounds-orchestration-heartbeat`, active every 20 minutes
 ## Current checkpoint
 
 - Checkpoint: 1 — deterministic foundations
-- Status: wave 1 launching
+- Status: wave 1 active
 - Tested Checkpoint 0 commit: `b519010`
-- Integration base: `b4b8091` on `main` (shared workspace boundary commit; push pending)
-- Next gate: create lanes 1A, 1B, and 1C from the exact Git-backed base; record task IDs before starting 1D
+- Tested Checkpoint 1 code base: `b4b8091` on `main`
+- Worker launch base: `7374d22` on `main` (code base plus orchestration-state commit)
+- Next gate: review and integrate the first clean completed lane, run sequential integration gates, then launch 1D only after an active slot is released
 - Physical iPhone gate: `pending-physical` (does not block automated implementation)
 - Live ElevenLabs gate: `pending-credentials` (text/disabled provider required)
 - Live VitalLens gate: `pending-explicit-opt-in-and-credentials` (fixture adapter required)
@@ -21,12 +22,12 @@ Heartbeat: `homerounds-orchestration-heartbeat`, active every 20 minutes
 
 ## Checkpoint lane ledger
 
-| Checkpoint | Lane                       | Ownership                                                                                                      | Task/thread | Base      | Status         | Integrated commit |
-| ---------- | -------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------- | --------- | -------------- | ----------------- |
-| 1          | 1A data/domain/persistence | `packages/domain/**`, `packages/persistence/**`, `packages/clinical-records/**`, `data/fhir/**`, `infra/db/**` | pending     | `b4b8091` | pending        | —                 |
-| 1          | 1B protocol/planner        | `packages/protocols/**`, `packages/planner/**`, `data/protocols/**`                                            | pending     | `b4b8091` | pending        | —                 |
-| 1          | 1C local finger PPG        | `packages/assessments/providers/finger-ppg/**`                                                                 | pending     | `b4b8091` | pending        | —                 |
-| 1          | 1D VitalLens               | `packages/assessments/providers/vitallens/**`                                                                  | pending     | `b4b8091` | pending wave 2 | —                 |
+| Checkpoint | Lane                       | Ownership                                                                                                      | Task/thread                            | Base                     | Status        | Integrated commit |
+| ---------- | -------------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ------------------------ | ------------- | ----------------- |
+| 1          | 1A data/domain/persistence | `packages/domain/**`, `packages/persistence/**`, `packages/clinical-records/**`, `data/fhir/**`, `infra/db/**` | `019f6d6f-b784-7882-af20-ac4d14cce6d4` | `7374d22`                | active        | —                 |
+| 1          | 1B protocol/planner        | `packages/protocols/**`, `packages/planner/**`, `data/protocols/**`                                            | `019f6d6f-b784-7882-af20-ac6a1e5afcef` | `7374d22`                | active        | —                 |
+| 1          | 1C local finger PPG        | `packages/assessments/providers/finger-ppg/**`                                                                 | `019f6d6f-b969-7180-9181-200678a737e5` | `7374d22`                | active        | —                 |
+| 1          | 1D VitalLens               | `packages/assessments/providers/vitallens/**`                                                                  | pending                                | pending integration head | queued wave 2 | —                 |
 
 ## Integration invariants
 

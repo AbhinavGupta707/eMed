@@ -555,7 +555,7 @@ describe("repository-backed server API orchestration", () => {
             provider: secondSession.provider,
             attestation: secondSession.attestation,
             quality: {
-              status: "fail",
+              status: "retry",
               score: 0.1,
               reasons: ["weak_signal"],
               metrics: { coverage: 0.2 }

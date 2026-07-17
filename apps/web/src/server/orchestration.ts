@@ -628,7 +628,12 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
       rawMediaStored: false
     });
 
-    if (quality.status === "retry") {
+    const priorRetryRecorded = (await this.#repository.listAuditEvents(round.id))
+      .filter(({ type }) => type === "capture_quality_rejected")
+      .map(({ payload }) => CaptureQualityRejectedPayloadSchema.safeParse(payload))
+      .some((payload) => payload.success && payload.data.quality.status === "retry");
+
+    if (quality.status === "retry" && !priorRetryRecorded) {
       return {
         round: await this.transition({
           roundId: round.id,

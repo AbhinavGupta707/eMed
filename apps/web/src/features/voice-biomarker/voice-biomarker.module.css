@@ -1,0 +1,247 @@
+.station {
+  display: grid;
+  gap: 1rem;
+  width: min(100%, 56rem);
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid #aebfc7;
+  border-radius: 1rem;
+  background: #ffffff;
+  color: #17262c;
+}
+
+.headingRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.headingRow h2,
+.qualityFeedback h3,
+.result h3 {
+  margin: 0;
+  line-height: 1.25;
+}
+
+.headingRow h2 {
+  font-size: clamp(1.3rem, 4vw, 1.8rem);
+}
+
+.eyebrow {
+  margin: 0 0 0.25rem;
+  color: #315d6d;
+  font-size: 0.875rem;
+  font-weight: 750;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.researchBadge {
+  padding: 0.4rem 0.7rem;
+  border: 1px solid #6d5c8f;
+  border-radius: 999px;
+  background: #f6f2fb;
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+
+.boundaryNote,
+.qualityFeedback,
+.result,
+.status {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border-left: 4px solid #35778c;
+  background: #f1f7f8;
+  line-height: 1.5;
+}
+
+.explanation {
+  padding: 0.8rem 1rem;
+  border: 1px solid #b8c7cd;
+  border-radius: 0.75rem;
+}
+
+.explanation summary {
+  min-height: 44px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.explanation p,
+.qualityFeedback p,
+.result p,
+.progressGroup p,
+.rawMediaNote {
+  margin: 0.5rem 0 0;
+  line-height: 1.5;
+}
+
+.consentRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: start;
+  line-height: 1.5;
+}
+
+.consentRow input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0.15rem 0 0;
+}
+
+.progressGroup {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.progressGroup label {
+  font-weight: 800;
+}
+
+.progressGroup progress {
+  width: 100%;
+  height: 1.2rem;
+  accent-color: #21586b;
+}
+
+.qualityFeedback {
+  border-left-color: #a36b1d;
+  background: #fff8e8;
+}
+
+.qualityFeedback ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.3rem;
+}
+
+.result {
+  border-left-color: #237051;
+  background: #eff8f3;
+}
+
+.featureList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 0.6rem;
+  margin: 1rem 0 0;
+}
+
+.featureList > div {
+  min-width: 0;
+  padding: 0.7rem;
+  border: 1px solid #bad4c7;
+  border-radius: 0.6rem;
+  background: #ffffff;
+}
+
+.featureList dt {
+  font-weight: 800;
+}
+
+.featureList dd {
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.rawMediaNote {
+  color: #37574a;
+  font-weight: 750;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.primaryButton,
+.secondaryButton,
+.cancelButton {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.7rem 1rem;
+  border: 2px solid #21586b;
+  border-radius: 0.7rem;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.primaryButton {
+  background: #21586b;
+  color: #ffffff;
+}
+
+.secondaryButton,
+.cancelButton {
+  background: #ffffff;
+  color: #173f4e;
+}
+
+.cancelButton {
+  border-color: #8b4242;
+  color: #702e2e;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.cancelButton:disabled {
+  border-color: #879399;
+  background: #e8edef;
+  color: #45575e;
+  cursor: not-allowed;
+}
+
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.cancelButton:focus-visible,
+.consentRow input:focus-visible,
+.explanation summary:focus-visible,
+.status:focus-visible {
+  outline: 4px solid #f0a33a;
+  outline-offset: 3px;
+}
+
+.status {
+  font-weight: 650;
+}
+
+.status[data-tone="error"] {
+  border-left-color: #a33636;
+  background: #fff3f2;
+}
+
+.status[data-tone="success"] {
+  border-left-color: #237051;
+  background: #eff8f3;
+}
+
+@media (max-width: 36rem) {
+  .station,
+  .explanation,
+  .featureList > div {
+    border-radius: 0.65rem;
+  }
+
+  .controls,
+  .primaryButton,
+  .secondaryButton,
+  .cancelButton {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .station,
+  .primaryButton,
+  .secondaryButton,
+  .cancelButton,
+  .explanation {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}

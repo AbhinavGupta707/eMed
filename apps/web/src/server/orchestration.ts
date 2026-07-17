@@ -1,15 +1,21 @@
 import {
+  CaptureQualityRejectedPayloadSchema,
+  FollowUpAnsweredPayloadSchema,
   PatientReportConfirmedPayloadSchema,
+  createCaptureQualityRejectedEvent,
+  createFollowUpAnsweredEvent,
   createMeasurementAcceptedEvent,
   createPatientReportConfirmedEvent,
   createRoundStateChangedEvent
 } from "@homerounds/audit";
 import {
+  CaptureQualitySchema,
   MeasurementFactSchema,
   PatientReportSchema,
   ProtocolResultSchema,
   RoundSchema,
   type ClinicalTask,
+  type CaptureQuality,
   type DomainEvent,
   type MeasurementFact,
   type PatientReport,
@@ -24,7 +30,8 @@ import {
   ProtocolDefinitionSchema,
   evaluateProtocol,
   type ProtocolDefinition,
-  type ProtocolEvaluationDecision
+  type ProtocolEvaluationDecision,
+  type ProtocolEvaluationInput
 } from "@homerounds/protocols";
 import { z } from "zod";
 
@@ -96,6 +103,15 @@ export type AssessmentSubmissionResult = {
   round: Round;
   measurement: MeasurementFact;
   decision: ProtocolEvaluationDecision;
+};
+
+export type CaptureQualitySubmissionResult =
+  | { round: Round; next: "retry"; protocolResult: null }
+  | { round: Round; next: "abstained_for_review"; protocolResult: ProtocolResult };
+
+export type FollowUpSubmissionResult = {
+  round: Round;
+  protocolResult: ProtocolResult;
 };
 
 function defaultNow(): string {
@@ -205,6 +221,7 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
     actor: { kind: "patient" | "clinician" | "system"; id: string };
     source: "patient_ui" | "clinician_ui" | "system";
     correlationId: string;
+    additionalEvents?: readonly DomainEvent[];
   }): Promise<Round> {
     const current = await this.getRound(input.roundId);
     if (input.patientId !== null && current.patientId !== input.patientId) {
@@ -237,7 +254,12 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
       afterVersion: next.stateVersion
     });
     try {
-      await this.#repository.updateRoundWithAudit(next, current.stateVersion, event);
+      await this.#repository.updateRoundWithAudit(
+        next,
+        current.stateVersion,
+        event,
+        input.additionalEvents
+      );
     } catch {
       throw new OrchestrationError("stale_state", true);
     }
@@ -380,7 +402,7 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
     if (round.patientId !== input.patientId) {
       throw new OrchestrationError("patient_mismatch", false);
     }
-    if (round.state !== "assessment_selected") {
+    if (round.state !== "assessment_selected" && round.state !== "capture_retry") {
       throw new OrchestrationError("invalid_state", false);
     }
     const assessmentSessionId = this.#createId();
@@ -548,6 +570,184 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
     return { round, measurement, decision };
   }
 
+  async submitCaptureQuality(input: {
+    roundId: string;
+    patientId: string;
+    expectedStateVersion: number;
+    assessmentSessionId: string;
+    provider: "finger_ppg" | "vitallens";
+    quality: CaptureQuality;
+    attestation: string;
+    actorId: string;
+    correlationId: string;
+  }): Promise<CaptureQualitySubmissionResult> {
+    const quality = CaptureQualitySchema.strict()
+      .refine(({ status }) => status !== "pass", {
+        message: "a rejected capture cannot have passing quality"
+      })
+      .parse(input.quality);
+    const round = await this.getRound(input.roundId);
+    if (round.patientId !== input.patientId) {
+      throw new OrchestrationError("patient_mismatch", false);
+    }
+    if (round.stateVersion !== input.expectedStateVersion) {
+      throw new OrchestrationError("stale_state", true);
+    }
+    if (round.state !== "capturing") {
+      throw new OrchestrationError("invalid_state", false);
+    }
+    const attestation = this.#verifyAttestation(input.attestation, false);
+    if (
+      attestation.roundId !== round.id ||
+      attestation.patientId !== round.patientId ||
+      attestation.assessmentSessionId !== input.assessmentSessionId
+    ) {
+      throw new OrchestrationError("assessment_attestation_invalid", false);
+    }
+    if (attestation.provider !== input.provider || input.provider !== this.#selectedProvider) {
+      throw new OrchestrationError("assessment_provider_mismatch", false);
+    }
+
+    const occurredAt = this.#now();
+    const qualityEvent = createCaptureQualityRejectedEvent({
+      eventId: deterministicUuid(
+        "capture-quality-rejected",
+        round.id,
+        input.assessmentSessionId,
+        quality.status
+      ),
+      occurredAt,
+      actor: { kind: "patient", id: input.actorId },
+      patientId: round.patientId,
+      roundId: round.id,
+      correlationId: input.correlationId,
+      source: "patient_ui",
+      assessmentSessionId: input.assessmentSessionId,
+      provider: input.provider,
+      quality,
+      rawMediaStored: false
+    });
+
+    if (quality.status === "retry") {
+      return {
+        round: await this.transition({
+          roundId: round.id,
+          patientId: round.patientId,
+          to: "capture_retry",
+          expectedStateVersion: round.stateVersion,
+          actor: { kind: "system", id: "homerounds-quality-gate" },
+          source: "system",
+          correlationId: input.correlationId,
+          additionalEvents: [qualityEvent]
+        }),
+        next: "retry",
+        protocolResult: null
+      };
+    }
+
+    const decision = evaluateProtocol(this.#protocol, {
+      now: occurredAt,
+      report: await this.#confirmedReport(round.id),
+      measurement: { status: "quality_failed", quality },
+      followUp: { status: "not_asked" },
+      followUpQuestionsAsked: 0
+    });
+    if (decision.kind !== "result" || decision.result.outcome !== "abstain_for_review") {
+      throw new OrchestrationError("round_conflict", false);
+    }
+    return {
+      round: await this.transition({
+        roundId: round.id,
+        patientId: round.patientId,
+        to: "abstained_for_review",
+        expectedStateVersion: round.stateVersion,
+        actor: { kind: "system", id: "homerounds-quality-gate" },
+        source: "system",
+        correlationId: input.correlationId,
+        additionalEvents: [qualityEvent]
+      }),
+      next: "abstained_for_review",
+      protocolResult: ProtocolResultSchema.parse(decision.result)
+    };
+  }
+
+  async submitFollowUp(input: {
+    roundId: string;
+    patientId: string;
+    expectedStateVersion: number;
+    questionId: string;
+    answer: "yes" | "no" | "unsure";
+    answeredAt: string;
+    actorId: string;
+    correlationId: string;
+  }): Promise<FollowUpSubmissionResult> {
+    let round = await this.getRound(input.roundId);
+    if (round.patientId !== input.patientId) {
+      throw new OrchestrationError("patient_mismatch", false);
+    }
+    if (round.state !== "follow_up_selected") {
+      throw new OrchestrationError("invalid_state", false);
+    }
+    if (round.stateVersion !== input.expectedStateVersion) {
+      throw new OrchestrationError("stale_state", true);
+    }
+    const question = this.#protocol.questions.find(({ id }) => id === input.questionId);
+    if (!question) throw new OrchestrationError("round_conflict", false);
+    const measurement = await this.#measurementEvidence(round.id);
+    if (measurement.status !== "present") {
+      throw new OrchestrationError("measurement_conflict", false);
+    }
+    const decision = evaluateProtocol(this.#protocol, {
+      now: this.#now(),
+      report: await this.#confirmedReport(round.id),
+      measurement,
+      followUp: {
+        status: "answered",
+        questionId: question.id,
+        answer: input.answer
+      },
+      followUpQuestionsAsked: 1
+    });
+    if (decision.kind !== "result") {
+      throw new OrchestrationError("round_conflict", false);
+    }
+    const result = ProtocolResultSchema.parse(decision.result);
+    const occurredAt = this.#now();
+    round = await this.transition({
+      roundId: round.id,
+      patientId: round.patientId,
+      to: "protocol_ready",
+      expectedStateVersion: round.stateVersion,
+      actor: { kind: "system", id: "homerounds-protocol-evaluator" },
+      source: "system",
+      correlationId: input.correlationId,
+      additionalEvents: [
+        createFollowUpAnsweredEvent({
+          eventId: deterministicUuid("follow-up-answered", round.id, question.id),
+          occurredAt,
+          actor: { kind: "patient", id: input.actorId },
+          patientId: round.patientId,
+          roundId: round.id,
+          correlationId: input.correlationId,
+          source: "patient_ui",
+          questionId: question.id,
+          answer: input.answer,
+          answeredAt: input.answeredAt
+        })
+      ]
+    });
+    if (result.outcome === "abstain_for_review") {
+      round = await this.#systemTransition(round, "abstained_for_review", input.correlationId);
+      return { round, protocolResult: result };
+    }
+    if (result.outcome !== "programme_review_requested") {
+      throw new OrchestrationError("round_conflict", false);
+    }
+    round = await this.#systemTransition(round, "protocol_decided", input.correlationId);
+    round = await this.#systemTransition(round, "action_pending", input.correlationId);
+    return { round, protocolResult: result };
+  }
+
   async listQueue(roundIds: readonly string[]): Promise<ClinicalQueueResult> {
     const ids = z.array(z.uuid()).min(1).max(50).parse(roundIds);
     const tasks = (
@@ -567,16 +767,14 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
   async assertProtocolResult(roundId: string, resultInput: ProtocolResult): Promise<void> {
     const expected = ProtocolResultSchema.parse(resultInput);
     const report = await this.#confirmedReport(roundId);
-    const measurements = await this.#repository.listMeasurementFacts(roundId);
-    const latest = [...measurements].sort((left, right) =>
-      right.fact.observedAt.localeCompare(left.fact.observedAt)
-    )[0];
+    const measurement = await this.#measurementEvidence(roundId);
+    const followUp = await this.#followUpEvidence(roundId);
     const decision = evaluateProtocol(this.#protocol, {
       now: this.#now(),
       report,
-      measurement: latest ? { status: "present", fact: latest.fact } : { status: "missing" },
-      followUp: { status: "not_asked" },
-      followUpQuestionsAsked: 0
+      measurement,
+      followUp,
+      followUpQuestionsAsked: followUp.status === "not_asked" ? 0 : 1
     });
     if (
       decision.kind !== "result" ||
@@ -646,6 +844,39 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
       inputMode: report.inputMode,
       confirmedAt: report.confirmedAt
     });
+  }
+
+  async #measurementEvidence(roundId: string): Promise<ProtocolEvaluationInput["measurement"]> {
+    const measurements = await this.#repository.listMeasurementFacts(roundId);
+    const latest = [...measurements].sort((left, right) =>
+      right.fact.observedAt.localeCompare(left.fact.observedAt)
+    )[0];
+    if (latest) return { status: "present", fact: latest.fact };
+    const qualityFailures = (await this.#repository.listAuditEvents(roundId))
+      .filter(({ type }) => type === "capture_quality_rejected")
+      .map((event) => ({
+        occurredAt: event.occurredAt,
+        payload: CaptureQualityRejectedPayloadSchema.safeParse(event.payload)
+      }))
+      .filter((entry) => entry.payload.success)
+      .sort((left, right) => right.occurredAt.localeCompare(left.occurredAt));
+    const latestFailure = qualityFailures[0];
+    return latestFailure?.payload.success
+      ? { status: "quality_failed", quality: latestFailure.payload.data.quality }
+      : { status: "missing" };
+  }
+
+  async #followUpEvidence(roundId: string): Promise<ProtocolEvaluationInput["followUp"]> {
+    const answers = (await this.#repository.listAuditEvents(roundId))
+      .filter(({ type }) => type === "follow_up_answered")
+      .map((event) => FollowUpAnsweredPayloadSchema.safeParse(event.payload))
+      .filter((result) => result.success)
+      .map((result) => result.data)
+      .sort((left, right) => right.answeredAt.localeCompare(left.answeredAt));
+    const latest = answers[0];
+    return latest
+      ? { status: "answered", questionId: latest.questionId, answer: latest.answer }
+      : { status: "not_asked" };
   }
 
   async #ensureStandaloneEvent(event: DomainEvent): Promise<void> {

@@ -1,4 +1,5 @@
 import {
+  CaptureQualitySchema,
   ClinicalTaskSchema,
   MeasurementFactSchema,
   PatientReportSchema,
@@ -147,6 +148,51 @@ export const SubmitAssessmentDataSchema = z
   })
   .strict();
 
+export const SubmitCaptureQualityRequestSchema = z
+  .object({
+    expectedStateVersion: z.number().int().nonnegative(),
+    assessmentSessionId: z.uuid(),
+    provider: z.enum(["finger_ppg", "vitallens"]),
+    attestation: z.string().min(32).max(2_000),
+    quality: CaptureQualitySchema.strict().refine(({ status }) => status !== "pass", {
+      message: "capture quality rejection cannot contain a passing result"
+    })
+  })
+  .strict();
+
+export const SubmitCaptureQualityDataSchema = z.discriminatedUnion("next", [
+  z
+    .object({
+      next: z.literal("retry"),
+      round: RoundSchema.strict(),
+      protocolResult: z.null()
+    })
+    .strict(),
+  z
+    .object({
+      next: z.literal("abstained_for_review"),
+      round: RoundSchema.strict(),
+      protocolResult: ProtocolResultSchema.strict()
+    })
+    .strict()
+]);
+
+export const SubmitFollowUpRequestSchema = z
+  .object({
+    expectedStateVersion: z.number().int().nonnegative(),
+    questionId: z.string().min(1).max(80),
+    answer: z.enum(["yes", "no", "unsure"]),
+    answeredAt: z.iso.datetime()
+  })
+  .strict();
+
+export const SubmitFollowUpDataSchema = z
+  .object({
+    round: RoundSchema.strict(),
+    protocolResult: ProtocolResultSchema.strict()
+  })
+  .strict();
+
 export const ExecuteActionRequestSchema = z
   .object({
     expectedStateVersion: z.number().int().nonnegative(),
@@ -218,4 +264,6 @@ export type TransitionRoundRequest = z.infer<typeof TransitionRoundRequestSchema
 export type SubmitReportRequest = z.infer<typeof SubmitReportRequestSchema>;
 export type StartAssessmentRequest = z.infer<typeof StartAssessmentRequestSchema>;
 export type SubmitAssessmentRequest = z.infer<typeof SubmitAssessmentRequestSchema>;
+export type SubmitCaptureQualityRequest = z.infer<typeof SubmitCaptureQualityRequestSchema>;
+export type SubmitFollowUpRequest = z.infer<typeof SubmitFollowUpRequestSchema>;
 export type ExecuteActionRequest = z.infer<typeof ExecuteActionRequestSchema>;

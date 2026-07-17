@@ -157,10 +157,19 @@ export class PostgresHomeRoundsRepository<TSnapshot, TFact> implements HomeRound
   async updateRoundWithAudit(
     roundInput: Round,
     expectedStateVersion: number,
-    eventInput: RoundStateChangedEvent
+    eventInput: RoundStateChangedEvent,
+    additionalEventInputs: readonly DomainEvent[] = []
   ): Promise<void> {
     const round = RoundSchema.parse(roundInput);
     const event = RoundStateChangedEventSchema.parse(eventInput);
+    const additionalEvents = additionalEventInputs.map((additionalEvent) => {
+      const parsed = DomainEventSchema.parse(additionalEvent);
+      assertStandaloneAuditEvent(parsed);
+      if (parsed.roundId !== round.id || parsed.patientId !== round.patientId) {
+        throw new Error("Additional audit event does not match the requested state change.");
+      }
+      return parsed;
+    });
     if (round.stateVersion !== expectedStateVersion + 1) {
       throw new OptimisticConcurrencyError(round.id, expectedStateVersion);
     }
@@ -193,6 +202,9 @@ export class PostgresHomeRoundsRepository<TSnapshot, TFact> implements HomeRound
         .returning({ id: rounds.id });
       if (!updated) throw new OptimisticConcurrencyError(round.id, expectedStateVersion);
       await transaction.insert(auditEvents).values(auditValues(event));
+      if (additionalEvents.length > 0) {
+        await transaction.insert(auditEvents).values(additionalEvents.map(auditValues));
+      }
     });
   }
 

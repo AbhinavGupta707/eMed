@@ -14,6 +14,10 @@ import {
   StartAssessmentRequestSchema,
   SubmitAssessmentDataSchema,
   SubmitAssessmentRequestSchema,
+  SubmitCaptureQualityDataSchema,
+  SubmitCaptureQualityRequestSchema,
+  SubmitFollowUpDataSchema,
+  SubmitFollowUpRequestSchema,
   SubmitReportDataSchema,
   SubmitReportRequestSchema,
   TransitionRoundRequestSchema,
@@ -21,6 +25,8 @@ import {
   type ExecuteActionRequest,
   type StartAssessmentRequest,
   type SubmitAssessmentRequest,
+  type SubmitCaptureQualityRequest,
+  type SubmitFollowUpRequest,
   type SubmitReportRequest,
   type TransitionRoundRequest
 } from "./schemas";
@@ -101,6 +107,24 @@ export class HomeRoundsApiClient {
       "POST",
       SubmitAssessmentRequestSchema.parse(input),
       SubmitAssessmentDataSchema
+    );
+  }
+
+  submitCaptureQuality(roundId: string, input: SubmitCaptureQualityRequest) {
+    return this.#json(
+      `/api/rounds/${z.uuid().parse(roundId)}/assessments/quality`,
+      "POST",
+      SubmitCaptureQualityRequestSchema.parse(input),
+      SubmitCaptureQualityDataSchema
+    );
+  }
+
+  submitFollowUp(roundId: string, input: SubmitFollowUpRequest) {
+    return this.#json(
+      `/api/rounds/${z.uuid().parse(roundId)}/follow-up`,
+      "POST",
+      SubmitFollowUpRequestSchema.parse(input),
+      SubmitFollowUpDataSchema
     );
   }
 

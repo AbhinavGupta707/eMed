@@ -10,6 +10,10 @@ import {
   StartAssessmentRequestSchema,
   SubmitAssessmentDataSchema,
   SubmitAssessmentRequestSchema,
+  SubmitCaptureQualityDataSchema,
+  SubmitCaptureQualityRequestSchema,
+  SubmitFollowUpDataSchema,
+  SubmitFollowUpRequestSchema,
   SubmitReportDataSchema,
   SubmitReportRequestSchema,
   TransitionRoundRequestSchema
@@ -278,6 +282,71 @@ export function handleSubmitAssessment(
                 explanationKey: result.decision.explanationKey
               }
       };
+    }
+  });
+}
+
+export function handleSubmitCaptureQuality(
+  request: Request,
+  runtime: ServerRuntime,
+  roundIdInput: string
+): Promise<Response> {
+  return serveApiRoute<
+    z.infer<typeof SubmitCaptureQualityRequestSchema>,
+    z.infer<typeof SubmitCaptureQualityDataSchema>
+  >(request, runtime.hooks, {
+    method: "POST",
+    roles: ["patient"],
+    mutation: true,
+    rateLimit: { bucket: "assessment-quality", limit: 20, windowMs: 60_000 },
+    readInput: jsonBodyReader(SubmitCaptureQualityRequestSchema, 32_000),
+    outputSchema: SubmitCaptureQualityDataSchema,
+    async handle(context, input) {
+      return serviceCall(() =>
+        runtime.orchestration.submitCaptureQuality({
+          roundId: roundIdSchema.parse(roundIdInput),
+          patientId: patientIdSchema.parse(context.session.patientId),
+          expectedStateVersion: input.expectedStateVersion,
+          assessmentSessionId: input.assessmentSessionId,
+          provider: input.provider,
+          quality: input.quality,
+          attestation: input.attestation,
+          actorId: context.session.sessionId,
+          correlationId: context.correlationId
+        })
+      );
+    }
+  });
+}
+
+export function handleSubmitFollowUp(
+  request: Request,
+  runtime: ServerRuntime,
+  roundIdInput: string
+): Promise<Response> {
+  return serveApiRoute<
+    z.infer<typeof SubmitFollowUpRequestSchema>,
+    z.infer<typeof SubmitFollowUpDataSchema>
+  >(request, runtime.hooks, {
+    method: "POST",
+    roles: ["patient"],
+    mutation: true,
+    rateLimit: { bucket: "follow-up-submit", limit: 10, windowMs: 60_000 },
+    readInput: jsonBodyReader(SubmitFollowUpRequestSchema),
+    outputSchema: SubmitFollowUpDataSchema,
+    async handle(context, input) {
+      return serviceCall(() =>
+        runtime.orchestration.submitFollowUp({
+          roundId: roundIdSchema.parse(roundIdInput),
+          patientId: patientIdSchema.parse(context.session.patientId),
+          expectedStateVersion: input.expectedStateVersion,
+          questionId: input.questionId,
+          answer: input.answer,
+          answeredAt: input.answeredAt,
+          actorId: context.session.sessionId,
+          correlationId: context.correlationId
+        })
+      );
     }
   });
 }

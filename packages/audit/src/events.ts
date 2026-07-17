@@ -1,4 +1,5 @@
 import {
+  CaptureQualitySchema,
   DomainEventSchema,
   ProtocolResultSchema,
   RoundStateSchema,
@@ -98,6 +99,25 @@ export const MeasurementAcceptedPayloadSchema = z
     unit: z.literal("bpm"),
     qualityStatus: z.literal("pass"),
     rawMediaStored: z.literal(false)
+  })
+  .strict();
+
+export const CaptureQualityRejectedPayloadSchema = z
+  .object({
+    assessmentSessionId: z.uuid(),
+    provider: z.enum(["finger_ppg", "vitallens"]),
+    quality: CaptureQualitySchema.strict().refine(({ status }) => status !== "pass", {
+      message: "a rejected capture cannot have passing quality"
+    }),
+    rawMediaStored: z.literal(false)
+  })
+  .strict();
+
+export const FollowUpAnsweredPayloadSchema = z
+  .object({
+    questionId: z.string().min(1).max(80),
+    answer: z.enum(["yes", "no", "unsure"]),
+    answeredAt: z.iso.datetime()
   })
   .strict();
 
@@ -254,6 +274,35 @@ export function createMeasurementAcceptedEvent(
       unit: input.unit,
       qualityStatus: input.qualityStatus,
       rawMediaStored: input.rawMediaStored
+    })
+  );
+}
+
+export function createCaptureQualityRejectedEvent(
+  input: EventBaseInput & z.infer<typeof CaptureQualityRejectedPayloadSchema>
+): DomainEvent {
+  return event(
+    input,
+    "capture_quality_rejected",
+    CaptureQualityRejectedPayloadSchema.parse({
+      assessmentSessionId: input.assessmentSessionId,
+      provider: input.provider,
+      quality: input.quality,
+      rawMediaStored: input.rawMediaStored
+    })
+  );
+}
+
+export function createFollowUpAnsweredEvent(
+  input: EventBaseInput & z.infer<typeof FollowUpAnsweredPayloadSchema>
+): DomainEvent {
+  return event(
+    input,
+    "follow_up_answered",
+    FollowUpAnsweredPayloadSchema.parse({
+      questionId: input.questionId,
+      answer: input.answer,
+      answeredAt: input.answeredAt
     })
   );
 }

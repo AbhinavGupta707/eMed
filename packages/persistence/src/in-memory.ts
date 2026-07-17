@@ -64,10 +64,19 @@ export class InMemoryHomeRoundsRepository<TSnapshot, TFact> implements HomeRound
   async updateRoundWithAudit(
     roundInput: Round,
     expectedStateVersion: number,
-    eventInput: RoundStateChangedEvent
+    eventInput: RoundStateChangedEvent,
+    additionalEventInputs: readonly DomainEvent[] = []
   ): Promise<void> {
     const round = RoundSchema.parse(roundInput);
     const event = RoundStateChangedEventSchema.parse(eventInput);
+    const additionalEvents = additionalEventInputs.map((additionalEvent) => {
+      const parsed = DomainEventSchema.parse(additionalEvent);
+      assertStandaloneAuditEvent(parsed);
+      if (parsed.roundId !== round.id || parsed.patientId !== round.patientId) {
+        throw new Error("Additional audit event does not match the persisted round state change.");
+      }
+      return parsed;
+    });
     const current = this.rounds.get(round.id);
     if (!current || current.stateVersion !== expectedStateVersion) {
       throw new OptimisticConcurrencyError(round.id, expectedStateVersion);
@@ -85,9 +94,15 @@ export class InMemoryHomeRoundsRepository<TSnapshot, TFact> implements HomeRound
     ) {
       throw new Error("Round audit event does not match the persisted state change.");
     }
-    if (this.auditEvents.has(event.eventId)) throw new DuplicateRecordError(event.eventId);
+    for (const auditEvent of [event, ...additionalEvents]) {
+      if (this.auditEvents.has(auditEvent.eventId))
+        throw new DuplicateRecordError(auditEvent.eventId);
+    }
     this.rounds.set(round.id, structuredClone(round));
     this.auditEvents.set(event.eventId, structuredClone(event));
+    for (const additionalEvent of additionalEvents) {
+      this.auditEvents.set(additionalEvent.eventId, structuredClone(additionalEvent));
+    }
   }
 
   async saveMeasurementFact(recordInput: MeasurementFactRecord): Promise<void> {

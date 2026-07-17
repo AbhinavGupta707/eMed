@@ -18,7 +18,8 @@ export type RoundRepository = {
   updateRoundWithAudit(
     round: Round,
     expectedStateVersion: number,
-    event: RoundStateChangedEvent
+    event: RoundStateChangedEvent,
+    additionalEvents?: readonly DomainEvent[]
   ): Promise<void>;
 };
 

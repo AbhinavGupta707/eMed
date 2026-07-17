@@ -7,6 +7,8 @@ import {
   QueueDataSchema,
   RoundDataSchema,
   SubmitAssessmentDataSchema,
+  SubmitCaptureQualityDataSchema,
+  SubmitFollowUpDataSchema,
   SubmitReportDataSchema
 } from "@homerounds/api-client";
 import { describe, expect, it } from "vitest";
@@ -20,6 +22,8 @@ import {
   handleQueue,
   handleStartAssessment,
   handleSubmitAssessment,
+  handleSubmitCaptureQuality,
+  handleSubmitFollowUp,
   handleSubmitReport,
   handleTransitionRound
 } from "./route-handlers";
@@ -281,6 +285,334 @@ describe("repository-backed server API orchestration", () => {
     const result = await success(response, ElevenLabsCredentialDataSchema);
     expect(result).toEqual({ status: "unavailable", reason: "disabled" });
     expect(response.headers.get("x-homerounds-runtime-profile")).toBe("server_provider_boundary");
+  });
+
+  it("persists rejected capture quality, retries once, and creates review without a measurement", async () => {
+    const runtime = createServerRuntime({
+      environment: parseServerEnvironment({}),
+      now: () => NOW,
+      createId: idFactory(),
+      assessmentAttestationSecret: "assessment-attestation-secret-value"
+    });
+    const created = await success(
+      await handleCreateRound(
+        apiRequest(
+          "/api/rounds",
+          {
+            patientId: "synthetic-maya",
+            triggerId: "trigger-quality-failure",
+            purpose: "Synthetic poor-quality path",
+            protocolId: "cardiometabolic_demo",
+            burdenSeconds: 90
+          },
+          "quality-create"
+        ),
+        runtime
+      ),
+      CreateRoundDataSchema
+    );
+    const roundId = created.round.id;
+    const screen = await success(
+      await handleTransitionRound(
+        apiRequest(
+          `/api/rounds/${roundId}/transition`,
+          { to: "red_flag_screen", expectedStateVersion: 0 },
+          "quality-screen"
+        ),
+        runtime,
+        roundId
+      ),
+      RoundDataSchema
+    );
+    const collecting = await success(
+      await handleTransitionRound(
+        apiRequest(
+          `/api/rounds/${roundId}/transition`,
+          { to: "collecting_report", expectedStateVersion: screen.round.stateVersion },
+          "quality-collect"
+        ),
+        runtime,
+        roundId
+      ),
+      RoundDataSchema
+    );
+    const report = await success(
+      await handleSubmitReport(
+        apiRequest(
+          `/api/rounds/${roundId}/report`,
+          {
+            report: {
+              reportId: "4dc826ac-22aa-49b8-a584-243498430c6f",
+              roundId,
+              weakness: "moderate",
+              palpitations: "unknown",
+              redFlags: { chestPain: "no", severeBreathlessness: "no", fainted: "no" },
+              inputMode: "text",
+              confirmedAt: NOW
+            },
+            expectedStateVersion: collecting.round.stateVersion
+          },
+          "quality-report"
+        ),
+        runtime,
+        roundId
+      ),
+      SubmitReportDataSchema
+    );
+    const firstSession = await success(
+      await handleStartAssessment(
+        apiRequest(
+          `/api/rounds/${roundId}/assessments/session`,
+          { expectedStateVersion: report.round.stateVersion },
+          "quality-session-1"
+        ),
+        runtime,
+        roundId
+      ),
+      AssessmentSessionDataSchema
+    );
+    const retry = await success(
+      await handleSubmitCaptureQuality(
+        apiRequest(
+          `/api/rounds/${roundId}/assessments/quality`,
+          {
+            expectedStateVersion: firstSession.round.stateVersion,
+            assessmentSessionId: firstSession.assessmentSessionId,
+            provider: firstSession.provider,
+            attestation: firstSession.attestation,
+            quality: {
+              status: "retry",
+              score: 0.3,
+              reasons: ["weak_signal", "motion"],
+              metrics: { coverage: 0.4 }
+            }
+          },
+          "quality-retry"
+        ),
+        runtime,
+        roundId
+      ),
+      SubmitCaptureQualityDataSchema
+    );
+    expect(retry).toMatchObject({ next: "retry", round: { state: "capture_retry" } });
+    const secondSession = await success(
+      await handleStartAssessment(
+        apiRequest(
+          `/api/rounds/${roundId}/assessments/session`,
+          { expectedStateVersion: retry.round.stateVersion },
+          "quality-session-2"
+        ),
+        runtime,
+        roundId
+      ),
+      AssessmentSessionDataSchema
+    );
+    const failed = await success(
+      await handleSubmitCaptureQuality(
+        apiRequest(
+          `/api/rounds/${roundId}/assessments/quality`,
+          {
+            expectedStateVersion: secondSession.round.stateVersion,
+            assessmentSessionId: secondSession.assessmentSessionId,
+            provider: secondSession.provider,
+            attestation: secondSession.attestation,
+            quality: {
+              status: "fail",
+              score: 0.1,
+              reasons: ["weak_signal"],
+              metrics: { coverage: 0.2 }
+            }
+          },
+          "quality-fail"
+        ),
+        runtime,
+        roundId
+      ),
+      SubmitCaptureQualityDataSchema
+    );
+    expect(failed).toMatchObject({
+      next: "abstained_for_review",
+      round: { state: "abstained_for_review" },
+      protocolResult: {
+        outcome: "abstain_for_review",
+        missingFactKeys: ["pulse_bpm"]
+      }
+    });
+    expect(await runtime.repository.listMeasurementFacts(roundId)).toHaveLength(0);
+    expect(
+      (await runtime.repository.listAuditEvents(roundId)).filter(
+        ({ type }) => type === "capture_quality_rejected"
+      )
+    ).toHaveLength(2);
+    if (!failed.protocolResult) return;
+    const action = await success(
+      await handleExecuteAction(
+        apiRequest(
+          `/api/rounds/${roundId}/actions`,
+          {
+            expectedStateVersion: failed.round.stateVersion,
+            protocolResult: failed.protocolResult,
+            confirmation: { confirmed: true, confirmedAt: NOW }
+          },
+          "quality-action"
+        ),
+        runtime,
+        roundId
+      ),
+      ExecuteActionDataSchema
+    );
+    expect(action).toMatchObject({ kind: "programme_task", created: true });
+  });
+
+  it("accepts exactly one structured follow-up and persists the resulting action-ready state", async () => {
+    const runtime = createServerRuntime({
+      environment: parseServerEnvironment({}),
+      now: () => NOW,
+      createId: idFactory(),
+      assessmentAttestationSecret: "assessment-attestation-secret-value"
+    });
+    const created = await success(
+      await handleCreateRound(
+        apiRequest(
+          "/api/rounds",
+          {
+            patientId: "synthetic-maya",
+            triggerId: "trigger-follow-up",
+            purpose: "Synthetic bounded follow-up path",
+            protocolId: "cardiometabolic_demo",
+            burdenSeconds: 90
+          },
+          "follow-up-create"
+        ),
+        runtime
+      ),
+      CreateRoundDataSchema
+    );
+    const roundId = created.round.id;
+    const screen = await success(
+      await handleTransitionRound(
+        apiRequest(
+          `/api/rounds/${roundId}/transition`,
+          { to: "red_flag_screen", expectedStateVersion: 0 },
+          "follow-up-screen"
+        ),
+        runtime,
+        roundId
+      ),
+      RoundDataSchema
+    );
+    const collecting = await success(
+      await handleTransitionRound(
+        apiRequest(
+          `/api/rounds/${roundId}/transition`,
+          { to: "collecting_report", expectedStateVersion: screen.round.stateVersion },
+          "follow-up-collect"
+        ),
+        runtime,
+        roundId
+      ),
+      RoundDataSchema
+    );
+    const report = await success(
+      await handleSubmitReport(
+        apiRequest(
+          `/api/rounds/${roundId}/report`,
+          {
+            report: {
+              reportId: "8ebfa0b4-3d57-443d-bbd7-139ea20d83ed",
+              roundId,
+              weakness: "moderate",
+              palpitations: "absent",
+              redFlags: { chestPain: "no", severeBreathlessness: "no", fainted: "no" },
+              inputMode: "text",
+              confirmedAt: NOW
+            },
+            expectedStateVersion: collecting.round.stateVersion
+          },
+          "follow-up-report"
+        ),
+        runtime,
+        roundId
+      ),
+      SubmitReportDataSchema
+    );
+    const assessment = await success(
+      await handleStartAssessment(
+        apiRequest(
+          `/api/rounds/${roundId}/assessments/session`,
+          { expectedStateVersion: report.round.stateVersion },
+          "follow-up-session"
+        ),
+        runtime,
+        roundId
+      ),
+      AssessmentSessionDataSchema
+    );
+    const assessed = await success(
+      await handleSubmitAssessment(
+        apiRequest(
+          `/api/rounds/${roundId}/assessments`,
+          {
+            expectedStateVersion: assessment.round.stateVersion,
+            measurement: {
+              factId: "f202953a-d11f-4601-b442-3a8a5cfb795a",
+              assessmentSessionId: assessment.assessmentSessionId,
+              provider: assessment.provider,
+              value: 72,
+              unit: "bpm",
+              observedAt: NOW,
+              durationMs: 30_000,
+              algorithmVersion: "finger_ppg_local_v1",
+              providerModelVersion: null,
+              quality: { status: "pass", score: 0.94, reasons: [], metrics: {} },
+              rawMediaRef: null
+            },
+            attestation: assessment.attestation
+          },
+          "follow-up-assessment"
+        ),
+        runtime,
+        roundId
+      ),
+      SubmitAssessmentDataSchema
+    );
+    expect(assessed).toMatchObject({
+      round: { state: "follow_up_selected" },
+      decision: { kind: "follow_up_required" }
+    });
+    if (assessed.decision.kind !== "follow_up_required") return;
+    const followedUp = await success(
+      await handleSubmitFollowUp(
+        apiRequest(
+          `/api/rounds/${roundId}/follow-up`,
+          {
+            expectedStateVersion: assessed.round.stateVersion,
+            questionId: assessed.decision.question.id,
+            answer: "no",
+            answeredAt: NOW
+          },
+          "follow-up-answer"
+        ),
+        runtime,
+        roundId
+      ),
+      SubmitFollowUpDataSchema
+    );
+    expect(followedUp).toMatchObject({
+      round: { state: "action_pending" },
+      protocolResult: {
+        outcome: "programme_review_requested",
+        matchedRuleIds: ["follow_up_answer_no"]
+      }
+    });
+    expect(
+      (await runtime.repository.listAuditEvents(roundId)).filter(
+        ({ type }) => type === "follow_up_answered"
+      )
+    ).toHaveLength(1);
+    await expect(
+      runtime.orchestration.assertProtocolResult(roundId, followedUp.protocolResult)
+    ).resolves.toBeUndefined();
   });
 
   it("routes a confirmed synthetic red flag through deterministic guidance without measurement", async () => {

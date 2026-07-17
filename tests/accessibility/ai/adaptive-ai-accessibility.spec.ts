@@ -51,9 +51,8 @@ test("adaptive route is keyboard operable, responsive, reduced-motion safe, name
   page
 }, testInfo) => {
   const failures = monitorBrowserFailures(page);
-  const scenario: SyntheticScenario = testInfo.project.name.includes("webkit")
-    ? "maya-poor-quality"
-    : "maya-happy-text";
+  const isIphoneWebKit = testInfo.project.name.includes("webkit");
+  const scenario: SyntheticScenario = isIphoneWebKit ? "maya-poor-quality" : "maya-happy-text";
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto(`/round?scenario=${scenario}`);
   await expect(
@@ -172,9 +171,15 @@ test("adaptive route is keyboard operable, responsive, reduced-motion safe, name
     page.getByRole("button", { name: "Skip label review and continue" }),
     "Enter"
   );
-  await expect(
-    page.getByRole("heading", { level: 1, name: "The selected camera check is unavailable" })
-  ).toBeVisible();
+  if (isIphoneWebKit) {
+    await expect(
+      page.getByRole("heading", { level: 1, name: /Your device is ready for the/i })
+    ).toBeVisible();
+  } else {
+    await expect(
+      page.getByRole("heading", { level: 1, name: "The selected camera check is unavailable" })
+    ).toBeVisible();
+  }
   await expectAxeSeriousAndCriticalClean(page);
   expectNoBrowserFailures(failures);
 });

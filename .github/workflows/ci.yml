@@ -90,7 +90,7 @@ jobs:
           set -euo pipefail
           static_dir="apps/web/.next/static"
           test -d "$static_dir"
-          for marker in DATABASE_URL DEMO_ACCESS_SECRET ELEVENLABS_API_KEY VITALLENS_API_KEY; do
+          for marker in DATABASE_URL DEMO_ACCESS_SECRET ELEVENLABS_API_KEY FIREWORKS_API_KEY VITALLENS_API_KEY; do
             if grep -R -F -q -- "$marker" "$static_dir"; then
               echo "::error::Server-only configuration marker entered a browser bundle: $marker"
               exit 1
@@ -132,6 +132,8 @@ jobs:
             command: pnpm test:e2e:patient
           - suite: clinician
             command: pnpm test:e2e:clinician
+          - suite: ai
+            command: pnpm test:e2e:ai
     steps:
       - name: Check out the exact revision
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -151,11 +153,12 @@ jobs:
             test-results/
             tests/**/test-results/
             /tmp/homerounds-${{ matrix.suite }}-e2e-results/
+            /tmp/homerounds-ai-*-e2e-results/
           if-no-files-found: ignore
           retention-days: 3
 
   accessibility:
-    name: Patient and clinician accessibility
+    name: Patient, clinician, and AI accessibility
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -165,7 +168,7 @@ jobs:
           persist-credentials: false
 
       - uses: ./.github/actions/setup-home-rounds
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright install --with-deps chromium webkit
       - run: pnpm test:a11y
 
       - name: Retain failure traces for three days
@@ -177,11 +180,12 @@ jobs:
             test-results/
             tests/**/test-results/
             /tmp/homerounds-patient-a11y-results/
+            /tmp/homerounds-ai-accessibility-results/
           if-no-files-found: ignore
           retention-days: 3
 
   performance:
-    name: Patient and clinician performance budgets
+    name: Patient, clinician, and AI performance budgets
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
@@ -203,6 +207,7 @@ jobs:
             test-results/
             tests/**/test-results/
             /tmp/homerounds-patient-performance-results/
+            /tmp/homerounds-ai-*-performance-results/
           if-no-files-found: ignore
           retention-days: 3
 

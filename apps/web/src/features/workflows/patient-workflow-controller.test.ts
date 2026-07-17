@@ -12,6 +12,7 @@ import {
   PatientReportSchema,
   ProtocolResultSchema,
   RoundSchema,
+  VoiceBiomarkerFactSchema,
   type CaptureQuality,
   type OpticalAssessmentProvider,
   type OpticalAssessmentResult,
@@ -108,6 +109,38 @@ const measurement = MeasurementFactSchema.parse({
   rawMediaRef: null
 });
 
+const voiceBiomarkerFact = VoiceBiomarkerFactSchema.parse({
+  factId: "1b8c6cc8-a9bb-4eb0-92f5-b99c62a16954",
+  roundId: ROUND_ID,
+  assessmentSessionId: SESSION_ID,
+  provider: "local_voice_features",
+  observedAt: NOW,
+  durationMs: 7_000,
+  algorithmVersion: "voice_local_features_v1",
+  features: {
+    medianFundamentalFrequencyHz: 181.2,
+    pitchVariabilitySemitones: 0.7,
+    jitterPercent: 0.8,
+    shimmerPercent: 2.4,
+    harmonicToNoiseRatioDb: 18.1,
+    phonationDurationMs: 7_000
+  },
+  quality: {
+    status: "pass",
+    score: 0.91,
+    reasons: [],
+    metrics: {
+      sampleRateHz: 48_000,
+      durationMs: 7_000,
+      clippingFraction: 0,
+      voicedFraction: 0.91,
+      estimatedSnrDb: 22
+    }
+  },
+  researchOnly: true,
+  rawMediaRef: null
+});
+
 function makeReport(
   roundId: string,
   redFlags: PatientReport["redFlags"] = {
@@ -186,6 +219,23 @@ const medicationEvidenceRoute = {
   voiceBiomarkerSkipped: false
 } satisfies EvidenceRoute;
 
+const voiceEvidenceRoute = {
+  ...emptyEvidenceRoute,
+  candidates: [
+    {
+      id: "voice.local.baseline",
+      kind: "voice_biomarker" as const,
+      label: "Local voice research signal",
+      description: "Capture a separate sustained vowel locally.",
+      producesFactKeys: ["voice_biomarker_observation" as const],
+      availability: { status: "available" as const },
+      estimatedBurdenSeconds: 15,
+      deterministicRank: 1
+    }
+  ],
+  selectedModuleId: "voice.local.baseline"
+} satisfies EvidenceRoute;
+
 class FakeApi implements PatientRoundApi {
   round: Round;
   evidenceRoute: EvidenceRoute = emptyEvidenceRoute;
@@ -202,6 +252,9 @@ class FakeApi implements PatientRoundApi {
     transitionRound: vi.fn(),
     submitReport: vi.fn(),
     confirmMedicationObservation: vi.fn(),
+    startVoiceBiomarker: vi.fn(),
+    submitVoiceBiomarker: vi.fn(),
+    skipVoiceBiomarker: vi.fn(),
     startAssessment: vi.fn(),
     submitAssessment: vi.fn(),
     submitCaptureQuality: vi.fn(),
@@ -283,6 +336,42 @@ class FakeApi implements PatientRoundApi {
       persisted: true,
       duplicateSuppressed: false
     });
+  }
+
+  startVoiceBiomarker(
+    roundId: string,
+    input: Parameters<PatientRoundApi["startVoiceBiomarker"]>[1]
+  ): ReturnType<PatientRoundApi["startVoiceBiomarker"]> {
+    this.calls.startVoiceBiomarker(roundId, input);
+    return Promise.resolve({
+      round: this.round,
+      assessmentSessionId: SESSION_ID,
+      provider: "local_voice_features",
+      attestation: "synthetic-voice-attestation-value-0000001",
+      expiresAt: "2026-07-17T10:05:00.000Z"
+    });
+  }
+
+  submitVoiceBiomarker(
+    roundId: string,
+    input: Parameters<PatientRoundApi["submitVoiceBiomarker"]>[1]
+  ): ReturnType<PatientRoundApi["submitVoiceBiomarker"]> {
+    this.calls.submitVoiceBiomarker(roundId, input);
+    this.evidenceRoute = { ...this.evidenceRoute, voiceBiomarkerCompleted: true };
+    return Promise.resolve({
+      round: this.round,
+      result: input.result,
+      evidenceRoute: this.evidenceRoute
+    });
+  }
+
+  skipVoiceBiomarker(
+    roundId: string,
+    input: Parameters<PatientRoundApi["skipVoiceBiomarker"]>[1]
+  ): ReturnType<PatientRoundApi["skipVoiceBiomarker"]> {
+    this.calls.skipVoiceBiomarker(roundId, input);
+    this.evidenceRoute = { ...this.evidenceRoute, voiceBiomarkerSkipped: true };
+    return Promise.resolve({ round: this.round, evidenceRoute: this.evidenceRoute });
   }
 
   startAssessment(
@@ -532,6 +621,44 @@ describe("patient workflow controller", () => {
     });
     expect(controller.getSnapshot().round?.state).toBe("capturing");
     expect(patientWorkflowView(controller.getSnapshot())).toBe("measurement_ready");
+  });
+
+  it("requires the selected local voice station before opening the pulse workflow", async () => {
+    const api = new FakeApi();
+    api.evidenceRoute = voiceEvidenceRoute;
+    const { controller } = controllerFor(api);
+
+    await advanceToAssessment(controller);
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("voice_biomarker");
+    expect(api.calls.startAssessment).not.toHaveBeenCalled();
+
+    await controller.prepareVoiceBiomarker();
+    expect(controller.getSnapshot().voiceBiomarkerSession?.assessmentSessionId).toBe(SESSION_ID);
+    await controller.completeVoiceBiomarker(voiceBiomarkerFact);
+
+    expect(api.calls.submitVoiceBiomarker).toHaveBeenCalledTimes(1);
+    expect(controller.getSnapshot().voiceBiomarkerFact?.rawMediaRef).toBeNull();
+    expect(controller.getSnapshot().evidenceRoute.voiceBiomarkerCompleted).toBe(true);
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("measurement_prepare");
+
+    await controller.prepareMeasurement();
+    expect(api.calls.startAssessment).toHaveBeenCalledTimes(1);
+  });
+
+  it("records an explicit voice-station decline before allowing the pulse workflow", async () => {
+    const api = new FakeApi();
+    api.evidenceRoute = voiceEvidenceRoute;
+    const { controller } = controllerFor(api);
+
+    await advanceToAssessment(controller);
+    await controller.skipVoiceBiomarker("patient_declined");
+
+    expect(api.calls.skipVoiceBiomarker).toHaveBeenCalledWith(ROUND_ID, {
+      expectedStateVersion: 3,
+      reason: "patient_declined"
+    });
+    expect(controller.getSnapshot().voiceBiomarkerFact).toBeNull();
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("measurement_prepare");
   });
 
   it("hard-stops on a structured red flag before provider selection", async () => {

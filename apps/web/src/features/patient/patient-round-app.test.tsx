@@ -16,10 +16,13 @@ import {
   MeasurementFactSchema,
   ProtocolResultSchema,
   RoundSchema,
+  VoiceBiomarkerFactSchema,
   type OpticalAssessmentProvider,
   type OpticalAssessmentResult,
   type Round,
-  type RoundState
+  type RoundState,
+  type VoiceBiomarkerAssessmentResult,
+  type VoiceBiomarkerProvider
 } from "@homerounds/contracts";
 import { DisabledVoiceSessionProvider } from "@homerounds/voice";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
@@ -41,6 +44,7 @@ const NOW = "2026-07-17T11:00:00.000Z";
 type AssessmentSessionResult = Awaited<ReturnType<PatientRoundApi["startAssessment"]>>;
 type AssessmentSubmissionResult = Awaited<ReturnType<PatientRoundApi["submitAssessment"]>>;
 type ActionResult = Awaited<ReturnType<PatientRoundApi["executeAction"]>>;
+type EvidenceRoute = NonNullable<Awaited<ReturnType<PatientRoundApi["getRound"]>>["evidenceRoute"]>;
 
 function makeRound(state: RoundState = "invited", version = 0): Round {
   const time = new Date(Date.parse(NOW) + version * 1_000).toISOString();
@@ -99,6 +103,38 @@ const measurement = MeasurementFactSchema.parse({
   rawMediaRef: null
 });
 
+const voiceBiomarkerFact = VoiceBiomarkerFactSchema.parse({
+  factId: "7789faf2-cf7a-4162-b65e-681f5909535c",
+  roundId: ROUND_ID,
+  assessmentSessionId: SESSION_ID,
+  provider: "local_voice_features",
+  observedAt: NOW,
+  durationMs: 7_000,
+  algorithmVersion: "voice_local_features_v1",
+  features: {
+    medianFundamentalFrequencyHz: 181.2,
+    pitchVariabilitySemitones: 0.7,
+    jitterPercent: 0.8,
+    shimmerPercent: 2.4,
+    harmonicToNoiseRatioDb: 18.1,
+    phonationDurationMs: 7_000
+  },
+  quality: {
+    status: "pass",
+    score: 0.91,
+    reasons: [],
+    metrics: {
+      sampleRateHz: 48_000,
+      durationMs: 7_000,
+      clippingFraction: 0,
+      voicedFraction: 0.91,
+      estimatedSnrDb: 22
+    }
+  },
+  researchOnly: true,
+  rawMediaRef: null
+});
+
 const completedTask = ClinicalTaskSchema.parse({
   id: TASK_ID,
   roundId: ROUND_ID,
@@ -127,13 +163,34 @@ const emptyEvidenceRoute = {
   medicationSkipped: false,
   voiceBiomarkerCompleted: false,
   voiceBiomarkerSkipped: false
-};
+} satisfies EvidenceRoute;
+
+const voiceEvidenceRoute = {
+  ...emptyEvidenceRoute,
+  candidates: [
+    {
+      id: "voice.local.baseline",
+      kind: "voice_biomarker" as const,
+      label: "Local voice research signal",
+      description: "Capture a separate sustained vowel locally.",
+      producesFactKeys: ["voice_biomarker_observation" as const],
+      availability: { status: "available" as const },
+      estimatedBurdenSeconds: 15,
+      deterministicRank: 1
+    }
+  ],
+  selectedModuleId: "voice.local.baseline"
+} satisfies EvidenceRoute;
 
 class UiApi implements PatientRoundApi {
   round = makeRound();
   task: typeof completedTask | null = null;
+  evidenceRoute: EvidenceRoute = emptyEvidenceRoute;
   readonly calls = {
     submitReport: vi.fn(),
+    startVoiceBiomarker: vi.fn(),
+    submitVoiceBiomarker: vi.fn(),
+    skipVoiceBiomarker: vi.fn(),
     startAssessment: vi.fn(),
     submitAssessment: vi.fn()
   };
@@ -147,7 +204,7 @@ class UiApi implements PatientRoundApi {
       round: this.round,
       protocolResult: null,
       task: this.task,
-      evidenceRoute: emptyEvidenceRoute
+      evidenceRoute: this.evidenceRoute
     });
   }
 
@@ -168,7 +225,7 @@ class UiApi implements PatientRoundApi {
         next: "emergency_closed",
         selectedModuleId: null,
         protocolResult: emergencyResult,
-        evidenceRoute: emptyEvidenceRoute
+        evidenceRoute: this.evidenceRoute
       });
     }
     this.round = nextRound(this.round, "assessment_selected");
@@ -177,7 +234,7 @@ class UiApi implements PatientRoundApi {
       next: "assessment_selected",
       selectedModuleId: "capture.finger_ppg.pulse",
       protocolResult: null,
-      evidenceRoute: emptyEvidenceRoute
+      evidenceRoute: this.evidenceRoute
     });
   }
 
@@ -199,6 +256,45 @@ class UiApi implements PatientRoundApi {
       fact: input.fact,
       persisted: true,
       duplicateSuppressed: false
+    });
+  }
+
+  startVoiceBiomarker(
+    roundId: string,
+    input: Parameters<PatientRoundApi["startVoiceBiomarker"]>[1]
+  ): ReturnType<PatientRoundApi["startVoiceBiomarker"]> {
+    this.calls.startVoiceBiomarker(roundId, input);
+    return Promise.resolve({
+      round: this.round,
+      assessmentSessionId: SESSION_ID,
+      provider: "local_voice_features",
+      attestation: "synthetic-voice-attestation-value-0000001",
+      expiresAt: "2026-07-17T11:05:00.000Z"
+    });
+  }
+
+  submitVoiceBiomarker(
+    roundId: string,
+    input: Parameters<PatientRoundApi["submitVoiceBiomarker"]>[1]
+  ): ReturnType<PatientRoundApi["submitVoiceBiomarker"]> {
+    this.calls.submitVoiceBiomarker(roundId, input);
+    this.evidenceRoute = { ...this.evidenceRoute, voiceBiomarkerCompleted: true };
+    return Promise.resolve({
+      round: this.round,
+      result: input.result,
+      evidenceRoute: this.evidenceRoute
+    });
+  }
+
+  skipVoiceBiomarker(
+    roundId: string,
+    input: Parameters<PatientRoundApi["skipVoiceBiomarker"]>[1]
+  ): ReturnType<PatientRoundApi["skipVoiceBiomarker"]> {
+    this.calls.skipVoiceBiomarker(roundId, input);
+    this.evidenceRoute = { ...this.evidenceRoute, voiceBiomarkerSkipped: true };
+    return Promise.resolve({
+      round: this.round,
+      evidenceRoute: this.evidenceRoute
     });
   }
 
@@ -322,12 +418,33 @@ class UiProvider implements OpticalAssessmentProvider {
   }
 }
 
+class UiVoiceBiomarkerProvider implements VoiceBiomarkerProvider {
+  readonly kind = "local_voice_features" as const;
+  result: VoiceBiomarkerAssessmentResult = { status: "completed", fact: voiceBiomarkerFact };
+
+  checkAvailability(): Promise<Awaited<ReturnType<VoiceBiomarkerProvider["checkAvailability"]>>> {
+    return Promise.resolve({ available: true, capabilities: { microphone: true, webAudio: true } });
+  }
+
+  capture(): Promise<VoiceBiomarkerAssessmentResult> {
+    return Promise.resolve(this.result);
+  }
+
+  dispose(): Promise<void> {
+    return Promise.resolve();
+  }
+}
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
 });
 
-function renderRound(api = new UiApi(), provider = new UiProvider()) {
+function renderRound(
+  api = new UiApi(),
+  provider = new UiProvider(),
+  voiceBiomarkerProvider = new UiVoiceBiomarkerProvider()
+) {
   render(
     createElement(PatientRoundApp, {
       api,
@@ -337,6 +454,7 @@ function renderRound(api = new UiApi(), provider = new UiProvider()) {
       isOnline: () => true,
       now: () => NOW,
       timeoutMs: 60_000,
+      voiceBiomarkerProvider,
       voiceProvider: new DisabledVoiceSessionProvider("missing_configuration")
     })
   );
@@ -450,6 +568,27 @@ describe("patient round app", () => {
     await screen.findByRole("heading", { name: "Stop this demo round" });
     expect(screen.getByText(/ended the ordinary flow before any camera check/i)).toBeVisible();
     expect(screen.queryByRole("button", { name: "Check this device" })).not.toBeInTheDocument();
+    expect(api.calls.startAssessment).not.toHaveBeenCalled();
+  });
+
+  it("runs a consented local voice research station before exposing the camera pulse step", async () => {
+    const api = new UiApi();
+    api.evidenceRoute = voiceEvidenceRoute;
+    renderRound(api);
+    await acceptInvitation();
+    await completeTextReport();
+
+    expect(
+      await screen.findByRole("heading", { name: "Sustained-vowel research signal" })
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Check this device" })).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByLabelText(/I consent to one separate local sustained-vowel capture/i)
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Start 7-second capture" }));
+
+    await screen.findByRole("heading", { name: "Next, prepare a short camera pulse check" });
+    expect(api.calls.submitVoiceBiomarker).toHaveBeenCalledTimes(1);
     expect(api.calls.startAssessment).not.toHaveBeenCalled();
   });
 

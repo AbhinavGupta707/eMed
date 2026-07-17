@@ -1,7 +1,11 @@
+import { LocalVoiceBiomarkerProvider } from "@homerounds/assessments";
 import { SyntheticVoiceSessionProvider } from "@homerounds/voice";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createPatientVoiceProvider } from "./provider-factories";
+import {
+  createPatientVoiceBiomarkerProvider,
+  createPatientVoiceProvider
+} from "./provider-factories";
 
 describe("patient provider factories", () => {
   afterEach(() => vi.unstubAllEnvs());
@@ -21,5 +25,9 @@ describe("patient provider factories", () => {
     vi.stubEnv("NODE_ENV", "test");
     vi.stubEnv("NEXT_PUBLIC_VOICE_TEST_FIXTURE", "unknown");
     expect(() => createPatientVoiceProvider()).toThrow(/unsupported/i);
+  });
+
+  it("creates the local-only voice research provider without a provider key", () => {
+    expect(createPatientVoiceBiomarkerProvider()).toBeInstanceOf(LocalVoiceBiomarkerProvider);
   });
 });

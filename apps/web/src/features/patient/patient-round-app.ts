@@ -1,7 +1,13 @@
 "use client";
 import { HomeRoundsApiClient } from "@homerounds/api-client";
 import type { MedicationLabelProvider } from "@homerounds/assessments";
-import { PatientReportSchema, RedFlagAnswerSchema, type RoundState } from "@homerounds/contracts";
+import {
+  PatientReportSchema,
+  RedFlagAnswerSchema,
+  type RoundState,
+  type VoiceBiomarkerProvider,
+  type VoiceSessionContext
+} from "@homerounds/contracts";
 import {
   createConfirmedPatientReport,
   type TranscriptConfirmation,
@@ -32,12 +38,15 @@ import {
   createElement,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
   type ComponentType,
   type ReactNode
 } from "react";
-import { VoiceInteractionPanel } from "../voice";
+import { VoiceInteractionPanel, type VoiceAgentProposalState } from "../voice";
+import { VoiceBiomarkerStation } from "../voice-biomarker";
+import { HistoryPurposeCard, VoiceAgentProposalReview } from "../voice-round";
 import { MedicationLabelPanel } from "../medication";
 import { AdaptiveRoundMap, RoundMapExperienceSchema, type RoundMapExperience } from "../round-map";
 import { ApiMedicationLabelProvider } from "../shared-round/medication-label-api-provider";
@@ -50,7 +59,11 @@ import {
   type PatientWorkflowState,
   type PatientWorkflowView
 } from "../workflows/patient-workflow-controller";
-import { createPatientOpticalProvider, createPatientVoiceProvider } from "./provider-factories";
+import {
+  createPatientOpticalProvider,
+  createPatientVoiceBiomarkerProvider,
+  createPatientVoiceProvider
+} from "./provider-factories";
 import {
   createRecordedCaptureReplayLoader,
   type RecordedCaptureReplayLoader
@@ -72,6 +85,7 @@ export type PatientRoundAppProps = Readonly<{
   config: PatientRoundLaunchConfig;
   api?: PatientRoundApi;
   voiceProvider?: VoiceSessionProvider;
+  voiceBiomarkerProvider?: VoiceBiomarkerProvider;
   createOpticalProvider?: OpticalProviderFactory;
   loadRecordedCaptureReplay?: RecordedCaptureReplayLoader | null;
   createId?: () => string;
@@ -135,6 +149,7 @@ function stepIndex(view: PatientWorkflowView): number {
     case "report":
       return 0;
     case "medication_review":
+    case "voice_biomarker":
     case "measurement_prepare":
     case "measurement_ready":
     case "measurement_unavailable":
@@ -223,6 +238,34 @@ function liveRoundMapExperience(state: PatientWorkflowState): RoundMapExperience
               statusDetail: "Review and confirm visible label fields before continuing."
             };
       }
+      if (candidate.kind === "voice_biomarker") {
+        if (route.selectedModuleId !== candidate.id) {
+          return {
+            candidate,
+            status: "skipped" as const,
+            statusDetail: "The validated route did not require this optional research signal."
+          };
+        }
+        if (route.voiceBiomarkerSkipped) {
+          return {
+            candidate,
+            status: "skipped" as const,
+            statusDetail: "You skipped this optional station; no voice feature fact was saved."
+          };
+        }
+        return route.voiceBiomarkerCompleted
+          ? {
+              candidate,
+              status: "completed" as const,
+              statusDetail:
+                "A quality-passing local research signal was saved without raw voice audio."
+            }
+          : {
+              candidate,
+              status: "current" as const,
+              statusDetail: "Consent and a passing local quality check are required."
+            };
+      }
       if (assessmentComplete) {
         if (assessmentCompletedWithoutMeasurement) {
           return {
@@ -248,7 +291,9 @@ function liveRoundMapExperience(state: PatientWorkflowState): RoundMapExperience
       const pulseReady =
         route.selectedModuleId === candidate.id ||
         (route.selectedModuleId === "medication.label.review" &&
-          (route.medicationConfirmed || route.medicationSkipped));
+          (route.medicationConfirmed || route.medicationSkipped)) ||
+        (route.selectedModuleId === "voice.local.baseline" &&
+          (route.voiceBiomarkerCompleted || route.voiceBiomarkerSkipped));
       return {
         candidate,
         status: pulseReady ? ("selected" as const) : ("next" as const),
@@ -262,7 +307,11 @@ function liveRoundMapExperience(state: PatientWorkflowState): RoundMapExperience
     currentRoundVersion: round.stateVersion,
     modules,
     resumedConfirmedProgress:
-      state.interrupted || route.medicationConfirmed || route.medicationSkipped,
+      state.interrupted ||
+      route.medicationConfirmed ||
+      route.medicationSkipped ||
+      route.voiceBiomarkerCompleted ||
+      route.voiceBiomarkerSkipped,
     selection: { status: "settled", outcome: route.selection, committed: true },
     syntheticStoryLabel: "Live synthetic adaptive route"
   });
@@ -520,10 +569,12 @@ function ReportPanel({
   state,
   controller,
   voiceProvider,
-  createId
+  createId,
+  now
 }: PatientShellProps & {
   voiceProvider: VoiceSessionProvider;
   createId: () => string;
+  now: () => string;
 }) {
   const [chestPain, setChestPain] = useState<string | null>(null);
   const [severeBreathlessness, setSevereBreathlessness] = useState<string | null>(null);
@@ -531,7 +582,20 @@ function ReportPanel({
   const [weakness, setWeakness] = useState<string | null>(null);
   const [palpitations, setPalpitations] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<TranscriptConfirmation | null>(null);
+  const [agentProposal, setAgentProposal] = useState<VoiceAgentProposalState | null>(null);
   const round = state.round;
+  const voiceContext = useMemo<VoiceSessionContext>(
+    () => ({
+      syntheticDataOnly: true,
+      patientAlias: "Maya",
+      roundPurpose:
+        round?.purpose ??
+        "Fictional cardiometabolic programme check-in for a scheduled home round.",
+      historySummary:
+        "Synthetic history: Maya is enrolled in a fictional cardiometabolic monitoring programme. Prior demo rounds provide bounded context only and do not establish a diagnosis."
+    }),
+    [round?.purpose]
+  );
   const complete =
     round !== null &&
     chestPain !== null &&
@@ -664,11 +728,23 @@ function ReportPanel({
         })
       )
     ),
+    round ? createElement(HistoryPurposeCard, { context: voiceContext }) : null,
     round
       ? createElement(VoiceInteractionPanel, {
+          context: voiceContext,
           createId: createId,
           onConfirmed: setConfirmation,
+          onProposal: setAgentProposal,
           provider: voiceProvider,
+          roundId: round.id
+        })
+      : null,
+    round && agentProposal
+      ? createElement(VoiceAgentProposalReview, {
+          createId,
+          now,
+          onConfirmed: (report) => controller.submitConfirmedReport(report),
+          proposal: agentProposal.proposal,
           roundId: round.id
         })
       : null,
@@ -1745,6 +1821,56 @@ function MedicationReviewPanel({
   });
 }
 
+function VoiceBiomarkerPanel({
+  state,
+  controller,
+  provider
+}: PatientShellProps & { provider: VoiceBiomarkerProvider }) {
+  const requested = useRef(false);
+  const session = state.voiceBiomarkerSession;
+
+  useEffect(() => {
+    if (requested.current || session !== null) return;
+    requested.current = true;
+    void controller.prepareVoiceBiomarker();
+  }, [controller, session]);
+
+  if (!state.round) return null;
+  if (!session) {
+    if (state.error && state.pending === null) {
+      return createElement(FeedbackState, {
+        action: createRequiredChildrenElement(
+          Button,
+          {
+            onClick: () => {
+              void controller.prepareVoiceBiomarker();
+            },
+            variant: "secondary"
+          },
+          "Try preparing the voice station again"
+        ),
+        description: state.error.message,
+        kind: "error",
+        title: "Voice station could not be prepared"
+      });
+    }
+    return createElement(FeedbackState, {
+      description:
+        "Creating a one-use, attested local session. No microphone capture starts without your consent.",
+      kind: "loading",
+      title: "Preparing the optional voice-signal station"
+    });
+  }
+
+  return createElement(VoiceBiomarkerStation, {
+    assessmentSessionId: session.assessmentSessionId,
+    onCompleted: (fact) => controller.completeVoiceBiomarker(fact),
+    onDeclined: () => controller.skipVoiceBiomarker("patient_declined"),
+    provider,
+    roundId: state.round.id
+  });
+}
+
 function PatientWorkflowContent({
   view,
   state,
@@ -1752,13 +1878,15 @@ function PatientWorkflowContent({
   voiceProvider,
   createId,
   now,
-  medicationLabelProvider
+  medicationLabelProvider,
+  voiceBiomarkerProvider
 }: PatientShellProps & {
   view: PatientWorkflowView;
   voiceProvider: VoiceSessionProvider;
   createId: () => string;
   now: () => string;
   medicationLabelProvider: MedicationLabelProvider;
+  voiceBiomarkerProvider: VoiceBiomarkerProvider;
 }): ReactNode {
   switch (view) {
     case "loading":
@@ -1775,8 +1903,15 @@ function PatientWorkflowContent({
       return createElement(ReportPanel, {
         controller: controller,
         createId: createId,
+        now: now,
         state: state,
         voiceProvider: voiceProvider
+      });
+    case "voice_biomarker":
+      return createElement(VoiceBiomarkerPanel, {
+        controller,
+        provider: voiceBiomarkerProvider,
+        state
       });
     case "medication_review":
       return createElement(MedicationReviewPanel, {
@@ -1833,6 +1968,7 @@ export function PatientRoundApp({
   config,
   api: providedApi,
   voiceProvider: providedVoice,
+  voiceBiomarkerProvider: providedVoiceBiomarker,
   createOpticalProvider = createPatientOpticalProvider,
   loadRecordedCaptureReplay: providedReplayLoader,
   createId = browserId,
@@ -1851,6 +1987,10 @@ export function PatientRoundApp({
   const voiceProvider = useMemo(
     () => providedVoice ?? createPatientVoiceProvider(),
     [providedVoice]
+  );
+  const voiceBiomarkerProvider = useMemo(
+    () => providedVoiceBiomarker ?? createPatientVoiceBiomarkerProvider(),
+    [providedVoiceBiomarker]
   );
   const medicationLabelProvider = useMemo(
     () => providedMedicationLabelProvider ?? new ApiMedicationLabelProvider(api),
@@ -1986,6 +2126,7 @@ export function PatientRoundApp({
           state: state,
           view: view,
           voiceProvider: voiceProvider,
+          voiceBiomarkerProvider,
           medicationLabelProvider,
           now
         })

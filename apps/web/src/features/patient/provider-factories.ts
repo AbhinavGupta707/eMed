@@ -2,10 +2,12 @@
 
 import {
   createFingerPpgProvider,
+  createLocalVoiceBiomarkerProvider,
   createVitalLensAssessmentProvider,
   type OpticalAssessmentProvider,
   type OpticalProviderKind
 } from "@homerounds/assessments";
+import type { VoiceBiomarkerProvider } from "@homerounds/contracts";
 import { SyntheticVoiceSessionProvider, type VoiceSessionProvider } from "@homerounds/voice";
 
 import {
@@ -51,4 +53,9 @@ export function createPatientVoiceProvider(): VoiceSessionProvider {
   return new ElevenLabsReactVoiceSessionProvider({
     fetchCredential: createHomeRoundsVoiceCredentialFetcher()
   });
+}
+
+/** Creates the consent-gated, in-browser sustained-vowel provider. Raw PCM never leaves memory. */
+export function createPatientVoiceBiomarkerProvider(): VoiceBiomarkerProvider {
+  return createLocalVoiceBiomarkerProvider({ captureDurationMs: 7_000 });
 }

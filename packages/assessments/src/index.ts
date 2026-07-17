@@ -10,4 +10,5 @@ export type {
 export * from "../providers/finger-ppg";
 export * from "../providers/medication-label";
 export * from "../providers/vitallens";
+export * from "../providers/voice-biomarker";
 export * from "./registry";

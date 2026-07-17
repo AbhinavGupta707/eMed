@@ -4,6 +4,7 @@ import {
   MeasurementFactSchema,
   PatientReportSchema,
   RedFlagAnswerSchema,
+  VoiceBiomarkerFactSchema,
   type CaptureQuality,
   type ClinicalTask,
   type ConfirmedMedicationObservationFact,
@@ -14,7 +15,8 @@ import {
   type PatientReport,
   type ProtocolResult,
   type Round,
-  type RoundState
+  type RoundState,
+  type VoiceBiomarkerFact
 } from "@homerounds/contracts";
 
 import {
@@ -36,6 +38,9 @@ export type PatientRoundApi = Pick<
   | "submitReport"
   | "submitMedicationLabelImage"
   | "confirmMedicationObservation"
+  | "startVoiceBiomarker"
+  | "submitVoiceBiomarker"
+  | "skipVoiceBiomarker"
   | "startAssessment"
   | "submitAssessment"
   | "submitCaptureQuality"
@@ -44,6 +49,7 @@ export type PatientRoundApi = Pick<
 >;
 
 type AssessmentSession = Awaited<ReturnType<PatientRoundApi["startAssessment"]>>;
+type VoiceBiomarkerSession = Awaited<ReturnType<PatientRoundApi["startVoiceBiomarker"]>>;
 type ProtocolDecision = Awaited<ReturnType<PatientRoundApi["submitAssessment"]>>["decision"];
 type ActionResult = Awaited<ReturnType<PatientRoundApi["executeAction"]>>;
 type ProviderAvailability = Awaited<ReturnType<OpticalAssessmentProvider["checkAvailability"]>>;
@@ -54,6 +60,9 @@ export type PatientWorkflowPending =
   | "transition"
   | "submitting_report"
   | "submitting_medication"
+  | "preparing_voice_biomarker"
+  | "submitting_voice_biomarker"
+  | "skipping_voice_biomarker"
   | "preparing_camera"
   | "capturing"
   | "submitting_measurement"
@@ -84,6 +93,8 @@ export type PatientWorkflowState = Readonly<{
   interrupted: boolean;
   evidenceRoute: EvidenceRoute;
   medicationFact: ConfirmedMedicationObservationFact | null;
+  voiceBiomarkerSession: VoiceBiomarkerSession | null;
+  voiceBiomarkerFact: VoiceBiomarkerFact | null;
 }>;
 
 export type PatientWorkflowView =
@@ -91,6 +102,7 @@ export type PatientWorkflowView =
   | "invitation"
   | "report"
   | "medication_review"
+  | "voice_biomarker"
   | "measurement_prepare"
   | "measurement_ready"
   | "measurement_unavailable"
@@ -183,11 +195,21 @@ export function patientWorkflowView(state: PatientWorkflowState): PatientWorkflo
     case "collecting_report":
       return "report";
     case "assessment_selected":
-      return state.evidenceRoute.selectedModuleId === "medication.label.review" &&
+      if (
+        state.evidenceRoute.selectedModuleId === "medication.label.review" &&
         !state.evidenceRoute.medicationConfirmed &&
         !state.evidenceRoute.medicationSkipped
-        ? "medication_review"
-        : "measurement_prepare";
+      ) {
+        return "medication_review";
+      }
+      if (
+        state.evidenceRoute.selectedModuleId === "voice.local.baseline" &&
+        !state.evidenceRoute.voiceBiomarkerCompleted &&
+        !state.evidenceRoute.voiceBiomarkerSkipped
+      ) {
+        return "voice_biomarker";
+      }
+      return "measurement_prepare";
     case "capturing":
       if (
         state.pending === "capturing" ||
@@ -271,7 +293,9 @@ export class PatientWorkflowController {
       recordedReplayLabel: null,
       interrupted: false,
       evidenceRoute: emptyEvidenceRoute(),
-      medicationFact: null
+      medicationFact: null,
+      voiceBiomarkerSession: null,
+      voiceBiomarkerFact: null
     };
   }
 
@@ -355,7 +379,9 @@ export class PatientWorkflowController {
         decision: null,
         optimisticRoundState: null,
         evidenceRoute: result.evidenceRoute,
-        medicationFact: null
+        medicationFact: null,
+        voiceBiomarkerSession: null,
+        voiceBiomarkerFact: null
       });
     } catch (error: unknown) {
       await this.#failOperation(error, rollbackRound);
@@ -413,6 +439,108 @@ export class PatientWorkflowController {
       throw new Error("Medication review is no longer available to skip.");
     }
     await this.#prepareMeasurementFrom(round, true);
+  }
+
+  async prepareVoiceBiomarker(): Promise<void> {
+    const round = this.#state.round;
+    if (
+      !round ||
+      round.state !== "assessment_selected" ||
+      this.#state.evidenceRoute.selectedModuleId !== "voice.local.baseline" ||
+      this.#state.evidenceRoute.voiceBiomarkerCompleted ||
+      this.#state.evidenceRoute.voiceBiomarkerSkipped ||
+      this.#state.voiceBiomarkerSession !== null ||
+      !this.#requireOnline()
+    ) {
+      return;
+    }
+    this.#update({ pending: "preparing_voice_biomarker", error: null });
+    try {
+      const session = await this.#api.startVoiceBiomarker(round.id, {
+        expectedStateVersion: round.stateVersion
+      });
+      if (this.#disposed) return;
+      this.#update({
+        round: session.round,
+        voiceBiomarkerSession: session,
+        pending: null,
+        error: null
+      });
+    } catch (error: unknown) {
+      await this.#failOperation(error, round);
+    }
+  }
+
+  async completeVoiceBiomarker(factInput: VoiceBiomarkerFact): Promise<void> {
+    const fact = VoiceBiomarkerFactSchema.parse(factInput);
+    const round = this.#state.round;
+    const session = this.#state.voiceBiomarkerSession;
+    if (
+      !round ||
+      round.state !== "assessment_selected" ||
+      !session ||
+      fact.roundId !== round.id ||
+      fact.assessmentSessionId !== session.assessmentSessionId ||
+      this.#state.evidenceRoute.selectedModuleId !== "voice.local.baseline" ||
+      !this.#requireOnline()
+    ) {
+      throw new Error("Voice-signal confirmation is no longer available for this round.");
+    }
+    this.#update({ pending: "submitting_voice_biomarker", error: null });
+    try {
+      const result = await this.#api.submitVoiceBiomarker(round.id, {
+        expectedStateVersion: round.stateVersion,
+        result: { status: "completed", fact },
+        attestation: session.attestation
+      });
+      if (this.#disposed) return;
+      this.#update({
+        round: result.round,
+        evidenceRoute: result.evidenceRoute,
+        voiceBiomarkerSession: null,
+        voiceBiomarkerFact: fact,
+        pending: null,
+        error: null
+      });
+    } catch (error: unknown) {
+      await this.#failOperation(error, round);
+      throw error;
+    }
+  }
+
+  async skipVoiceBiomarker(
+    reason: "patient_declined" | "unsupported_device" | "permission_denied" = "patient_declined"
+  ): Promise<void> {
+    const round = this.#state.round;
+    if (
+      !round ||
+      round.state !== "assessment_selected" ||
+      this.#state.evidenceRoute.selectedModuleId !== "voice.local.baseline" ||
+      this.#state.evidenceRoute.voiceBiomarkerCompleted ||
+      this.#state.evidenceRoute.voiceBiomarkerSkipped ||
+      !this.#requireOnline()
+    ) {
+      throw new Error("Voice-signal station is no longer available to skip.");
+    }
+    this.#update({ pending: "skipping_voice_biomarker", error: null });
+    try {
+      const result = await this.#api.skipVoiceBiomarker(round.id, {
+        expectedStateVersion: round.stateVersion,
+        reason
+      });
+      if (this.#disposed) return;
+      this.#update({
+        round: result.round,
+        evidenceRoute: result.evidenceRoute,
+        voiceBiomarkerSession: null,
+        voiceBiomarkerFact: null,
+        pending: null,
+        error: null
+      });
+    } catch (error: unknown) {
+      await this.#failOperation(error, round);
+      throw error;
+    }
   }
 
   async #prepareMeasurementFrom(round: Round, skipMedicationReview = false): Promise<boolean> {
@@ -658,6 +786,8 @@ export class PatientWorkflowController {
         selectedProvider: null,
         evidenceRoute: refreshed.evidenceRoute ?? emptyEvidenceRoute(),
         medicationFact: null,
+        voiceBiomarkerSession: null,
+        voiceBiomarkerFact: null,
         recordedReplayLabel: null,
         interrupted: false
       });
@@ -685,6 +815,14 @@ export class PatientWorkflowController {
       !this.#state.evidenceRoute.medicationSkipped
     ) {
       await this.cancelRound();
+    } else if (
+      round.state === "assessment_selected" &&
+      this.#state.evidenceRoute.selectedModuleId === "voice.local.baseline" &&
+      !this.#state.evidenceRoute.voiceBiomarkerCompleted &&
+      !this.#state.evidenceRoute.voiceBiomarkerSkipped
+    ) {
+      await this.skipVoiceBiomarker("patient_declined");
+      await this.continueWithoutMeasurement();
     } else if (["assessment_selected", "capturing", "capture_retry"].includes(round.state)) {
       await this.continueWithoutMeasurement();
     } else {
@@ -866,6 +1004,8 @@ export class PatientWorkflowController {
           selectedProvider: null,
           evidenceRoute: latest.evidenceRoute ?? emptyEvidenceRoute(),
           medicationFact: null,
+          voiceBiomarkerSession: null,
+          voiceBiomarkerFact: null,
           recordedReplayLabel: null,
           error: mapped
         });

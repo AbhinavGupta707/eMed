@@ -1,6 +1,6 @@
 # HomeRounds orchestration state
 
-Updated: 17 July 2026 16:12 BST  
+Updated: 17 July 2026 16:19 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
 Goal: Checkpoint 7 pre-flight and launch preparation for live AI-native synthetic-demo inference  
 Integration branch: `main`
@@ -11,7 +11,7 @@ Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stop
 ## Current checkpoint
 
 - Checkpoint: 7 — AI-native live inference and external validation, pre-launch
-- Status: Checkpoints 0–6 remain integrated and verified for the bounded local/no-key candidate; Checkpoint 7 pre-flight passes and integration-owned shared-base freeze is in progress; no implementation worker has launched
+- Status: Checkpoints 0–6 remain integrated and verified for the bounded local/no-key candidate; Checkpoint 7 pre-flight and integration-owned shared-base freeze pass; Wave A launch is authorized
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
 - Rehearsed application/package candidate: `99acb5b` before Checkpoint 6 evidence-led documentation updates
@@ -24,7 +24,8 @@ Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stop
 - Checkpoint 4 Wave B launch base: `a2f548250c2f179f1f799c8b23ae3bf2be9550cf`
 - Tested Checkpoint 4 integration commit: `c46f3f1` on `main`
 - Checkpoint 5 launch base: `8589723e511b65dc849ef36234e7f462966e14a5`
-- Next gate: commit the Checkpoint 7 plan, complete the central contract/environment/dependency pre-freeze, run the green shared-base gate, record its exact commit, then launch Wave A lanes 7A/7B/7C
+- Checkpoint 7 tested shared-content base: `231941191ac30c75cdf41253d686da192e0b0ceb`
+- Next gate: launch Wave A lanes 7A/7B/7C from the state-ledger commit, record their task IDs/worktree paths, and activate the task heartbeat
 - Physical iPhone gate: `pending-physical` (does not block automated implementation)
 - Live ElevenLabs gate: `token-preflight-pass-audio-pending` (dedicated private/authenticated zero-retention agent and signed WebRTC token verified; real microphone/transcript/edit-confirm run still pending)
 - Live VitalLens gate: `pending-explicit-opt-in-and-credentials` (fixture adapter required)

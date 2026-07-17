@@ -20,6 +20,10 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:e2e": "playwright test",
+    "test:demo": "node --test scripts/demo/demo-tooling.test.mjs",
+    "demo:seed": "node scripts/demo/seed.mjs",
+    "demo:reset": "node scripts/demo/reset.mjs",
+    "demo:check": "node scripts/demo/check.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

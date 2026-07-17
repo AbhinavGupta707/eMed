@@ -402,7 +402,7 @@ The orchestrator exclusively owns:
 ```text
 data/demo/**
 scripts/demo/**
-public/demo/**
+apps/web/public/demo/**
 ```
 
 Integration deliverables:

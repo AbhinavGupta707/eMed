@@ -188,6 +188,22 @@ export type ElevenLabsConversationStarter = (
   options: ElevenLabsConversationStartOptions
 ) => Promise<ElevenLabsConversationHandle>;
 
+export type MicrophonePermissionRequester = (signal: AbortSignal) => Promise<void>;
+
+/** Requests consent without retaining or reading audio; the SDK opens its own live track afterwards. */
+export async function requestBrowserMicrophonePermission(signal: AbortSignal): Promise<void> {
+  if (signal.aborted) throw new DOMException("Session cancelled", "AbortError");
+  if (!globalThis.isSecureContext || !globalThis.navigator.mediaDevices?.getUserMedia) {
+    throw new DOMException("Microphone is unavailable", "NotSupportedError");
+  }
+  const stream = await globalThis.navigator.mediaDevices.getUserMedia({ audio: true });
+  try {
+    if (signal.aborted) throw new DOMException("Session cancelled", "AbortError");
+  } finally {
+    for (const track of stream.getTracks()) track.stop();
+  }
+}
+
 export type VoiceScheduler = Readonly<{
   now(): number;
   setTimeout(callback: () => void, delayMs: number): unknown;
@@ -298,6 +314,7 @@ type ActiveSession = {
   readonly proposalToolResults: Map<string, Promise<string>>;
   readonly onAbort: () => void;
   conversation: ElevenLabsConversationHandle | undefined;
+  microphonePermissionReady: boolean;
   timeoutHandle?: unknown;
   reconnectHandle?: unknown;
   reconnectAttempt: number;
@@ -309,6 +326,7 @@ type ActiveSession = {
 type AdapterOptions = Readonly<{
   fetchCredential: VoiceCredentialFetcher;
   startConversation?: ElevenLabsConversationStarter;
+  requestMicrophonePermission?: MicrophonePermissionRequester;
   scheduler?: VoiceScheduler;
   createSessionId?: () => string;
   sessionMaxMs?: number;
@@ -320,6 +338,7 @@ export class ElevenLabsReactVoiceSessionProvider implements VoiceSessionProvider
   readonly kind = "elevenlabs" as const;
   readonly #fetchCredential: VoiceCredentialFetcher;
   readonly #startConversation: ElevenLabsConversationStarter;
+  readonly #requestMicrophonePermission: MicrophonePermissionRequester;
   readonly #scheduler: VoiceScheduler;
   readonly #createSessionId: () => string;
   readonly #sessionMaxMs: number;
@@ -332,6 +351,9 @@ export class ElevenLabsReactVoiceSessionProvider implements VoiceSessionProvider
   constructor(options: AdapterOptions) {
     this.#fetchCredential = options.fetchCredential;
     this.#startConversation = options.startConversation ?? startElevenLabsReactConversation;
+    this.#requestMicrophonePermission =
+      options.requestMicrophonePermission ??
+      (options.startConversation ? () => Promise.resolve() : requestBrowserMicrophonePermission);
     this.#scheduler = options.scheduler ?? browserScheduler;
     this.#createSessionId = options.createSessionId ?? (() => globalThis.crypto.randomUUID());
     this.#sessionMaxMs = z
@@ -372,6 +394,7 @@ export class ElevenLabsReactVoiceSessionProvider implements VoiceSessionProvider
       proposalToolResults: new Map(),
       onAbort: () => void this.stop("cancelled"),
       conversation: undefined,
+      microphonePermissionReady: false,
       reconnectAttempt: 0,
       connectionAttempt: 0,
       terminal: false,
@@ -421,6 +444,11 @@ export class ElevenLabsReactVoiceSessionProvider implements VoiceSessionProvider
     if (!this.#isCurrent(active)) return;
     const connectionAttempt = ++active.connectionAttempt;
     try {
+      if (!active.microphonePermissionReady) {
+        await this.#requestMicrophonePermission(active.request.signal);
+        if (!this.#isCurrentConnection(active, connectionAttempt)) return;
+        active.microphonePermissionReady = true;
+      }
       const rawCredential = await this.#fetchCredential(active.request);
       if (!this.#isCurrentConnection(active, connectionAttempt)) return;
       const credential = ElevenLabsSessionCredentialSchema.parse(rawCredential);

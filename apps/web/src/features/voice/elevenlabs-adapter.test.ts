@@ -144,6 +144,7 @@ describe("ElevenLabs React voice adapter", () => {
   it("uses only a short-lived WebRTC token and maps validated presentation events", async () => {
     const scheduler = new FakeScheduler();
     const conversation = makeConversation();
+    const requestMicrophonePermission = vi.fn(async () => undefined);
     let callbacks: ElevenLabsConversationStartOptions | undefined;
     const startConversation = vi.fn(async (options: ElevenLabsConversationStartOptions) => {
       callbacks = options;
@@ -153,6 +154,7 @@ describe("ElevenLabs React voice adapter", () => {
     const provider = new ElevenLabsReactVoiceSessionProvider({
       fetchCredential: vi.fn(async () => credential),
       startConversation,
+      requestMicrophonePermission,
       scheduler,
       createSessionId: () => "local-session"
     });
@@ -180,6 +182,7 @@ describe("ElevenLabs React voice adapter", () => {
     ).resolves.toEqual({ sessionId: "provider-session-1" });
 
     expect(startConversation).toHaveBeenCalledTimes(1);
+    expect(requestMicrophonePermission).toHaveBeenCalledTimes(1);
     expect(Object.keys(startConversation.mock.calls[0]?.[0] ?? {}).sort()).toEqual([
       "clientTools",
       "connectionType",

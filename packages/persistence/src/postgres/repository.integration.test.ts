@@ -6,7 +6,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { describe, expect, it } from "vitest";
 
-import type { CommitActionInput } from "../models";
+import { TaskOptimisticConcurrencyError, type CommitActionInput } from "../models";
 import { PostgresHomeRoundsRepository } from "./repository";
 import * as schema from "./schema";
 
@@ -127,6 +127,48 @@ describe("PostgreSQL repository integration", () => {
         await expect(
           repository.listActionAttempts("programme-review:synthetic-maya:postgres")
         ).resolves.toHaveLength(2);
+
+        const persistedTask = results.find(({ created }) => created)?.task;
+        if (!persistedTask) throw new Error("Expected the first action to create the task.");
+        const clinicianEvent = event(
+          "f06a55ff-6572-48d0-809f-ddaf53940526",
+          "clinician_save_note",
+          "postgres-clinician-note"
+        );
+        clinicianEvent.actor = { kind: "clinician", id: "synthetic-clinician" };
+        clinicianEvent.source = "clinician_ui";
+        clinicianEvent.payload = {
+          kind: "save_note",
+          taskId: persistedTask.id,
+          operationKey: "clinician:postgres:save-note:0001",
+          syntheticDataOnly: true
+        };
+        const clinicianMutation = {
+          task: {
+            ...persistedTask,
+            updatedAt: "2026-07-17T08:11:00.000Z"
+          },
+          expectedTaskUpdatedAt: persistedTask.updatedAt,
+          event: clinicianEvent
+        };
+        const firstClinicianMutation = await repository.commitClinicianMutation(clinicianMutation);
+        const duplicateClinicianMutation =
+          await repository.commitClinicianMutation(clinicianMutation);
+        expect(firstClinicianMutation.created).toBe(true);
+        expect(duplicateClinicianMutation.created).toBe(false);
+        await expect(repository.getTask(persistedTask.id)).resolves.toMatchObject({
+          updatedAt: "2026-07-17T08:11:00.000Z"
+        });
+        await expect(
+          repository.commitClinicianMutation({
+            ...clinicianMutation,
+            event: event(
+              "5cab8941-68e4-497f-baa2-5f9ae878ff3d",
+              "clinician_record_contact",
+              "postgres-clinician-stale"
+            )
+          })
+        ).rejects.toBeInstanceOf(TaskOptimisticConcurrencyError);
         await expect(
           client.unsafe(
             "update audit_events set type = 'forbidden_mutation' where event_id = '56e97030-ea84-43e6-9969-9d36a61392dd'"

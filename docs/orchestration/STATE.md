@@ -53,7 +53,7 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 ## Integration invariants
 
 - At most three worker tasks active.
-- Effective from Checkpoint 2, every isolated task is explicitly launched with `gpt-5.6-sol`; `high` is used for bounded lanes and `xhigh` for complex lanes according to the frozen matrix in the orchestration plan.
+- Effective from Checkpoint 2, every isolated task is explicitly launched with `gpt-5.6-sol`; `high` is used for bounded lanes and `xhigh` for complex lanes according to the frozen matrix in the orchestration plan. The completed Checkpoint 1 entries remain truthfully labelled `legacy/pre-policy`; any future relaunch of 1A–1D must use `gpt-5.6-sol`/`xhigh`.
 - Checkpoint 3 ran `3A + 3B` concurrently with exclusive file allowlists; both handed off clean commits and were integrated in order. The orchestrator retained `data/demo/**`, `scripts/demo/**`, `apps/web/public/demo/**`, cross-lane server seams, and integration tests.
 - Checkpoint 4 Wave A uses exactly three concurrent worktrees from `566ab81`: 4A and 4B use `high`; the more complex adversarial/transaction lane 4C uses `xhigh`. Wave B 4D uses `xhigh` and launches only after Wave A is integrated and tested.
 - Checkpoint 4 Wave A merged in its required order: 4C (`996ecde`), 4A (`1d56b70`), then 4B (`7e23c96`). The orchestrator fixed both reported product defects centrally and exposed reproducible root verification commands in `3fd9697`.

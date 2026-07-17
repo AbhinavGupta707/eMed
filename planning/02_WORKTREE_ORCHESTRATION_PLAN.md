@@ -45,6 +45,10 @@ Every managed worktree is created with an explicit `model: "gpt-5.6-sol"`; worke
 
 | Checkpoint | Lane                              | Model         | Reasoning | Rationale                                                                                   |
 | ---------- | --------------------------------- | ------------- | --------- | ------------------------------------------------------------------------------------------- |
+| 1          | 1A data/domain/persistence        | `gpt-5.6-sol` | `xhigh`   | schema, migrations, transactions, provenance, and persistence integrity                     |
+| 1          | 1B protocol/planner               | `gpt-5.6-sol` | `xhigh`   | deterministic safety rules, burden bounds, state transitions, and protocol edge cases       |
+| 1          | 1C local finger PPG               | `gpt-5.6-sol` | `xhigh`   | browser sensor lifecycle, signal quality, privacy, and no-measurement failure semantics     |
+| 1          | 1D VitalLens                      | `gpt-5.6-sol` | `xhigh`   | provider boundary, consent, server-key isolation, bounded media, and typed outage behavior  |
 | 2          | 2A voice/text                     | `gpt-5.6-sol` | `xhigh`   | provider session lifecycle, client-secret isolation, transcript confirmation, outage safety |
 | 2          | 2B API/actions/audit              | `gpt-5.6-sol` | `xhigh`   | transactions, concurrency, idempotency, redaction, provider proxies                         |
 | 2          | 2C visual system                  | `gpt-5.6-sol` | `high`    | bounded design-system and accessibility implementation                                      |
@@ -57,7 +61,7 @@ Every managed worktree is created with an explicit `model: "gpt-5.6-sol"`; worke
 | 5          | 5A submission/claim audit         | `gpt-5.6-sol` | `high`    | evidence-bound narrative and claim verification                                             |
 | 5          | 5B QA/recovery evidence           | `gpt-5.6-sol` | `high`    | bounded evidence assembly with explicit waivers                                             |
 
-The orchestrator records the selected model and reasoning effort alongside every worker task ID in the state ledger. A change to this allocation is a documented orchestration decision, not an implicit fallback.
+The orchestrator records the selected model and reasoning effort alongside every worker task ID in the state ledger. Checkpoint 1 predates this policy in the historical run, so its completed entries remain labelled `legacy/pre-policy`; any relaunch of those lanes must use the matrix above. A change to this allocation is a documented orchestration decision, not an implicit fallback.
 
 ## 2. Ownership rules
 

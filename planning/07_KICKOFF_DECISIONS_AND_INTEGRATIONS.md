@@ -31,6 +31,8 @@ The number of worktrees is determined by independent ownership, not a fixed team
 
 The exact paths, merge order, checks and worker prompts are in `02_WORKTREE_ORCHESTRATION_PLAN.md`. These counts should change only if the MVP decision changes enough to alter the dependency graph. A blocked worker does not justify spawning a duplicate owner for the same files.
 
+Every lane also follows the explicit worker-model matrix in that plan: `gpt-5.6-sol` with `high` for bounded work and `xhigh` for provider, persistence, state-machine, security, concurrency, or clinical-safety complexity. The model and reasoning effort are recorded beside the task ID rather than inherited from a default.
+
 ## 3. Account and integration requirements
 
 ### Required before the complete live demo

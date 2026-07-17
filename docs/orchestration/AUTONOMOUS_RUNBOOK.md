@@ -15,7 +15,7 @@ The durable execution design is specified in `planning/02_WORKTREE_ORCHESTRATION
 - Use `thinking: "high"` for bounded, straightforward implementation or evidence lanes.
 - Use `thinking: "xhigh"` for complex integration, provider, state-machine, concurrency, persistence, security, or clinical-safety lanes.
 - Record model and reasoning effort in `STATE.md`; do not rely on an inherited default.
-- Current allocation: 2A `xhigh`, 2B `xhigh`, 2C `high`; 3A `xhigh`, 3B `xhigh`; 4A `high`, 4B `high`, 4C `xhigh`, 4D `xhigh`; 5A `high`, 5B `high`.
+- Allocation: 1A–1D `xhigh` if relaunched (their completed historical runs predate the policy); 2A `xhigh`, 2B `xhigh`, 2C `high`; 3A `xhigh`, 3B `xhigh`; 4A `high`, 4B `high`, 4C `xhigh`, 4D `xhigh`; 5A `high`, 5B `high`.
 
 ## Integrate
 

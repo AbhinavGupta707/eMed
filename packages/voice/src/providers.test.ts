@@ -1,7 +1,11 @@
 import type { VoicePresentationEvent } from "@homerounds/contracts/voice";
 import { describe, expect, it } from "vitest";
 
-import { DisabledVoiceSessionProvider, TextVoiceSessionProvider } from "./providers";
+import {
+  DisabledVoiceSessionProvider,
+  SyntheticVoiceSessionProvider,
+  TextVoiceSessionProvider
+} from "./providers";
 
 const ROUND_ID = "cc80d269-2f79-4328-a129-98cac85219e4";
 
@@ -48,6 +52,31 @@ describe("deterministic text provider", () => {
     expect(events.filter((event) => event.type === "ended")).toEqual([
       { type: "ended", reason: "cancelled" }
     ]);
+  });
+});
+
+describe("synthetic browser voice fixture", () => {
+  it("emits identifier-free transcript events without external media", async () => {
+    const provider = new SyntheticVoiceSessionProvider(() => "synthetic-session-1");
+    const events: VoicePresentationEvent[] = [];
+    provider.subscribe((event) => events.push(event));
+
+    await expect(provider.capabilities()).resolves.toEqual({
+      available: true,
+      voice: true,
+      text: true
+    });
+    await provider.start({
+      roundId: ROUND_ID,
+      phase: "patient_report",
+      signal: new AbortController().signal
+    });
+
+    expect(events).toContainEqual({
+      type: "transcript_final",
+      text: "I have felt a little weak this morning."
+    });
+    expect(JSON.stringify(events)).not.toMatch(/audio|blob|media|patient[_ -]?id/i);
   });
 });
 

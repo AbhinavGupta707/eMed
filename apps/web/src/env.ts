@@ -20,6 +20,9 @@ const serverEnvironmentSchema = z
     VOICE_SESSION_MAX_SECONDS: z.coerce.number().int().min(15).max(300).default(120),
     NARRATIVE_MODEL_PROVIDER: z.enum(["disabled"]).default("disabled"),
     INFERENCE_PROVIDER: z.enum(["disabled", "fake", "fireworks"]).default("disabled"),
+    FAKE_INFERENCE_PROFILE: z
+      .enum(["deterministic", "medication", "abstain", "failure", "slow"])
+      .default("deterministic"),
     FIREWORKS_API_KEY: z.string().min(1).optional(),
     FIREWORKS_SELECTION_MODEL: z
       .literal("accounts/fireworks/models/deepseek-v4-pro")
@@ -118,6 +121,17 @@ const serverEnvironmentSchema = z
         code: "custom",
         message: "Fireworks inference requires a server-only API key",
         path: ["FIREWORKS_API_KEY"]
+      });
+    }
+
+    if (
+      environment.FAKE_INFERENCE_PROFILE !== "deterministic" &&
+      (environment.APP_ENV !== "development" || environment.INFERENCE_PROVIDER !== "fake")
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Non-default fake inference profiles are restricted to development tests",
+        path: ["FAKE_INFERENCE_PROFILE"]
       });
     }
 

@@ -5,6 +5,7 @@ import {
 } from "@homerounds/contracts/voice";
 import { z } from "zod";
 
+import { SYNTHETIC_TRANSCRIPT_FIXTURES } from "./fixtures";
 import { VoiceSessionPhaseSchema } from "./session";
 
 const ProviderStartInputSchema = z
@@ -88,6 +89,66 @@ export class TextVoiceSessionProvider implements VoiceSessionProvider {
 
   sendText(text: string): Promise<void> {
     if (!this.#active) return Promise.reject(new Error("No active text session"));
+    this.#events.emit({ type: "transcript_final", text: TextInputSchema.parse(text) });
+    return Promise.resolve();
+  }
+
+  subscribe(listener: VoiceProviderListener): () => void {
+    return this.#events.subscribe(listener);
+  }
+}
+
+/** Identifier-free, in-memory voice fixture for browser automation only. */
+export class SyntheticVoiceSessionProvider implements VoiceSessionProvider {
+  readonly kind = "disabled" as const;
+  readonly #events = new PresentationEventBus();
+  readonly #createSessionId: () => string;
+  #active: ActiveTextSession | undefined;
+
+  constructor(createSessionId: () => string = () => globalThis.crypto.randomUUID()) {
+    this.#createSessionId = createSessionId;
+  }
+
+  capabilities(): Promise<{ available: boolean; voice: boolean; text: boolean }> {
+    return Promise.resolve({ available: true, voice: true, text: true });
+  }
+
+  async start(input: {
+    roundId: string;
+    phase: string;
+    signal: AbortSignal;
+  }): Promise<{ sessionId: string }> {
+    const parsed = ProviderStartInputSchema.parse(input);
+    if (parsed.signal.aborted) throw new DOMException("Session cancelled", "AbortError");
+    if (this.#active) await this.stop("replaced");
+
+    const sessionId = this.#createSessionId();
+    const onAbort = () => void this.stop("cancelled");
+    this.#active = { sessionId, signal: parsed.signal, onAbort };
+    parsed.signal.addEventListener("abort", onAbort, { once: true });
+    this.#events.emit({ type: "connecting" });
+    this.#events.emit({ type: "connected", sessionId });
+    this.#events.emit({ type: "listening" });
+    this.#events.emit(SYNTHETIC_TRANSCRIPT_FIXTURES.tentative);
+    this.#events.emit(SYNTHETIC_TRANSCRIPT_FIXTURES.final);
+    return { sessionId };
+  }
+
+  async stop(reason: string): Promise<void> {
+    const active = this.#active;
+    if (!active) return;
+    this.#active = undefined;
+    active.signal.removeEventListener("abort", active.onAbort);
+    this.#events.emit({ type: "ended", reason: StopReasonSchema.parse(reason) });
+  }
+
+  setMuted(muted: boolean): Promise<void> {
+    if (this.#active) this.#events.emit({ type: "muted", muted });
+    return Promise.resolve();
+  }
+
+  sendText(text: string): Promise<void> {
+    if (!this.#active) return Promise.reject(new Error("No active synthetic session"));
     this.#events.emit({ type: "transcript_final", text: TextInputSchema.parse(text) });
     return Promise.resolve();
   }

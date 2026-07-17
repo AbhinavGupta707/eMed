@@ -9,6 +9,7 @@ describe("server environment safety profile", () => {
     expect(environment.VOICE_PROVIDER).toBe("disabled");
     expect(environment.PERSISTENCE_PROVIDER).toBe("auto");
     expect(environment.INFERENCE_PROVIDER).toBe("disabled");
+    expect(environment.FAKE_INFERENCE_PROFILE).toBe("deterministic");
     expect(environment.ADAPTIVE_SELECTION_ENABLED).toBe(false);
     expect(environment.MEDICATION_LABEL_AI_ENABLED).toBe(false);
     expect(environment.OPTICAL_ASSESSMENT_PROVIDER).toBe("finger_ppg");
@@ -37,6 +38,32 @@ describe("server environment safety profile", () => {
     ).toBe("fake");
     expect(() => parseServerEnvironment({ ADAPTIVE_SELECTION_ENABLED: "true" })).toThrow();
     expect(() => parseServerEnvironment({ MEDICATION_LABEL_AI_ENABLED: "true" })).toThrow();
+  });
+
+  it("restricts non-default fake inference profiles to development fake-provider tests", () => {
+    expect(
+      parseServerEnvironment({
+        INFERENCE_PROVIDER: "fake",
+        ADAPTIVE_SELECTION_ENABLED: "true",
+        FAKE_INFERENCE_PROFILE: "medication"
+      }).FAKE_INFERENCE_PROFILE
+    ).toBe("medication");
+    expect(() =>
+      parseServerEnvironment({
+        INFERENCE_PROVIDER: "disabled",
+        FAKE_INFERENCE_PROFILE: "failure"
+      })
+    ).toThrow();
+    expect(() =>
+      parseServerEnvironment({
+        APP_ENV: "demo",
+        DATABASE_URL: "postgresql://example.invalid/homerounds",
+        DEMO_ACCESS_SECRET: "synthetic-demo-secret",
+        INFERENCE_PROVIDER: "fake",
+        ADAPTIVE_SELECTION_ENABLED: "true",
+        FAKE_INFERENCE_PROFILE: "abstain"
+      })
+    ).toThrow();
   });
 
   it("rejects raw-media storage in every profile", () => {

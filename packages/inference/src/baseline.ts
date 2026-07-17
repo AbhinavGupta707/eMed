@@ -9,6 +9,10 @@ import type {
   AdaptiveSelectionProviderAttempt
 } from "./adaptive-selection";
 import { inferenceFailure } from "./failures";
+import { runtimeInferenceSleep, type InferenceSleep } from "./structured-transport";
+
+export type FakeAdaptiveSelectionProfile =
+  "deterministic" | "medication" | "abstain" | "failure" | "slow";
 
 export class DisabledAdaptiveSelectionProvider implements AdaptiveSelectionProvider {
   async select(): Promise<AdaptiveSelectionProviderAttempt> {
@@ -24,6 +28,9 @@ export class FakeAdaptiveSelectionProvider implements AdaptiveSelectionProvider 
     private readonly dependencies: {
       createId: () => string;
       now: () => string;
+      profile?: FakeAdaptiveSelectionProfile;
+      slowDelayMs?: number;
+      sleep?: InferenceSleep;
     }
   ) {}
 
@@ -40,6 +47,9 @@ export class FakeAdaptiveSelectionProvider implements AdaptiveSelectionProvider 
       };
     }
     const input = parsedInput.data;
+    const profile = this.dependencies.profile ?? "deterministic";
+    const slowDelayMs = this.dependencies.slowDelayMs ?? 1_200;
+    const sleep = this.dependencies.sleep ?? runtimeInferenceSleep;
     if (signal.aborted) {
       return {
         ok: false,
@@ -54,36 +64,79 @@ export class FakeAdaptiveSelectionProvider implements AdaptiveSelectionProvider 
         rejectionReason: "ineligible_candidate"
       };
     }
+    if (input.redFlagGate === "clear" && profile === "failure") {
+      return {
+        ok: false,
+        failure: inferenceFailure("provider_unavailable", true)
+      };
+    }
+    if (input.redFlagGate === "clear" && profile === "slow") {
+      try {
+        await sleep(slowDelayMs, signal);
+      } catch {
+        return {
+          ok: false,
+          failure: inferenceFailure(signal.aborted ? "cancelled" : "provider_unavailable", false)
+        };
+      }
+      if (signal.aborted) {
+        return {
+          ok: false,
+          failure: inferenceFailure("cancelled", false)
+        };
+      }
+    }
+    const medicationCandidate = input.candidates.find(
+      (candidate) =>
+        candidate.kind === "medication_label" &&
+        candidate.availability.status === "available" &&
+        candidate.estimatedBurdenSeconds <= input.burdenSecondsRemaining &&
+        candidate.producesFactKeys.some((factKey) => input.neededFactKeys.includes(factKey))
+    );
+    if (input.redFlagGate === "clear" && profile === "medication" && !medicationCandidate) {
+      return {
+        ok: false,
+        failure: inferenceFailure("contract_rejected", false),
+        rejectionReason: "ineligible_candidate"
+      };
+    }
+    const shouldAbstain = input.redFlagGate !== "clear" || profile === "abstain";
+    const selectedCandidate = profile === "medication" ? medicationCandidate : fallback;
     const envelope = AdaptiveSelectionEnvelopeSchema.safeParse({
       roundId: input.roundId,
       stateVersion: input.stateVersion,
-      decision:
-        input.redFlagGate === "clear"
-          ? {
-              decision: "select",
-              candidateModuleId: fallback.id,
-              evidenceReferenceIds: [],
-              rationale: "The safe test provider selected the deterministic evidence route.",
-              uncertainty: "low",
-              missingInformation: []
-            }
-          : {
-              decision: "abstain",
-              candidateModuleId: null,
-              evidenceReferenceIds: [],
-              rationale:
-                "The safe test provider cannot select a route until the safety gate is clear.",
-              uncertainty: "high",
-              missingInformation: ["Safety gate clearance"]
-            },
+      decision: !shouldAbstain
+        ? {
+            decision: "select",
+            candidateModuleId: selectedCandidate?.id,
+            evidenceReferenceIds: [],
+            rationale:
+              profile === "medication"
+                ? "The safe test provider selected the eligible synthetic medication review."
+                : "The safe test provider selected the deterministic evidence route.",
+            uncertainty: "low",
+            missingInformation: []
+          }
+        : {
+            decision: "abstain",
+            candidateModuleId: null,
+            evidenceReferenceIds: [],
+            rationale:
+              "The safe test provider abstained so the deterministic route remains authoritative.",
+            uncertainty: "high",
+            missingInformation:
+              input.redFlagGate === "clear"
+                ? ["A stronger synthetic signal"]
+                : ["Safety gate clearance"]
+          },
       provenance: {
         attemptId: this.dependencies.createId(),
         provider: "fake",
         task: "adaptive_module_selection",
-        modelAlias: "fake-adaptive-v1",
+        modelAlias: `fake-adaptive-${profile}-v1`,
         contractVersion: "adaptive-selection.v1",
         attemptedAt: this.dependencies.now(),
-        durationMs: 0,
+        durationMs: profile === "slow" ? slowDelayMs : 0,
         tokenUsage: null
       }
     });

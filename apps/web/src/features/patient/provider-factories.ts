@@ -6,7 +6,7 @@ import {
   type OpticalAssessmentProvider,
   type OpticalProviderKind
 } from "@homerounds/assessments";
-import type { VoiceSessionProvider } from "@homerounds/voice";
+import { SyntheticVoiceSessionProvider, type VoiceSessionProvider } from "@homerounds/voice";
 
 import {
   ElevenLabsReactVoiceSessionProvider,
@@ -38,6 +38,16 @@ export function createPatientOpticalProvider(kind: OpticalProviderKind): Optical
 }
 
 export function createPatientVoiceProvider(): VoiceSessionProvider {
+  const fixture = process.env.NEXT_PUBLIC_VOICE_TEST_FIXTURE;
+  if (fixture !== undefined) {
+    if (fixture !== "synthetic") {
+      throw new Error("Unsupported browser voice test fixture.");
+    }
+    if (process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test") {
+      throw new Error("The synthetic browser voice fixture is forbidden in production builds.");
+    }
+    return new SyntheticVoiceSessionProvider();
+  }
   return new ElevenLabsReactVoiceSessionProvider({
     fetchCredential: createHomeRoundsVoiceCredentialFetcher()
   });

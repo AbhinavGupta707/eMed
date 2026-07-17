@@ -135,7 +135,11 @@ export function createServerRuntime(overrides: ServerRuntimeOverrides = {}): Ser
     (environment.ADAPTIVE_SELECTION_ENABLED && fireworksTransport
       ? new StructuredAdaptiveSelectionProvider(fireworksTransport)
       : environment.ADAPTIVE_SELECTION_ENABLED && environment.INFERENCE_PROVIDER === "fake"
-        ? new FakeAdaptiveSelectionProvider({ createId, now })
+        ? new FakeAdaptiveSelectionProvider({
+            createId,
+            now,
+            profile: environment.FAKE_INFERENCE_PROFILE
+          })
         : new DisabledAdaptiveSelectionProvider());
   const medicationLabel =
     overrides.medicationLabelProvider ??

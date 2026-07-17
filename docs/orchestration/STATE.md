@@ -2,7 +2,7 @@
 
 Updated: 17 July 2026 16:22 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
-Goal: Checkpoint 7 pre-flight and launch preparation for live AI-native synthetic-demo inference  
+Goal: Checkpoint 7 AI-native integration, adversarial validation, and hosted release evidence  
 Integration branch: `main`
 Release-candidate tag: `homerounds-v0.1.0-demo-rc1` on this final ledger commit
 Heartbeat: `homerounds-checkpoint-7-orchestration-heartbeat`, active every 20 minutes on this master task
@@ -11,7 +11,7 @@ Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stop
 ## Current checkpoint
 
 - Checkpoint: 7 — AI-native live inference and external validation, pre-launch
-- Status: Checkpoints 0–6 remain integrated and verified for the bounded local/no-key candidate; Checkpoint 7 pre-flight and integration-owned shared-base freeze pass; all three Wave A workers are active
+- Status: Checkpoints 0–6 remain integrated; Checkpoint 7 Wave A is reviewed, merged, centrally integrated, and green; Wave B adversarial and adaptive-UX validation is next
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
 - Rehearsed application/package candidate: `99acb5b` before Checkpoint 6 evidence-led documentation updates
@@ -26,7 +26,8 @@ Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stop
 - Checkpoint 5 launch base: `8589723e511b65dc849ef36234e7f462966e14a5`
 - Checkpoint 7 tested shared-content base: `231941191ac30c75cdf41253d686da192e0b0ceb`
 - Checkpoint 7 Wave A worker launch base: `5410cdb5f557f471244d093f2060e4e23248a605`
-- Next gate: inspect and integrate clean Wave A handoffs in order 7A, 7B, 7C, with narrow checks after each and the full Wave A gate before Wave B
+- Checkpoint 7 tested Wave A integration commit: `09df6d3f617a7da2172eddc15d9cffcdbefc9f28`
+- Next gate: launch exactly two exclusive Wave B workers from the Wave A ledger commit, then review and integrate 7D before 7E
 - Physical iPhone gate: `pending-physical` (does not block automated implementation)
 - Live ElevenLabs gate: `token-preflight-pass-audio-pending` (dedicated private/authenticated zero-retention agent and signed WebRTC token verified; real microphone/transcript/edit-confirm run still pending)
 - Live VitalLens gate: `pending-explicit-opt-in-and-credentials` (fixture adapter required)
@@ -53,9 +54,9 @@ Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stop
 | 4          | 4D operations/security     | `.github/**`, `infra/deploy/**`, `docs/operations/**`, `docs/security/**`                                                                          | `019f6e4c-0272-7342-a18b-2c9caa9d6dbc` | `a2f5482` | `gpt-5.6-sol`/`xhigh` | integrated; central hosted controls reconciled; all gates pass    | `6cf0d7c`         |
 | 5          | 5A submission/claim audit  | `docs/submission/**`                                                                                                                               | `019f6e6f-5e60-7f72-ad87-6b747ff3b469` | `8589723` | `gpt-5.6-sol`/`high`  | integrated; worker `03ba86f`, claims and links reviewed           | `9f2c485`         |
 | 5          | 5B QA/recovery evidence    | `docs/qa/**`, `public/demo-backup/**`                                                                                                              | `019f6e6f-5e60-7f72-ad87-6b95e89e8e58` | `8589723` | `gpt-5.6-sol`/`high`  | integrated; worker `ef8184d`, 33 requirements/17 scenarios mapped | `99acb5b`         |
-| 7          | 7A inference foundation    | `packages/inference/src/**`, `packages/inference/README.md`                                                                                        | `019f70b1-897b-7972-bba8-df86a9c79c1f` | `5410cdb` | `gpt-5.6-sol`/`xhigh` | active in `/Users/abhinavgupta/.codex/worktrees/ce7c/eMed`        | pending           |
-| 7          | 7B medication multimodal   | `packages/assessments/providers/medication-label/**`, `apps/web/src/features/medication/**`                                                        | `019f70b1-8b15-7f13-bb07-338d56f236d1` | `5410cdb` | `gpt-5.6-sol`/`xhigh` | active in `/Users/abhinavgupta/.codex/worktrees/3069/eMed`        | pending           |
-| 7          | 7C adaptive patient UX     | `apps/web/src/features/round-map/**`, `apps/web/src/features/patient/**`                                                                           | `019f70b1-897c-7252-b579-0139e4dad224` | `5410cdb` | `gpt-5.6-sol`/`high`  | active in `/Users/abhinavgupta/.codex/worktrees/a888/eMed`        | pending           |
+| 7          | 7A inference foundation    | `packages/inference/src/**`, `packages/inference/README.md`                                                                                        | `019f70b1-897b-7972-bba8-df86a9c79c1f` | `5410cdb` | `gpt-5.6-sol`/`xhigh` | integrated; worker `a135f15`, 30 pass/one live skip               | `1018797`         |
+| 7          | 7B medication multimodal   | `packages/assessments/providers/medication-label/**`, `apps/web/src/features/medication/**`                                                        | `019f70b1-8b15-7f13-bb07-338d56f236d1` | `5410cdb` | `gpt-5.6-sol`/`xhigh` | integrated; worker `09f974e`, async persistence fix verified      | `1c9371c`         |
+| 7          | 7C adaptive patient UX     | `apps/web/src/features/round-map/**`, `apps/web/src/features/patient/**`                                                                           | `019f70b1-897c-7252-b579-0139e4dad224` | `5410cdb` | `gpt-5.6-sol`/`high`  | integrated; worker `1cbf0de`, responsive browser evidence         | `7f86776`         |
 
 ## Integration invariants
 
@@ -193,3 +194,13 @@ Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stop
 - The green shared-base gate covers repository formatting; all 14 packages for lint, strict typecheck, tests, and build; 102 web tests; 13 unit, seven contract, seven integration, five demo-tooling, seven planner, seven shared-contract, and two inference-baseline tests; Git whitespace; and the six-case Chromium/iPhone-layout Playwright matrix. The first browser attempt was blocked only by sandbox `EPERM` on port 3000; the identical approved localhost rerun passed 6/6.
 - The Neon repository test first failed in the network sandbox with DNS denied; the identical approved external run passed 1/1 test file and all 14 repository cases in 7.47 seconds. No secret value was printed.
 - Vercel CLI 54.9.1 incorrectly requested a Preview Git branch even when its documented all-branches form was used, then correctly rejected production branch `main` as a Preview-specific branch. The official Vercel API was used instead: sensitive key/agent upsert and non-secret provider configuration each returned HTTP 201, and a metadata-only GET verified targets and types without returning values.
+
+## Checkpoint 7 Wave A integration evidence
+
+- All three exact-base workers completed clean exclusive handoffs and were archived after review. Lane 7A worker `a135f15` added the typed Fireworks transport, deterministic task router, strict structured-output enforcement, bounded retry/deadline/cancellation, provider-safe failures, provenance, abstention, and before/after authority checks. Lane 7B worker `09f974e` added consent-first ephemeral medication image handling, complete text parity, explicit editable confirmation, provider failures, and durable-confirmation retry/double-submit protection. Lane 7C worker `1cbf0de` added the accessible adaptive Round Map and its unavailable, abstained, rejected, stale, resumed, keyboard, reduced-motion, and responsive states.
+- Integration connected the allowlisted selector to report submission without yielding red-flag, protocol, quality, action, or persistence authority. The server writes the accepted/fallback route atomically with the state transition; refresh reconstructs the bounded route from validated audit events; a server-committed route remains visibly accepted as later deterministic steps advance, while an uncommitted older result still presents as stale.
+- The medication path now uses same-origin server APIs, Kimi vision only behind the server-only Fireworks transport, canonical base64 validation, byte-buffer zeroing, bounded proposal audit, proposal-to-confirmation reconstruction, stale/conflict checks, exact duplicate suppression, and an explicit auditable skip into the pulse path. No image, data URL, narrative, prompt, raw provider payload, transcript, or hidden reasoning is persisted. A model observation is never a confirmed medication fact until the patient reviews and confirms it.
+- The raw medication image limit is intentionally 3 MB: base64 expands this to about 4 MB, leaving envelope room below Vercel's documented 4.5 MB Function request limit. JPEG/PNG/WebP signature, dimension, declared-length, request-body, and 3 MB binary checks all remain fail-closed. `PERSISTENCE_PROVIDER=memory` is an explicit development/test-only isolation switch; hosted/demo profiles reject it and continue to require PostgreSQL.
+- Central integration commit `09df6d3` passes repository Prettier; all 14 package lint and strict-type suites; all 14 package test suites including 135 web tests, 87 assessment tests, 30 inference tests plus one visible live-key skip; 13 unit, seven contract, seven integration, and five demo-tooling tests; the production build with both medication API routes; and `git diff --check`.
+- Browser regression is explicit and honest. The first root Playwright run was blocked by sandbox port binding and its approved rerun passed 6/6 across Chromium and iPhone-sized Safari layout. The first patient rerun inherited live local provider/database settings and exposed test contamination; after explicit disabled-provider and in-memory isolation, patient journeys passed 3/3. Clinician journeys then passed 3/3 with the same isolation. These are automated browser results, not physical iPhone evidence.
+- Wave A does not promote the one-off Fireworks connectivity trials, signed ElevenLabs token, Vercel configuration, Neon repository test, or simulator/layout runs into live release evidence. Exact three-run model trials, live audio, hosted HTTPS, physical iPhone 12 Safari, complete accessibility/performance, and three exact-candidate demo rehearsals remain pending Wave B/release gates.

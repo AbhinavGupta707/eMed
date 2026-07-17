@@ -1,6 +1,6 @@
 # HomeRounds orchestration state
 
-Updated: 17 July 2026 05:53 BST  
+Updated: 17 July 2026 05:59 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
 Goal: active  
 Integration branch: `main`
@@ -10,10 +10,10 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 ## Current checkpoint
 
 - Checkpoint: 5 — submission, demo evidence and release packaging
-- Status: Checkpoint 4 is integrated and conclusively tested; two exclusive bounded Checkpoint 5 documentation/evidence lanes are ready to launch from the frozen Checkpoint 4 evidence commit
+- Status: Checkpoint 4 is integrated and conclusively tested; two exclusive bounded Checkpoint 5 documentation/evidence lanes are active from the frozen Checkpoint 4 evidence commit
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
-- Current integration head: `c46f3f1`
+- Current integration head: `8589723`
 - Checkpoint 2 worker launch base: `aae76d3a6fce26ee7ef8b8024839556f3c5570ad`
 - Tested Checkpoint 2 integration commit: `48ab92e` on `main`
 - Checkpoint 3 worker launch base: `48ab92ebad2137390f01ef9976ef8a7d1b248da5`
@@ -22,11 +22,12 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 - Tested Checkpoint 4 Wave A integration commit: `3fd9697` on `main`
 - Checkpoint 4 Wave B launch base: `a2f548250c2f179f1f799c8b23ae3bf2be9550cf`
 - Tested Checkpoint 4 integration commit: `c46f3f1` on `main`
-- Next gate: launch and integrate Checkpoint 5 lanes 5A and 5B, audit every submission claim against implemented/tested evidence, then run the complete Checkpoint 5 exit gate
+- Checkpoint 5 launch base: `8589723e511b65dc849ef36234e7f462966e14a5`
+- Next gate: review and integrate active Checkpoint 5 lanes 5A and 5B, audit every submission claim against implemented/tested evidence, then run the complete Checkpoint 5 exit gate
 - Physical iPhone gate: `pending-physical` (does not block automated implementation)
 - Live ElevenLabs gate: `pending-credentials` (text/disabled provider required)
 - Live VitalLens gate: `pending-explicit-opt-in-and-credentials` (fixture adapter required)
-- Hosted Vercel/Neon gate: `pending-account-login` (local profile required)
+- Hosted Vercel/Neon gate: `pending-neon-login-authorization` (Vercel CLI is authenticated with no projects; Neon sign-in is open but sharing GitHub identity requires explicit owner approval; local PostgreSQL profile remains authoritative)
 - GitHub visibility: verified `PUBLIC`; source/fixtures must remain synthetic and secret-free
 
 ## Checkpoint lane ledger
@@ -46,6 +47,8 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 | 4          | 4B clinician E2E           | `tests/e2e/clinician/**`, `tests/accessibility/clinician/**`, `tests/performance/clinician/**`                                                     | `019f6e2e-9abf-70b1-ad74-b4261f8909e2` | `566ab81` | `gpt-5.6-sol`/`high`  | integrated; functional, accessibility and performance pass     | `7e23c96`         |
 | 4          | 4C contract/integration    | `tests/unit/**`, `tests/contract/**`, `tests/integration/**`                                                                                       | `019f6e2e-9f5d-7011-a580-8caecf40b082` | `566ab81` | `gpt-5.6-sol`/`xhigh` | integrated; audit-payload defect fixed; 27/27 tests pass       | `996ecde`         |
 | 4          | 4D operations/security     | `.github/**`, `infra/deploy/**`, `docs/operations/**`, `docs/security/**`                                                                          | `019f6e4c-0272-7342-a18b-2c9caa9d6dbc` | `a2f5482` | `gpt-5.6-sol`/`xhigh` | integrated; central hosted controls reconciled; all gates pass | `6cf0d7c`         |
+| 5          | 5A submission/claim audit  | `docs/submission/**`                                                                                                                               | `019f6e6f-5e60-7f72-ad87-6b747ff3b469` | `8589723` | `gpt-5.6-sol`/`high`  | active; worktree `4f78/eMed`                                   | pending           |
+| 5          | 5B QA/recovery evidence    | `docs/qa/**`, `public/demo-backup/**`                                                                                                              | `019f6e6f-5e60-7f72-ad87-6b95e89e8e58` | `8589723` | `gpt-5.6-sol`/`high`  | active; worktree `37c1/eMed`                                   | pending           |
 
 ## Integration invariants
 
@@ -61,6 +64,7 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 ## Blockers and decisions
 
 - None blocking local implementation.
+- Hosted deployment discovery found an authenticated Vercel CLI account with zero existing projects and no Neon credential/CLI/session. Chrome reached Neon sign-in; selecting GitHub would share account identity and create/sign into an external account, so it remains an explicit human authorization gate. No half-configured project or insecure in-memory hosted deployment was created.
 - In-app Browser initialization failed in the current runtime before page control; the CP0 user-perspective fallback ran in Playwright Chromium and iPhone-sized WebKit with axe. Retry the in-app Browser at later UI checkpoints and do not mislabel this as physical Safari evidence.
 - Release provider is not selected. Local PPG is the no-key default; both adapters are implemented and compared later.
 - ElevenLabs is the hosted voice primary. OpenAI Realtime, LiveKit, browser Web Speech, voice biomarkers, respiratory rate, HRV, OCR, wearables, and live EHR integrations remain out of the hackathon path.

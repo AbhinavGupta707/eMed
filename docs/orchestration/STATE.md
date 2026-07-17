@@ -1,6 +1,6 @@
 # HomeRounds orchestration state
 
-Updated: 17 July 2026 03:29 BST  
+Updated: 17 July 2026 03:36 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
 Goal: active  
 Integration branch: `main`
@@ -13,7 +13,7 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 - Status: active; two exclusive `gpt-5.6-sol`/`xhigh` worktrees are implementing from the exact tested Checkpoint 2 commit while integration owns demo tooling
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
-- Current integration head: `ba2ad69`
+- Current integration head: `d033b82`
 - Checkpoint 2 worker launch base: `aae76d3a6fce26ee7ef8b8024839556f3c5570ad`
 - Tested Checkpoint 2 integration commit: `48ab92e` on `main`
 - Checkpoint 3 worker launch base: `48ab92ebad2137390f01ef9976ef8a7d1b248da5`
@@ -95,3 +95,10 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 - A fresh disposable PostgreSQL 16 database accepted the migration. Through a real local HomeRounds server, `demo:seed` and `demo:check` created and verified all three invited/version-0 rounds with an empty scoped clinician queue.
 - The happy scenario was advanced to `red_flag_screen`/version 1, then `demo:reset` transactionally removed only the three exact seeded trigger IDs, reseeded them through the public API, and restored the baseline. A second reset produced the same baseline, while an unrelated synthetic control round survived both resets.
 - The reset refuses `APP_ENV=production`, requires `DEMO_MODE=true` and `DATABASE_URL`, never truncates, and temporarily disables the append-only audit delete trigger only inside its exact-scope transaction. The full repository format, 13-package lint, strict typecheck, unit/integration suites, and production build remain green after the tooling change.
+
+## Checkpoint 3 integration-seam evidence
+
+- The API now accepts an attestation-bound non-passing capture outcome separately from a passing measurement. A retry moves `capturing` to `capture_retry`; a terminal failure atomically persists a raw-media-free quality event, creates no measurement, and deterministically moves to `abstained_for_review` with the exact protocol result.
+- A retry creates a new assessment session from `capture_retry`; the server never substitutes another provider. Protocol-result revalidation reconstructs the latest persisted quality failure so the abstention task remains executable and idempotent.
+- The one returned structured follow-up now has a strict patient-only endpoint. Its answer is atomically audited with the first transition, re-evaluated by the versioned protocol, and moves only to `action_pending` or `abstained_for_review`; a model cannot supply or execute it.
+- Affected audit, persistence, API-client, and web suites pass; the web suite now has 46 tests, including full poor-quality retry/fail/task and one-follow-up paths. Affected lint and repository-wide strict typecheck pass.

@@ -146,7 +146,10 @@ export function handleGetRound(
       if (context.session.role === "patient") {
         assertPatientScope(context.session.patientId, round.patientId);
       }
-      return { round };
+      const protocolResult = await serviceCall(() =>
+        runtime.orchestration.getProtocolResult(round.id)
+      );
+      return { round, protocolResult };
     }
   });
 }

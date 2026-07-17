@@ -67,7 +67,12 @@ export const CreateRoundDataSchema = z
   .object({ round: RoundSchema.strict(), created: z.boolean() })
   .strict();
 
-export const RoundDataSchema = z.object({ round: RoundSchema.strict() }).strict();
+export const RoundDataSchema = z
+  .object({
+    round: RoundSchema.strict(),
+    protocolResult: ProtocolResultSchema.strict().nullable().optional()
+  })
+  .strict();
 
 export const TransitionRoundRequestSchema = z
   .object({

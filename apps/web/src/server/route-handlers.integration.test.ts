@@ -23,6 +23,7 @@ import {
   handleCreateRound,
   handleElevenLabsCredential,
   handleExecuteAction,
+  handleGetRound,
   handleQueue,
   handleStartAssessment,
   handleSubmitAssessment,
@@ -231,6 +232,16 @@ describe("repository-backed server API orchestration", () => {
       ),
       ExecuteActionDataSchema
     );
+
+    const resumable = await success(
+      await handleGetRound(
+        new Request(`http://localhost:3000/api/rounds/${roundId}`),
+        runtime,
+        roundId
+      ),
+      RoundDataSchema
+    );
+    expect(resumable.protocolResult).toEqual(assessed.decision.result);
     expect(firstAction).toMatchObject({
       kind: "programme_task",
       created: true,

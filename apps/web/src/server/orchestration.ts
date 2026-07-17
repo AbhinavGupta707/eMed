@@ -769,6 +769,33 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
     return { tasks, scope: "requested_rounds" };
   }
 
+  async getProtocolResult(roundId: string): Promise<ProtocolResult | null> {
+    const round = await this.getRound(roundId);
+    if (
+      ![
+        "action_pending",
+        "abstained_for_review",
+        "awaiting_clinician",
+        "outcome_ready",
+        "closed",
+        "emergency_closed"
+      ].includes(round.state)
+    ) {
+      return null;
+    }
+    const report = await this.#confirmedReport(round.id);
+    const measurement = await this.#measurementEvidence(round.id);
+    const followUp = await this.#followUpEvidence(round.id);
+    const decision = evaluateProtocol(this.#protocol, {
+      now: this.#now(),
+      report,
+      measurement,
+      followUp,
+      followUpQuestionsAsked: followUp.status === "not_asked" ? 0 : 1
+    });
+    return decision.kind === "result" ? ProtocolResultSchema.parse(decision.result) : null;
+  }
+
   async assertProtocolResult(roundId: string, resultInput: ProtocolResult): Promise<void> {
     const expected = ProtocolResultSchema.parse(resultInput);
     const report = await this.#confirmedReport(roundId);

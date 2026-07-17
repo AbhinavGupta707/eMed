@@ -27,7 +27,8 @@ Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stop
 - Checkpoint 7 tested shared-content base: `231941191ac30c75cdf41253d686da192e0b0ceb`
 - Checkpoint 7 Wave A worker launch base: `5410cdb5f557f471244d093f2060e4e23248a605`
 - Checkpoint 7 tested Wave A integration commit: `09df6d3f617a7da2172eddc15d9cffcdbefc9f28`
-- Next gate: launch exactly two exclusive Wave B workers from the Wave A ledger commit, then review and integrate 7D before 7E
+- Checkpoint 7 Wave B worker launch base: `c3c97154124731cdacb8cd1f4bc65708b78bc5ac`
+- Next gate: monitor the two exclusive Wave B workers, then review and integrate 7D before 7E
 - Physical iPhone gate: `pending-physical` (does not block automated implementation)
 - Live ElevenLabs gate: `token-preflight-pass-audio-pending` (dedicated private/authenticated zero-retention agent and signed WebRTC token verified; real microphone/transcript/edit-confirm run still pending)
 - Live VitalLens gate: `pending-explicit-opt-in-and-credentials` (fixture adapter required)
@@ -57,6 +58,8 @@ Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stop
 | 7          | 7A inference foundation    | `packages/inference/src/**`, `packages/inference/README.md`                                                                                        | `019f70b1-897b-7972-bba8-df86a9c79c1f` | `5410cdb` | `gpt-5.6-sol`/`xhigh` | integrated; worker `a135f15`, 30 pass/one live skip               | `1018797`         |
 | 7          | 7B medication multimodal   | `packages/assessments/providers/medication-label/**`, `apps/web/src/features/medication/**`                                                        | `019f70b1-8b15-7f13-bb07-338d56f236d1` | `5410cdb` | `gpt-5.6-sol`/`xhigh` | integrated; worker `09f974e`, async persistence fix verified      | `1c9371c`         |
 | 7          | 7C adaptive patient UX     | `apps/web/src/features/round-map/**`, `apps/web/src/features/patient/**`                                                                           | `019f70b1-897c-7252-b579-0139e4dad224` | `5410cdb` | `gpt-5.6-sol`/`high`  | integrated; worker `1cbf0de`, responsive browser evidence         | `7f86776`         |
+| 7          | 7D adversarial AI/contract | `tests/ai/**`, `tests/contract/ai/**`, `tests/integration/ai/**`                                                                                   | `019f70f4-1bd9-7721-af46-559b50b00c39` | `c3c9715` | `gpt-5.6-sol`/`xhigh` | active in `/Users/abhinavgupta/.codex/worktrees/7a70/eMed`        | pending           |
+| 7          | 7E adaptive UX validation  | `tests/e2e/ai/**`, `tests/accessibility/ai/**`, `tests/performance/ai/**`                                                                          | `019f70f4-1be5-7fd2-a116-05684c565f94` | `c3c9715` | `gpt-5.6-sol`/`high`  | active in `/Users/abhinavgupta/.codex/worktrees/09b7/eMed`        | pending           |
 
 ## Integration invariants
 

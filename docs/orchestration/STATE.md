@@ -10,12 +10,12 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 ## Current checkpoint
 
 - Checkpoint: 2 — provider-neutral interaction, actions, API, and visual system
-- Status: shared dependency/package base tested; three isolated lanes ready to launch
+- Status: three isolated lanes active from the tested shared base
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
-- Current integration head before Checkpoint 2 base commit: `fd79808`
-- Checkpoint 2 worker launch base: pending the tested shared-base commit
-- Next gate: launch lanes 2A, 2B, and 2C from the exact shared-base SHA with the explicit model/reasoning allocation below
+- Current integration head: `aae76d3`
+- Checkpoint 2 worker launch base: `aae76d3a6fce26ee7ef8b8024839556f3c5570ad`
+- Next gate: monitor without interfering, then review each clean worker commit for scope before sequential integration and full cross-lane promotion tests
 - Physical iPhone gate: `pending-physical` (does not block automated implementation)
 - Live ElevenLabs gate: `pending-credentials` (text/disabled provider required)
 - Live VitalLens gate: `pending-explicit-opt-in-and-credentials` (fixture adapter required)
@@ -30,9 +30,9 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 | 1          | 1B protocol/planner        | `packages/protocols/**`, `packages/planner/**`, `data/protocols/**`                                                       | `019f6d6f-b784-7882-af20-ac6a1e5afcef` | `7374d22` | legacy/pre-policy     | integrated; 39 lane tests plus full integration gate passed | `ad419fe`         |
 | 1          | 1C local finger PPG        | `packages/assessments/providers/finger-ppg/**`                                                                            | `019f6d6f-b969-7180-9181-200678a737e5` | `7374d22` | legacy/pre-policy     | integrated; 22 lane tests plus full integration gate passed | `7b7c7af`         |
 | 1          | 1D VitalLens               | `packages/assessments/providers/vitallens/**`                                                                             | `019f6d80-70a5-7733-89d1-44804892cb29` | `ad419fe` | legacy/pre-policy     | integrated; 27 lane tests plus full integration gate passed | `e7873a9`         |
-| 2          | 2A voice/text              | `packages/voice/**`, `apps/web/src/features/voice/**`                                                                     | pending                                | pending   | `gpt-5.6-sol`/`xhigh` | ready to launch                                             | —                 |
-| 2          | 2B API/actions/audit       | `packages/actions/**`, `packages/audit/**`, `packages/api-client/**`, `apps/web/src/app/api/**`, `apps/web/src/server/**` | pending                                | pending   | `gpt-5.6-sol`/`xhigh` | ready to launch                                             | —                 |
-| 2          | 2C visual system           | `packages/ui/**`, `apps/web/src/app/globals.css`, `apps/web/src/app/styleguide/**`                                        | pending                                | pending   | `gpt-5.6-sol`/`high`  | ready to launch                                             | —                 |
+| 2          | 2A voice/text              | `packages/voice/**`, `apps/web/src/features/voice/**`                                                                     | `019f6d9e-969b-7330-a675-e8ce51f58962` | `aae76d3` | `gpt-5.6-sol`/`xhigh` | active                                                      | —                 |
+| 2          | 2B API/actions/audit       | `packages/actions/**`, `packages/audit/**`, `packages/api-client/**`, `apps/web/src/app/api/**`, `apps/web/src/server/**` | `019f6d9e-96a0-7dd3-867e-287eb53ec786` | `aae76d3` | `gpt-5.6-sol`/`xhigh` | active                                                      | —                 |
+| 2          | 2C visual system           | `packages/ui/**`, `apps/web/src/app/globals.css`, `apps/web/src/app/styleguide/**`                                        | `019f6d9e-9789-71a3-bc30-3c7f1fbfa11f` | `aae76d3` | `gpt-5.6-sol`/`high`  | active                                                      | —                 |
 
 ## Integration invariants
 

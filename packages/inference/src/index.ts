@@ -22,4 +22,10 @@ export {
   InferenceTaskSchema
 } from "@homerounds/contracts/inference";
 
+export * from "./adaptive-selection";
 export * from "./baseline";
+export * from "./failures";
+export * from "./fireworks-transport";
+export * from "./model-router";
+export * from "./selection-service";
+export * from "./structured-transport";

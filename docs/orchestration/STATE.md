@@ -1,6 +1,6 @@
 # HomeRounds orchestration state
 
-Updated: 17 July 2026 18:15 BST  
+Updated: 17 July 2026 18:37 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
 Goal: Checkpoint 7 AI-native integration, adversarial validation, and hosted release evidence  
 Integration branch: `main`
@@ -34,7 +34,7 @@ Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stop
 - Physical iPhone gate: `pending-physical` (does not block automated implementation)
 - Live ElevenLabs gate: `token-preflight-pass-audio-pending` (dedicated private/authenticated zero-retention agent and signed WebRTC token verified; real microphone/transcript/edit-confirm run still pending)
 - Live VitalLens gate: `pending-explicit-opt-in-and-credentials` (fixture adapter required)
-- Fireworks gate: `deepseek-exact-three-run-pass-kimi-release-evaluation-pending` (DeepSeek V4 Pro passed three consecutive exact-contract selections after the provider-schema compatibility fix; earlier Kimi K2.6 vision passed once, but its exact repeated release evaluation remains pending)
+- Fireworks gate: `deepseek-and-kimi-exact-three-run-pass` (DeepSeek V4 Pro adaptive selection and Kimi K2.6 medication-label vision each pass three consecutive exact-contract live runs; required suites remain keyless and visibly skip both tests without explicit opt-in)
 - Hosted Vercel/Neon gate: `project-git-neon-preview-config-pass-deploy-pending` (GitHub repository and Neon resource connected; PostgreSQL 17.10, migration, eight tables, 14/14 remote repository tests, and metadata-only Preview provider-variable verification pass; exact origin, deployment, and hosted browser evidence remain pending)
 - GitHub visibility: verified `PUBLIC`; source/fixtures must remain synthetic and secret-free
 
@@ -219,3 +219,5 @@ Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stop
 - Central commit `c3eceac` adds development-only fake inference profiles for deterministic pulse, eligible medication, abstention, typed failure, and bounded delay plus an identifier-free in-memory browser voice fixture. Non-default fake profiles are rejected unless `APP_ENV=development` with the fake provider, and the voice fixture is rejected by production builds. Package tests, targeted web tests, lint, strict typecheck, Git whitespace, and the production web build pass; no dependency or contract changed.
 - Replacement lane 7E-R launched exactly once from `c3eceac` as thread `019f710d-0ba1-7f11-a4d1-569696d8bb79` in `/Users/abhinavgupta/.codex/worktrees/193e/eMed`, using `gpt-5.6-sol`/`high` and the original exclusive browser/accessibility/performance ownership. Integration order remains 7D then 7E-R.
 - The post-7D integration gate independently passes 63/63 new adversarial tests, 36/36 full contract tests, 18/18 full integration tests, scoped ESLint, all 14 package typechecks, repository formatting, and `git diff --check`. The tests are keyless and use injected transports/in-memory persistence; they do not claim hosted or live-provider evidence.
+- Live Kimi release evaluation initially failed safely and exposed two real boundary issues: removing supported array/string bounds allowed a 6,843-character response to end at the token limit, and the array form then allowed duplicate observation field IDs. No failed proposal was accepted or persisted. Commit `2bb5c28` retains Fireworks-supported bounds, uses seven fixed provider-generation field keys, deterministically maps them into the unchanged authoritative observation array, and keeps strict post-generation Zod validation. Missing fields fail closed and duplicate IDs are unrepresentable at generation time.
+- After that correction, DeepSeek again passed three consecutive exact selections in 8.08 seconds and Kimi passed three consecutive exact vision extractions from an identifier-free in-memory PNG in 16.05 seconds. Each vision input buffer was zeroed after the provider boundary. The full web suite passes 140 tests with one visible live skip, the production web build passes, and no raw image, provider response content, key, prompt, or hidden reasoning was logged or persisted.

@@ -61,11 +61,19 @@ test("warm shell, persisted API, slow selection, and CLS remain inside bounded l
   expect(navigation!.loadMs).toBeLessThanOrEqual(WARM_LOAD_BUDGET_MS);
 
   const started = await startRound(page, scenarioUrl(slowOrigin, "maya-happy-text"));
+  const roundRouteWarmup = await page.request.get(`${slowOrigin}/api/rounds/${started.round.id}`);
+  expect(roundRouteWarmup.status()).toBe(200);
   const apiStartedAt = performance.now();
   const warmRoundResponse = await page.request.get(`${slowOrigin}/api/rounds/${started.round.id}`);
   const warmRoundApiMs = performance.now() - apiStartedAt;
   expect(warmRoundResponse.status()).toBe(200);
   expect(warmRoundApiMs).toBeLessThanOrEqual(WARM_ROUND_API_BUDGET_MS);
+
+  const reportRouteWarmup = await page.request.post(
+    `${slowOrigin}/api/rounds/${started.round.id}/report`,
+    { headers: { origin: slowOrigin }, data: {} }
+  );
+  expect(reportRouteWarmup.status()).toBe(400);
 
   await completeStructuredAnswers(page, calmAnswers);
   await confirmTypedNarrative(page, "Synthetic slow-provider performance context.");

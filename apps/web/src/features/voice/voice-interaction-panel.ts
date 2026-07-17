@@ -1,16 +1,18 @@
 "use client";
 
-import type { VoiceSessionProvider } from "@homerounds/contracts/voice";
+import type { VoiceSessionContext, VoiceSessionProvider } from "@homerounds/contracts/voice";
 import type { TranscriptConfirmation, VoiceSessionFailureCode } from "@homerounds/voice";
 import { Fragment, createElement, useId, useState, type ChangeEvent } from "react";
 
 import styles from "./voice-interaction.module.css";
-import { useVoiceInteraction } from "./use-voice-interaction";
+import { useVoiceInteraction, type VoiceAgentProposalState } from "./use-voice-interaction";
 
 export type VoiceInteractionPanelProps = Readonly<{
   roundId: string;
   provider: VoiceSessionProvider;
+  context?: VoiceSessionContext;
   onConfirmed: (confirmation: TranscriptConfirmation) => void;
+  onProposal?: (proposal: VoiceAgentProposalState) => void;
   createId?: () => string;
   now?: () => string;
 }>;
@@ -61,14 +63,18 @@ export function VoiceInteractionPanel(props: VoiceInteractionPanelProps) {
 function VoiceInteractionPanelSession({
   roundId,
   provider,
+  context,
   onConfirmed,
+  onProposal,
   createId,
   now
 }: VoiceInteractionPanelProps) {
   const controller = useVoiceInteraction({
     provider,
     roundId,
+    ...(context ? { context } : {}),
     onConfirmed,
+    ...(onProposal ? { onProposal } : {}),
     ...(createId ? { createId } : {}),
     ...(now ? { now } : {})
   });

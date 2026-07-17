@@ -1,6 +1,7 @@
 "use client";
 
 import { ApiSuccessEnvelopeSchema, ElevenLabsCredentialDataSchema } from "@homerounds/api-client";
+import { VoiceServerLocationSchema, type VoiceServerLocation } from "@homerounds/contracts/voice";
 
 import {
   ElevenLabsSessionCredentialSchema,
@@ -9,6 +10,40 @@ import {
 } from "./elevenlabs-adapter";
 
 const CredentialEnvelopeSchema = ApiSuccessEnvelopeSchema(ElevenLabsCredentialDataSchema);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Checkpoint integration owns the shared API schema update. Until that merge,
+ * accept exactly its frozen `serverLocation` addition while retaining the
+ * current envelope schema for every other field.
+ */
+function parseCredentialEnvelope(rawEnvelope: unknown): Readonly<{
+  envelope: ReturnType<typeof CredentialEnvelopeSchema.parse>;
+  serverLocation?: VoiceServerLocation;
+}> | null {
+  const rawData = isRecord(rawEnvelope) && isRecord(rawEnvelope.data) ? rawEnvelope.data : null;
+  const location = VoiceServerLocationSchema.safeParse(rawData?.serverLocation);
+  const direct = CredentialEnvelopeSchema.safeParse(rawEnvelope);
+  if (direct.success) {
+    return {
+      envelope: direct.data,
+      ...(location.success ? { serverLocation: location.data } : {})
+    };
+  }
+  if (!rawData || !location.success) return null;
+
+  const dataWithoutLocation = { ...rawData };
+  delete dataWithoutLocation.serverLocation;
+  const compatible = CredentialEnvelopeSchema.safeParse({
+    ...(isRecord(rawEnvelope) ? rawEnvelope : {}),
+    data: dataWithoutLocation
+  });
+  if (!compatible.success) return null;
+  return { envelope: compatible.data, serverLocation: location.data };
+}
 
 export type HomeRoundsVoiceCredentialFetcherOptions = Readonly<{
   endpoint?: string;
@@ -47,9 +82,9 @@ export function createHomeRoundsVoiceCredentialFetcher(
     } catch {
       throw new VoiceCredentialError("provider");
     }
-    const parsedEnvelope = CredentialEnvelopeSchema.safeParse(rawEnvelope);
-    if (!parsedEnvelope.success) throw new VoiceCredentialError("provider");
-    const envelope = parsedEnvelope.data;
+    const parsedEnvelope = parseCredentialEnvelope(rawEnvelope);
+    if (!parsedEnvelope) throw new VoiceCredentialError("provider");
+    const { envelope } = parsedEnvelope;
 
     if (envelope.data.status === "unavailable") {
       const reason = envelope.data.reason;
@@ -60,12 +95,15 @@ export function createHomeRoundsVoiceCredentialFetcher(
       );
     }
 
+    if (!parsedEnvelope.serverLocation) throw new VoiceCredentialError("provider");
+
     try {
       return ElevenLabsSessionCredentialSchema.parse({
         provider: "elevenlabs",
         connectionType: "webrtc",
         conversationToken: envelope.data.token,
-        expiresAt: envelope.data.expiresAt
+        expiresAt: envelope.data.expiresAt,
+        serverLocation: parsedEnvelope.serverLocation
       });
     } catch {
       throw new VoiceCredentialError("provider");

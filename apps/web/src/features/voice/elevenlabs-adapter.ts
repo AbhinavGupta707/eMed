@@ -1,11 +1,18 @@
 "use client";
 
 import {
+  VoiceAgentReportProposalSchema,
+  VoiceAgentToolOutcomeSchema,
   VoicePresentationEventSchema,
+  VoiceServerLocationSchema,
+  VoiceSessionContextSchema,
+  type VoiceAgentToolOutcome,
   type VoicePresentationEvent,
+  type VoiceServerLocation,
+  type VoiceSessionContext,
   type VoiceSessionProvider
 } from "@homerounds/contracts/voice";
-import { VoiceSessionPhaseSchema } from "@homerounds/voice";
+import { VoiceSessionStartInputSchema } from "@homerounds/voice";
 import { z } from "zod";
 
 export const ElevenLabsSessionCredentialSchema = z
@@ -13,18 +20,11 @@ export const ElevenLabsSessionCredentialSchema = z
     provider: z.literal("elevenlabs"),
     connectionType: z.literal("webrtc"),
     conversationToken: z.string().trim().min(16).max(4096),
-    expiresAt: z.iso.datetime()
+    expiresAt: z.iso.datetime(),
+    serverLocation: VoiceServerLocationSchema
   })
   .strict();
 export type ElevenLabsSessionCredential = z.infer<typeof ElevenLabsSessionCredentialSchema>;
-
-const CredentialRequestSchema = z
-  .object({
-    roundId: z.uuid(),
-    phase: VoiceSessionPhaseSchema,
-    signal: z.custom<AbortSignal>((value) => value instanceof AbortSignal)
-  })
-  .strict();
 
 const ProviderMessageSchema = z
   .object({
@@ -51,6 +51,13 @@ const ProviderModeSchema = z.object({ mode: z.enum(["speaking", "listening"]) })
 const ProviderStatusSchema = z
   .object({ status: z.enum(["disconnected", "connecting", "connected", "disconnecting"]) })
   .strict();
+const ProviderDisconnectContextSchema = z
+  .object({
+    type: z.string().trim().min(1).max(120),
+    reason: z.string().trim().max(240).optional(),
+    code: z.number().int().optional()
+  })
+  .strict();
 const ProviderDisconnectSchema = z.discriminatedUnion("reason", [
   z
     .object({
@@ -60,37 +67,94 @@ const ProviderDisconnectSchema = z.discriminatedUnion("reason", [
   z
     .object({
       reason: z.literal("agent"),
-      context: z
-        .object({
-          type: z.string(),
-          reason: z.string().optional(),
-          code: z.number().optional()
-        })
-        .strict()
-        .optional(),
-      closeCode: z.number().optional(),
-      closeReason: z.string().optional()
+      context: ProviderDisconnectContextSchema.optional(),
+      closeCode: z.number().int().optional(),
+      closeReason: z.string().trim().max(240).optional()
     })
     .strict(),
   z
     .object({
       reason: z.literal("error"),
-      message: z.string(),
-      context: z
-        .object({
-          type: z.string(),
-          reason: z.string().optional(),
-          code: z.number().optional()
-        })
-        .strict(),
-      closeCode: z.number().optional(),
-      closeReason: z.string().optional()
+      message: z.string().trim().min(1).max(500),
+      context: ProviderDisconnectContextSchema,
+      closeCode: z.number().int().optional(),
+      closeReason: z.string().trim().max(240).optional()
     })
     .strict()
 ]);
 
 const TextInputSchema = z.string().trim().min(1).max(2000);
 const StopReasonSchema = z.string().trim().min(1).max(120);
+const NoClientToolInputSchema = z.object({}).strict();
+
+const safeToolOutcomes = {
+  invalidReport: VoiceAgentToolOutcomeSchema.parse({
+    status: "not_ready",
+    reason: "required_answer_missing",
+    message: "The report proposal was not accepted. Please ask the patient for the missing answer."
+  }),
+  invalidToolInput: VoiceAgentToolOutcomeSchema.parse({
+    status: "not_ready",
+    reason: "tool_unavailable",
+    message: "That tool request was not accepted. Continue without changing the round."
+  }),
+  roundChanged: VoiceAgentToolOutcomeSchema.parse({
+    status: "not_ready",
+    reason: "round_state_changed",
+    message: "This voice session is no longer current. Do not change the round."
+  }),
+  toolUnavailable: VoiceAgentToolOutcomeSchema.parse({
+    status: "not_ready",
+    reason: "tool_unavailable",
+    message: "The requested tool is unavailable. Continue without changing the round."
+  })
+} as const satisfies Record<string, VoiceAgentToolOutcome>;
+
+function serializeToolOutcome(outcome: VoiceAgentToolOutcome): string {
+  return JSON.stringify(VoiceAgentToolOutcomeSchema.parse(outcome));
+}
+
+function toDynamicVariables(context: VoiceSessionContext) {
+  const parsed = VoiceSessionContextSchema.parse(context);
+  return {
+    synthetic_data_only: parsed.syntheticDataOnly,
+    patient_alias: parsed.patientAlias,
+    round_purpose: parsed.roundPurpose,
+    history_summary: parsed.historySummary
+  } as const;
+}
+
+export type ElevenLabsConnectionLocation = Readonly<{
+  origin: string;
+  livekitUrl: string;
+}>;
+
+const elevenLabsConnectionLocations = {
+  us: {
+    origin: "wss://api.elevenlabs.io",
+    livekitUrl: "wss://livekit.rtc.elevenlabs.io"
+  },
+  global: {
+    origin: "wss://api.elevenlabs.io",
+    livekitUrl: "wss://livekit.rtc.elevenlabs.io"
+  },
+  "eu-residency": {
+    origin: "wss://api.eu.residency.elevenlabs.io",
+    livekitUrl: "wss://livekit.rtc.eu.residency.elevenlabs.io"
+  },
+  "in-residency": {
+    origin: "wss://api.in.residency.elevenlabs.io",
+    livekitUrl: "wss://livekit.rtc.in.residency.elevenlabs.io"
+  }
+} as const satisfies Record<VoiceServerLocation, ElevenLabsConnectionLocation>;
+
+/** Mirrors the location resolution used by the installed ElevenLabs React/client SDK. */
+export function resolveElevenLabsConnectionLocation(
+  rawLocation: VoiceServerLocation
+): ElevenLabsConnectionLocation {
+  const location = VoiceServerLocationSchema.parse(rawLocation);
+  return elevenLabsConnectionLocations[location];
+}
 
 export type VoiceCredentialFetcher = (
   request: Readonly<{ roundId: string; phase: "patient_report" | "narration"; signal: AbortSignal }>
@@ -106,6 +170,12 @@ export type ElevenLabsConversationHandle = Readonly<{
 export type ElevenLabsConversationStartOptions = Readonly<{
   conversationToken: string;
   connectionType: "webrtc";
+  serverLocation: z.infer<typeof VoiceServerLocationSchema>;
+  dynamicVariables?: Readonly<Record<string, string | number | boolean>>;
+  clientTools: Readonly<{
+    propose_patient_report(parameters: unknown): Promise<string>;
+    request_next_round_step(parameters: unknown): Promise<string>;
+  }>;
   onConnect(value: unknown): void;
   onDisconnect(value: unknown): void;
   onError(message: unknown, context?: unknown): void;
@@ -135,9 +205,13 @@ export async function startElevenLabsReactConversation(
 ): Promise<ElevenLabsConversationHandle> {
   // Conditional import keeps the hosted provider out of the no-key interaction path.
   const { Conversation } = await import("@elevenlabs/react");
+  const connectionLocation = resolveElevenLabsConnectionLocation(options.serverLocation);
   const conversation = await Conversation.startSession({
     conversationToken: options.conversationToken,
     connectionType: options.connectionType,
+    ...connectionLocation,
+    ...(options.dynamicVariables ? { dynamicVariables: options.dynamicVariables } : {}),
+    clientTools: options.clientTools,
     onConnect: options.onConnect,
     onDisconnect: options.onDisconnect,
     onError: options.onError,
@@ -219,13 +293,15 @@ function classifyProviderFailure(error: unknown): ProviderFailure {
 type ActiveSession = {
   readonly generation: number;
   readonly localSessionId: string;
-  readonly request: z.infer<typeof CredentialRequestSchema>;
+  readonly request: z.infer<typeof VoiceSessionStartInputSchema>;
   readonly seenMessageIds: Set<number>;
+  readonly proposalToolResults: Map<string, Promise<string>>;
   readonly onAbort: () => void;
   conversation: ElevenLabsConversationHandle | undefined;
   timeoutHandle?: unknown;
   reconnectHandle?: unknown;
   reconnectAttempt: number;
+  connectionAttempt: number;
   terminal: boolean;
   connectedSessionId: string | undefined;
 };
@@ -282,12 +358,8 @@ export class ElevenLabsReactVoiceSessionProvider implements VoiceSessionProvider
     return Promise.resolve({ available: true, voice: true, text: true });
   }
 
-  async start(input: {
-    roundId: string;
-    phase: string;
-    signal: AbortSignal;
-  }): Promise<{ sessionId: string }> {
-    const request = CredentialRequestSchema.parse(input);
+  async start(input: Parameters<VoiceSessionProvider["start"]>[0]): Promise<{ sessionId: string }> {
+    const request = VoiceSessionStartInputSchema.parse(input);
     if (request.signal.aborted) throw new DOMException("Session cancelled", "AbortError");
     if (this.#active) await this.stop("replaced");
 
@@ -297,9 +369,11 @@ export class ElevenLabsReactVoiceSessionProvider implements VoiceSessionProvider
       localSessionId: this.#createSessionId(),
       request,
       seenMessageIds: new Set(),
+      proposalToolResults: new Map(),
       onAbort: () => void this.stop("cancelled"),
       conversation: undefined,
       reconnectAttempt: 0,
+      connectionAttempt: 0,
       terminal: false,
       connectedSessionId: undefined
     };
@@ -345,9 +419,10 @@ export class ElevenLabsReactVoiceSessionProvider implements VoiceSessionProvider
 
   async #connect(active: ActiveSession): Promise<void> {
     if (!this.#isCurrent(active)) return;
+    const connectionAttempt = ++active.connectionAttempt;
     try {
       const rawCredential = await this.#fetchCredential(active.request);
-      if (!this.#isCurrent(active)) return;
+      if (!this.#isCurrentConnection(active, connectionAttempt)) return;
       const credential = ElevenLabsSessionCredentialSchema.parse(rawCredential);
       if (Date.parse(credential.expiresAt) <= this.#scheduler.now()) {
         throw new VoiceCredentialError("missing_configuration");
@@ -356,14 +431,43 @@ export class ElevenLabsReactVoiceSessionProvider implements VoiceSessionProvider
       const conversation = await this.#startConversation({
         conversationToken: credential.conversationToken,
         connectionType: "webrtc",
-        onConnect: (value) => this.#handleConnect(active, value),
-        onDisconnect: (value) => this.#handleDisconnect(active, value),
-        onError: (message, context) => this.#handleError(active, message, context),
-        onMessage: (value) => this.#handleMessage(active, value),
-        onModeChange: (value) => this.#handleMode(active, value),
-        onStatusChange: (value) => this.#handleStatus(active, value)
+        serverLocation: credential.serverLocation,
+        ...(active.request.context
+          ? { dynamicVariables: toDynamicVariables(active.request.context) }
+          : {}),
+        clientTools: this.#createClientTools(active, connectionAttempt),
+        onConnect: (value) => {
+          if (this.#isCurrentConnection(active, connectionAttempt)) {
+            this.#handleConnect(active, value);
+          }
+        },
+        onDisconnect: (value) => {
+          if (this.#isCurrentConnection(active, connectionAttempt)) {
+            this.#handleDisconnect(active, value);
+          }
+        },
+        onError: (message, context) => {
+          if (this.#isCurrentConnection(active, connectionAttempt)) {
+            this.#handleError(active, message, context);
+          }
+        },
+        onMessage: (value) => {
+          if (this.#isCurrentConnection(active, connectionAttempt)) {
+            this.#handleMessage(active, value);
+          }
+        },
+        onModeChange: (value) => {
+          if (this.#isCurrentConnection(active, connectionAttempt)) {
+            this.#handleMode(active, value);
+          }
+        },
+        onStatusChange: (value) => {
+          if (this.#isCurrentConnection(active, connectionAttempt)) {
+            this.#handleStatus(active, value);
+          }
+        }
       });
-      if (!this.#isCurrent(active)) {
+      if (!this.#isCurrentConnection(active, connectionAttempt)) {
         await conversation.endSession();
         return;
       }
@@ -376,8 +480,89 @@ export class ElevenLabsReactVoiceSessionProvider implements VoiceSessionProvider
       active.reconnectHandle = undefined;
       this.#emitFor(active, { type: "listening" });
     } catch (error: unknown) {
-      if (!this.#isCurrent(active)) return;
+      if (!this.#isCurrentConnection(active, connectionAttempt)) return;
       await this.#handleFailure(active, classifyProviderFailure(error));
+    }
+  }
+
+  #createClientTools(
+    active: ActiveSession,
+    connectionAttempt: number
+  ): ElevenLabsConversationStartOptions["clientTools"] {
+    return {
+      propose_patient_report: (parameters) =>
+        this.#proposePatientReport(active, connectionAttempt, parameters),
+      request_next_round_step: (parameters) =>
+        this.#requestNextRoundStep(active, connectionAttempt, parameters)
+    };
+  }
+
+  #proposePatientReport(
+    active: ActiveSession,
+    connectionAttempt: number,
+    parameters: unknown
+  ): Promise<string> {
+    if (!this.#isCurrentConnection(active, connectionAttempt)) {
+      return Promise.resolve(serializeToolOutcome(safeToolOutcomes.roundChanged));
+    }
+    const proposal = VoiceAgentReportProposalSchema.safeParse(parameters);
+    if (!proposal.success) {
+      return Promise.resolve(serializeToolOutcome(safeToolOutcomes.invalidReport));
+    }
+    const proposalKey = JSON.stringify(proposal.data);
+    const duplicate = active.proposalToolResults.get(proposalKey);
+    if (duplicate) return duplicate;
+    if (active.proposalToolResults.size >= 8) {
+      return Promise.resolve(serializeToolOutcome(safeToolOutcomes.toolUnavailable));
+    }
+
+    const result = this.#invokeTool(active, connectionAttempt, () =>
+      active.request.clientTools?.proposePatientReport(proposal.data)
+    );
+    active.proposalToolResults.set(proposalKey, result);
+    return result;
+  }
+
+  #requestNextRoundStep(
+    active: ActiveSession,
+    connectionAttempt: number,
+    parameters: unknown
+  ): Promise<string> {
+    if (!this.#isCurrentConnection(active, connectionAttempt)) {
+      return Promise.resolve(serializeToolOutcome(safeToolOutcomes.roundChanged));
+    }
+    if (!NoClientToolInputSchema.safeParse(parameters).success) {
+      return Promise.resolve(serializeToolOutcome(safeToolOutcomes.invalidToolInput));
+    }
+    return this.#invokeTool(active, connectionAttempt, () =>
+      active.request.clientTools?.requestNextRoundStep()
+    );
+  }
+
+  async #invokeTool(
+    active: ActiveSession,
+    connectionAttempt: number,
+    invoke: () => Promise<VoiceAgentToolOutcome> | undefined
+  ): Promise<string> {
+    if (!this.#isCurrentConnection(active, connectionAttempt)) {
+      return serializeToolOutcome(safeToolOutcomes.roundChanged);
+    }
+    try {
+      const pendingOutcome = invoke();
+      if (!pendingOutcome) return serializeToolOutcome(safeToolOutcomes.toolUnavailable);
+      const outcome = VoiceAgentToolOutcomeSchema.safeParse(await pendingOutcome);
+      if (!this.#isCurrentConnection(active, connectionAttempt)) {
+        return serializeToolOutcome(safeToolOutcomes.roundChanged);
+      }
+      return serializeToolOutcome(
+        outcome.success ? outcome.data : safeToolOutcomes.toolUnavailable
+      );
+    } catch {
+      return serializeToolOutcome(
+        this.#isCurrentConnection(active, connectionAttempt)
+          ? safeToolOutcomes.toolUnavailable
+          : safeToolOutcomes.roundChanged
+      );
     }
   }
 
@@ -495,6 +680,8 @@ export class ElevenLabsReactVoiceSessionProvider implements VoiceSessionProvider
       return;
     }
     active.reconnectAttempt += 1;
+    // Invalidate callbacks and tools from the failed connection before the retry delay.
+    active.connectionAttempt += 1;
     active.seenMessageIds.clear();
     this.#emitFor(active, { type: "error", recoverable: true, code: "network" });
     this.#emitFor(active, { type: "reconnecting", attempt: active.reconnectAttempt });
@@ -532,6 +719,10 @@ export class ElevenLabsReactVoiceSessionProvider implements VoiceSessionProvider
 
   #isCurrent(active: ActiveSession): boolean {
     return this.#active === active && active.generation === this.#generation && !active.terminal;
+  }
+
+  #isCurrentConnection(active: ActiveSession, connectionAttempt: number): boolean {
+    return this.#isCurrent(active) && active.connectionAttempt === connectionAttempt;
   }
 
   #emitFor(active: ActiveSession, rawEvent: VoicePresentationEvent): void {

@@ -4,7 +4,13 @@
 
 import "@testing-library/jest-dom/vitest";
 
-import type { VoicePresentationEvent, VoiceSessionProvider } from "@homerounds/contracts/voice";
+import type {
+  VoiceAgentClientToolHandlers,
+  VoiceAgentReportProposal,
+  VoicePresentationEvent,
+  VoiceSessionContext,
+  VoiceSessionProvider
+} from "@homerounds/contracts/voice";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -16,11 +22,27 @@ import { VoiceInteractionPanel } from "./voice-interaction-panel";
 const ROUND_ID = "cc80d269-2f79-4328-a129-98cac85219e4";
 const SECOND_ROUND_ID = "14df34c4-8204-4810-8113-37b63c963a91";
 const PROPOSAL_ID = "1596aee5-e0ae-45df-bd5f-96fd89700f7b";
+const sessionContext = {
+  syntheticDataOnly: true as const,
+  patientAlias: "Maya",
+  roundPurpose: "Synthetic check-in",
+  historySummary: "One prior synthetic round."
+};
+const reportProposal: VoiceAgentReportProposal = {
+  contractVersion: "voice-report-proposal.v1",
+  weakness: "moderate",
+  palpitations: "intermittent",
+  redFlags: { chestPain: "no", severeBreathlessness: "unsure", fainted: "no" },
+  note: "I have felt weak since this morning.",
+  unresolvedFields: ["severe_breathlessness"]
+};
 
 class SyntheticVoiceProvider implements VoiceSessionProvider {
   readonly kind = "elevenlabs" as const;
   readonly #listeners = new Set<(event: VoicePresentationEvent) => void>();
   #signal: AbortSignal | undefined;
+  #context: VoiceSessionContext | undefined;
+  #clientTools: VoiceAgentClientToolHandlers | undefined;
 
   capabilities(): Promise<{ available: boolean; voice: boolean; text: boolean }> {
     return Promise.resolve({ available: true, voice: true, text: true });
@@ -30,8 +52,12 @@ class SyntheticVoiceProvider implements VoiceSessionProvider {
     roundId: string;
     phase: string;
     signal: AbortSignal;
+    context?: VoiceSessionContext;
+    clientTools?: VoiceAgentClientToolHandlers;
   }): Promise<{ sessionId: string }> {
     this.#signal = input.signal;
+    this.#context = input.context;
+    this.#clientTools = input.clientTools;
     this.emit({ type: "connecting" });
     this.emit({ type: "connected", sessionId: "synthetic-voice-session" });
     this.emit({ type: "listening" });
@@ -64,6 +90,20 @@ class SyntheticVoiceProvider implements VoiceSessionProvider {
 
   get aborted(): boolean {
     return this.#signal?.aborted ?? false;
+  }
+
+  get context(): VoiceSessionContext | undefined {
+    return this.#context;
+  }
+
+  proposePatientReport(proposal: VoiceAgentReportProposal) {
+    if (!this.#clientTools) throw new Error("Client tools are unavailable");
+    return this.#clientTools.proposePatientReport(proposal);
+  }
+
+  requestNextRoundStep() {
+    if (!this.#clientTools) throw new Error("Client tools are unavailable");
+    return this.#clientTools.requestNextRoundStep();
   }
 }
 
@@ -150,6 +190,39 @@ describe("voice interaction panel", () => {
       })
     );
     expect(screen.getByRole("button", { name: "Text confirmed" })).toBeDisabled();
+  });
+
+  it("exposes an ephemeral typed agent proposal without confirming or advancing it", async () => {
+    const provider = new SyntheticVoiceProvider();
+    const onProposal = vi.fn();
+    const onConfirmed = vi.fn();
+    render(
+      createElement(VoiceInteractionPanel, {
+        roundId: ROUND_ID,
+        provider,
+        context: sessionContext,
+        onProposal,
+        onConfirmed,
+        createId: () => PROPOSAL_ID
+      })
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Start voice" }));
+
+    await expect(provider.proposePatientReport(reportProposal)).resolves.toEqual({
+      status: "pending_confirmation",
+      proposalId: PROPOSAL_ID,
+      message: "The proposal is ready for the patient to review and confirm on screen."
+    });
+    await expect(provider.requestNextRoundStep()).resolves.toMatchObject({
+      status: "not_ready",
+      reason: "report_not_confirmed"
+    });
+
+    expect(provider.context).toEqual(sessionContext);
+    expect(onProposal).toHaveBeenCalledWith({ proposalId: PROPOSAL_ID, proposal: reportProposal });
+    expect(onConfirmed).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Your check-in text")).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Confirm this text" })).toBeDisabled();
   });
 
   it("cancels media and rejects late transcript events", async () => {

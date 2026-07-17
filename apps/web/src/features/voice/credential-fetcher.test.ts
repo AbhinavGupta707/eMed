@@ -30,7 +30,8 @@ describe("HomeRounds voice credential fetcher", () => {
         token: "short-lived-conversation-token",
         agentId: "agent_synthetic",
         expiresAt: "2026-07-17T10:00:00.000Z",
-        maxSessionSeconds: 120
+        maxSessionSeconds: 120,
+        serverLocation: "eu-residency"
       })
     );
     const signal = new AbortController().signal;
@@ -40,7 +41,8 @@ describe("HomeRounds voice credential fetcher", () => {
       provider: "elevenlabs",
       connectionType: "webrtc",
       conversationToken: "short-lived-conversation-token",
-      expiresAt: "2026-07-17T10:00:00.000Z"
+      expiresAt: "2026-07-17T10:00:00.000Z",
+      serverLocation: "eu-residency"
     });
     expect(fetcher).toHaveBeenCalledWith(
       "/api/providers/elevenlabs/session",
@@ -86,6 +88,25 @@ describe("HomeRounds voice credential fetcher", () => {
     await expect(malformed(request())).rejects.toMatchObject({ code: "provider" });
     await expect(network(request())).rejects.toMatchObject({ code: "network" });
   });
+
+  it.each([undefined, "unsupported-region"])(
+    "fails closed when an available token has location %s",
+    async (serverLocation) => {
+      const data = {
+        status: "available",
+        token: "short-lived-conversation-token",
+        agentId: "agent_synthetic",
+        expiresAt: "2026-07-17T10:00:00.000Z",
+        maxSessionSeconds: 120,
+        ...(serverLocation ? { serverLocation } : {})
+      };
+      const credential = createHomeRoundsVoiceCredentialFetcher({
+        fetcher: vi.fn(async () => apiResponse(data))
+      });
+
+      await expect(credential(request())).rejects.toMatchObject({ code: "provider" });
+    }
+  );
 
   it("does not replace caller cancellation with a provider-facing error", async () => {
     const controller = new AbortController();

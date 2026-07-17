@@ -1,5 +1,7 @@
 import {
   VoicePresentationEventSchema,
+  VoiceSessionContextSchema,
+  type VoiceAgentClientToolHandlers,
   type VoicePresentationEvent,
   type VoiceSessionProvider
 } from "@homerounds/contracts/voice";
@@ -8,13 +10,28 @@ import { z } from "zod";
 import { SYNTHETIC_TRANSCRIPT_FIXTURES } from "./fixtures";
 import { VoiceSessionPhaseSchema } from "./session";
 
-const ProviderStartInputSchema = z
+export const VoiceAgentClientToolHandlersSchema = z
+  .object({
+    proposePatientReport: z.custom<VoiceAgentClientToolHandlers["proposePatientReport"]>(
+      (value) => typeof value === "function"
+    ),
+    requestNextRoundStep: z.custom<VoiceAgentClientToolHandlers["requestNextRoundStep"]>(
+      (value) => typeof value === "function"
+    )
+  })
+  .strict();
+
+export const VoiceSessionStartInputSchema = z
   .object({
     roundId: z.uuid(),
     phase: VoiceSessionPhaseSchema,
-    signal: z.custom<AbortSignal>((value) => value instanceof AbortSignal)
+    signal: z.custom<AbortSignal>((value) => value instanceof AbortSignal),
+    context: VoiceSessionContextSchema.optional(),
+    clientTools: VoiceAgentClientToolHandlersSchema.optional()
   })
   .strict();
+
+type ProviderStartInput = Parameters<VoiceSessionProvider["start"]>[0];
 
 const TextInputSchema = z.string().trim().min(1).max(2000);
 const StopReasonSchema = z.string().trim().min(1).max(120);
@@ -55,12 +72,8 @@ export class TextVoiceSessionProvider implements VoiceSessionProvider {
     return Promise.resolve({ available: true, voice: false, text: true });
   }
 
-  async start(input: {
-    roundId: string;
-    phase: string;
-    signal: AbortSignal;
-  }): Promise<{ sessionId: string }> {
-    const parsed = ProviderStartInputSchema.parse(input);
+  async start(input: ProviderStartInput): Promise<{ sessionId: string }> {
+    const parsed = VoiceSessionStartInputSchema.parse(input);
     if (parsed.signal.aborted) throw new DOMException("Session cancelled", "AbortError");
     if (this.#active) await this.stop("replaced");
 
@@ -113,12 +126,8 @@ export class SyntheticVoiceSessionProvider implements VoiceSessionProvider {
     return Promise.resolve({ available: true, voice: true, text: true });
   }
 
-  async start(input: {
-    roundId: string;
-    phase: string;
-    signal: AbortSignal;
-  }): Promise<{ sessionId: string }> {
-    const parsed = ProviderStartInputSchema.parse(input);
+  async start(input: ProviderStartInput): Promise<{ sessionId: string }> {
+    const parsed = VoiceSessionStartInputSchema.parse(input);
     if (parsed.signal.aborted) throw new DOMException("Session cancelled", "AbortError");
     if (this.#active) await this.stop("replaced");
 
@@ -177,12 +186,8 @@ export class DisabledVoiceSessionProvider implements VoiceSessionProvider {
     return Promise.resolve({ available: false, voice: false, text: true });
   }
 
-  start(input: {
-    roundId: string;
-    phase: string;
-    signal: AbortSignal;
-  }): Promise<{ sessionId: string }> {
-    const parsed = ProviderStartInputSchema.parse(input);
+  start(input: ProviderStartInput): Promise<{ sessionId: string }> {
+    const parsed = VoiceSessionStartInputSchema.parse(input);
     const sessionId = this.#createSessionId();
     if (parsed.signal.aborted)
       return Promise.reject(new DOMException("Session cancelled", "AbortError"));

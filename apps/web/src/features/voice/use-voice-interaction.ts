@@ -1,6 +1,13 @@
 "use client";
 
-import type { VoicePresentationEvent, VoiceSessionProvider } from "@homerounds/contracts/voice";
+import {
+  VoiceAgentReportProposalSchema,
+  VoiceAgentToolOutcomeSchema,
+  type VoiceAgentReportProposal,
+  type VoicePresentationEvent,
+  type VoiceSessionContext,
+  type VoiceSessionProvider
+} from "@homerounds/contracts/voice";
 import {
   createInitialVoiceSessionState,
   createTranscriptState,
@@ -10,22 +17,30 @@ import {
   type TranscriptState,
   type VoiceSessionState
 } from "@homerounds/voice";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type VoiceCapabilities = Readonly<{ available: boolean; voice: boolean; text: boolean }>;
+
+export type VoiceAgentProposalState = Readonly<{
+  proposalId: string;
+  proposal: VoiceAgentReportProposal;
+}>;
 
 type UseVoiceInteractionOptions = Readonly<{
   provider: VoiceSessionProvider;
   roundId: string;
+  context?: VoiceSessionContext;
   createId?: () => string;
   now?: () => string;
   onConfirmed?: (confirmation: TranscriptConfirmation) => void;
+  onProposal?: (proposal: VoiceAgentProposalState) => void;
 }>;
 
 export type VoiceInteractionController = Readonly<{
   capabilities: VoiceCapabilities | null;
   session: VoiceSessionState;
   transcript: TranscriptState;
+  agentProposal: VoiceAgentProposalState | null;
   startVoice(): Promise<void>;
   endVoice(): Promise<void>;
   cancelVoice(): Promise<void>;
@@ -46,15 +61,18 @@ function defaultNow(): string {
 export function useVoiceInteraction({
   provider,
   roundId,
+  context,
   createId = defaultCreateId,
   now = defaultNow,
-  onConfirmed
+  onConfirmed,
+  onProposal
 }: UseVoiceInteractionOptions): VoiceInteractionController {
   const [capabilities, setCapabilities] = useState<VoiceCapabilities | null>(null);
   const [session, setSession] = useState<VoiceSessionState>(createInitialVoiceSessionState);
   const [transcript, setTranscript] = useState<TranscriptState>(() =>
     createTranscriptState(roundId, 1)
   );
+  const [agentProposal, setAgentProposal] = useState<VoiceAgentProposalState | null>(null);
   const sessionRef = useRef(session);
   const transcriptRef = useRef(transcript);
   const generationRef = useRef(1);
@@ -84,6 +102,32 @@ export function useVoiceInteraction({
     }
     return transition;
   }, []);
+
+  const clientTools = useMemo(
+    () => ({
+      proposePatientReport: async (rawProposal: VoiceAgentReportProposal) => {
+        const proposal = VoiceAgentReportProposalSchema.parse(rawProposal);
+        const proposalState = {
+          proposalId: createId(),
+          proposal
+        } satisfies VoiceAgentProposalState;
+        setAgentProposal(proposalState);
+        onProposal?.(proposalState);
+        return VoiceAgentToolOutcomeSchema.parse({
+          status: "pending_confirmation",
+          proposalId: proposalState.proposalId,
+          message: "The proposal is ready for the patient to review and confirm on screen."
+        });
+      },
+      requestNextRoundStep: async () =>
+        VoiceAgentToolOutcomeSchema.parse({
+          status: "not_ready",
+          reason: "report_not_confirmed",
+          message: "The visible report has not been confirmed. Do not advance the round."
+        })
+    }),
+    [createId, onProposal]
+  );
 
   useEffect(() => {
     let active = true;
@@ -137,6 +181,7 @@ export function useVoiceInteraction({
       sessionRef.current.status === "idle" ? generationRef.current : generationRef.current + 1;
     generationRef.current = nextGeneration;
     proposalIdRef.current = null;
+    setAgentProposal(null);
     const nextTranscript = createTranscriptState(roundId, nextGeneration);
     transcriptRef.current = nextTranscript;
     setTranscript(nextTranscript);
@@ -153,7 +198,9 @@ export function useVoiceInteraction({
       await provider.start({
         roundId,
         phase: "patient_report",
-        signal: controller.signal
+        signal: controller.signal,
+        ...(context ? { context } : {}),
+        clientTools
       });
     } catch {
       updateSession({
@@ -163,7 +210,7 @@ export function useVoiceInteraction({
         event: { type: "error", recoverable: false, code: "provider" }
       });
     }
-  }, [nextEventId, provider, roundId, updateSession]);
+  }, [clientTools, context, nextEventId, provider, roundId, updateSession]);
 
   const endVoice = useCallback(async () => {
     await provider.stop("completed");
@@ -221,6 +268,7 @@ export function useVoiceInteraction({
     capabilities,
     session,
     transcript,
+    agentProposal,
     startVoice,
     endVoice,
     cancelVoice,

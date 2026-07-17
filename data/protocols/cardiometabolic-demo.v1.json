@@ -1,0 +1,446 @@
+{
+  "dsl": "homerounds.protocol",
+  "schemaVersion": 1,
+  "authoringMode": "reviewed_static",
+  "id": "cardiometabolic_demo",
+  "version": "1.0.0",
+  "status": "illustrative_demo_only",
+  "neutralActionWording": "programme review requested",
+  "title": "Illustrative cardiometabolic programme round",
+  "clinicalOwner": {
+    "role": "Demo protocol review role",
+    "organisation": "HomeRounds synthetic hackathon team"
+  },
+  "reviewDate": "2026-10-17",
+  "sources": [
+    {
+      "id": "demo_safety_policy_v1",
+      "title": "HomeRounds synthetic red-flag safety policy",
+      "provenanceType": "synthetic_demo_assumption",
+      "citation": "Synthetic hackathon safety fixture. This is not clinical guidance and requires clinical review before any real-world use.",
+      "accessedAt": "2026-07-17"
+    },
+    {
+      "id": "demo_programme_policy_v1",
+      "title": "HomeRounds illustrative programme review policy",
+      "provenanceType": "illustrative_consensus",
+      "citation": "Illustrative demo thresholds and review flow created only to exercise deterministic software behavior; not clinically validated.",
+      "accessedAt": "2026-07-17"
+    }
+  ],
+  "burdenBudget": {
+    "maxFollowUpQuestions": 1
+  },
+  "freshness": {
+    "pulseMaxAgeSeconds": 3600
+  },
+  "questions": [
+    {
+      "id": "symptoms_worse_today",
+      "promptKey": "protocol.question.symptoms_worse_today",
+      "answerType": "yes_no_unsure"
+    }
+  ],
+  "rules": [
+    {
+      "id": "red_flag_chest_pain_yes",
+      "stage": "red_flag",
+      "priority": 100,
+      "all": [{ "kind": "red_flag", "field": "chestPain", "operator": "equals", "value": "yes" }],
+      "effect": {
+        "kind": "return",
+        "outcome": "emergency_guidance",
+        "allowedActions": ["show_emergency_guidance"],
+        "missingFactKeys": [],
+        "explanationKey": "protocol.red_flag.chest_pain"
+      },
+      "evidence": {
+        "sourceIds": ["demo_safety_policy_v1"],
+        "rationale": "A confirmed synthetic red-flag answer takes precedence over measurement and planning."
+      }
+    },
+    {
+      "id": "red_flag_breathlessness_yes",
+      "stage": "red_flag",
+      "priority": 100,
+      "all": [
+        {
+          "kind": "red_flag",
+          "field": "severeBreathlessness",
+          "operator": "equals",
+          "value": "yes"
+        }
+      ],
+      "effect": {
+        "kind": "return",
+        "outcome": "emergency_guidance",
+        "allowedActions": ["show_emergency_guidance"],
+        "missingFactKeys": [],
+        "explanationKey": "protocol.red_flag.severe_breathlessness"
+      },
+      "evidence": {
+        "sourceIds": ["demo_safety_policy_v1"],
+        "rationale": "A confirmed synthetic red-flag answer takes precedence over measurement and planning."
+      }
+    },
+    {
+      "id": "red_flag_fainted_yes",
+      "stage": "red_flag",
+      "priority": 100,
+      "all": [{ "kind": "red_flag", "field": "fainted", "operator": "equals", "value": "yes" }],
+      "effect": {
+        "kind": "return",
+        "outcome": "emergency_guidance",
+        "allowedActions": ["show_emergency_guidance"],
+        "missingFactKeys": [],
+        "explanationKey": "protocol.red_flag.fainted"
+      },
+      "evidence": {
+        "sourceIds": ["demo_safety_policy_v1"],
+        "rationale": "A confirmed synthetic red-flag answer takes precedence over measurement and planning."
+      }
+    },
+    {
+      "id": "red_flag_chest_pain_unsure",
+      "stage": "red_flag",
+      "priority": 90,
+      "all": [
+        { "kind": "red_flag", "field": "chestPain", "operator": "equals", "value": "unsure" }
+      ],
+      "effect": {
+        "kind": "return",
+        "outcome": "abstain_for_review",
+        "allowedActions": ["create_programme_task"],
+        "missingFactKeys": [],
+        "explanationKey": "protocol.red_flag.answer_uncertain"
+      },
+      "evidence": {
+        "sourceIds": ["demo_safety_policy_v1"],
+        "rationale": "Uncertain red-flag information is preserved and sent for review rather than inferred."
+      }
+    },
+    {
+      "id": "red_flag_breathlessness_unsure",
+      "stage": "red_flag",
+      "priority": 90,
+      "all": [
+        {
+          "kind": "red_flag",
+          "field": "severeBreathlessness",
+          "operator": "equals",
+          "value": "unsure"
+        }
+      ],
+      "effect": {
+        "kind": "return",
+        "outcome": "abstain_for_review",
+        "allowedActions": ["create_programme_task"],
+        "missingFactKeys": [],
+        "explanationKey": "protocol.red_flag.answer_uncertain"
+      },
+      "evidence": {
+        "sourceIds": ["demo_safety_policy_v1"],
+        "rationale": "Uncertain red-flag information is preserved and sent for review rather than inferred."
+      }
+    },
+    {
+      "id": "red_flag_fainted_unsure",
+      "stage": "red_flag",
+      "priority": 90,
+      "all": [{ "kind": "red_flag", "field": "fainted", "operator": "equals", "value": "unsure" }],
+      "effect": {
+        "kind": "return",
+        "outcome": "abstain_for_review",
+        "allowedActions": ["create_programme_task"],
+        "missingFactKeys": [],
+        "explanationKey": "protocol.red_flag.answer_uncertain"
+      },
+      "evidence": {
+        "sourceIds": ["demo_safety_policy_v1"],
+        "rationale": "Uncertain red-flag information is preserved and sent for review rather than inferred."
+      }
+    },
+    {
+      "id": "measurement_missing",
+      "stage": "data_quality",
+      "priority": 100,
+      "all": [{ "kind": "measurement_state", "operator": "equals", "value": "missing" }],
+      "effect": {
+        "kind": "return",
+        "outcome": "abstain_for_review",
+        "allowedActions": ["create_programme_task"],
+        "missingFactKeys": ["pulse_bpm"],
+        "explanationKey": "protocol.measurement.missing"
+      },
+      "evidence": {
+        "sourceIds": ["demo_programme_policy_v1"],
+        "rationale": "The evaluator does not invent a missing pulse value."
+      }
+    },
+    {
+      "id": "measurement_unknown",
+      "stage": "data_quality",
+      "priority": 100,
+      "all": [{ "kind": "measurement_state", "operator": "equals", "value": "unknown" }],
+      "effect": {
+        "kind": "return",
+        "outcome": "abstain_for_review",
+        "allowedActions": ["create_programme_task"],
+        "missingFactKeys": ["pulse_bpm"],
+        "explanationKey": "protocol.measurement.unknown"
+      },
+      "evidence": {
+        "sourceIds": ["demo_programme_policy_v1"],
+        "rationale": "Unknown or future-dated evidence is preserved as uncertain."
+      }
+    },
+    {
+      "id": "measurement_conflicting",
+      "stage": "data_quality",
+      "priority": 100,
+      "all": [{ "kind": "measurement_state", "operator": "equals", "value": "conflicting" }],
+      "effect": {
+        "kind": "return",
+        "outcome": "abstain_for_review",
+        "allowedActions": ["create_programme_task"],
+        "missingFactKeys": [],
+        "explanationKey": "protocol.measurement.conflicting"
+      },
+      "evidence": {
+        "sourceIds": ["demo_programme_policy_v1"],
+        "rationale": "Conflicting evidence is surfaced for review without selecting a value."
+      }
+    },
+    {
+      "id": "measurement_quality_failed",
+      "stage": "data_quality",
+      "priority": 100,
+      "all": [{ "kind": "measurement_state", "operator": "equals", "value": "quality_failed" }],
+      "effect": {
+        "kind": "return",
+        "outcome": "abstain_for_review",
+        "allowedActions": ["create_programme_task"],
+        "missingFactKeys": ["pulse_bpm"],
+        "explanationKey": "protocol.measurement.quality_failed"
+      },
+      "evidence": {
+        "sourceIds": ["demo_programme_policy_v1"],
+        "rationale": "A failed capture-quality gate never becomes a measurement."
+      }
+    },
+    {
+      "id": "measurement_stale",
+      "stage": "data_quality",
+      "priority": 100,
+      "all": [{ "kind": "measurement_state", "operator": "equals", "value": "stale" }],
+      "effect": {
+        "kind": "return",
+        "outcome": "abstain_for_review",
+        "allowedActions": ["create_programme_task"],
+        "missingFactKeys": ["pulse_bpm"],
+        "explanationKey": "protocol.measurement.stale"
+      },
+      "evidence": {
+        "sourceIds": ["demo_programme_policy_v1"],
+        "rationale": "Evidence outside the explicit freshness window is not treated as current."
+      }
+    },
+    {
+      "id": "follow_up_answer_yes",
+      "stage": "decision",
+      "priority": 100,
+      "all": [
+        {
+          "kind": "follow_up_answer",
+          "questionId": "symptoms_worse_today",
+          "operator": "equals",
+          "value": "yes"
+        }
+      ],
+      "effect": {
+        "kind": "return",
+        "outcome": "programme_review_requested",
+        "allowedActions": ["create_programme_task"],
+        "missingFactKeys": [],
+        "explanationKey": "protocol.follow_up.worse_yes"
+      },
+      "evidence": {
+        "sourceIds": ["demo_programme_policy_v1"],
+        "rationale": "The confirmed structured answer selects neutral programme review wording."
+      }
+    },
+    {
+      "id": "follow_up_answer_no",
+      "stage": "decision",
+      "priority": 100,
+      "all": [
+        {
+          "kind": "follow_up_answer",
+          "questionId": "symptoms_worse_today",
+          "operator": "equals",
+          "value": "no"
+        }
+      ],
+      "effect": {
+        "kind": "return",
+        "outcome": "programme_review_requested",
+        "allowedActions": ["create_programme_task"],
+        "missingFactKeys": [],
+        "explanationKey": "protocol.follow_up.worse_no"
+      },
+      "evidence": {
+        "sourceIds": ["demo_programme_policy_v1"],
+        "rationale": "The confirmed structured answer completes the illustrative programme round."
+      }
+    },
+    {
+      "id": "follow_up_answer_unsure",
+      "stage": "decision",
+      "priority": 100,
+      "all": [
+        {
+          "kind": "follow_up_answer",
+          "questionId": "symptoms_worse_today",
+          "operator": "equals",
+          "value": "unsure"
+        }
+      ],
+      "effect": {
+        "kind": "return",
+        "outcome": "abstain_for_review",
+        "allowedActions": ["create_programme_task"],
+        "missingFactKeys": [],
+        "explanationKey": "protocol.follow_up.answer_uncertain"
+      },
+      "evidence": {
+        "sourceIds": ["demo_programme_policy_v1"],
+        "rationale": "An uncertain follow-up remains uncertain and is sent for review."
+      }
+    },
+    {
+      "id": "illustrative_high_pulse",
+      "stage": "decision",
+      "priority": 80,
+      "all": [{ "kind": "pulse_bpm", "operator": "gte", "value": 100, "unit": "bpm" }],
+      "effect": {
+        "kind": "return",
+        "outcome": "programme_review_requested",
+        "allowedActions": ["create_programme_task"],
+        "missingFactKeys": [],
+        "explanationKey": "protocol.pulse.illustrative_high"
+      },
+      "evidence": {
+        "sourceIds": ["demo_programme_policy_v1"],
+        "rationale": "This threshold is illustrative only and requests neutral programme review."
+      }
+    },
+    {
+      "id": "normal_pulse_moderate_weakness_follow_up",
+      "stage": "decision",
+      "priority": 70,
+      "all": [
+        {
+          "kind": "pulse_bpm",
+          "operator": "between_inclusive",
+          "min": 60,
+          "max": 99,
+          "unit": "bpm"
+        },
+        { "kind": "report_field", "field": "weakness", "operator": "equals", "value": "moderate" },
+        { "kind": "follow_up_budget", "operator": "equals", "value": "available" }
+      ],
+      "effect": {
+        "kind": "ask_follow_up",
+        "questionId": "symptoms_worse_today",
+        "explanationKey": "protocol.follow_up.required"
+      },
+      "evidence": {
+        "sourceIds": ["demo_programme_policy_v1"],
+        "rationale": "The illustrative branch asks one bounded structured question when budget remains."
+      }
+    },
+    {
+      "id": "normal_pulse_follow_up_budget_exhausted",
+      "stage": "decision",
+      "priority": 70,
+      "all": [
+        {
+          "kind": "pulse_bpm",
+          "operator": "between_inclusive",
+          "min": 60,
+          "max": 99,
+          "unit": "bpm"
+        },
+        { "kind": "report_field", "field": "weakness", "operator": "equals", "value": "moderate" },
+        { "kind": "follow_up_budget", "operator": "equals", "value": "exhausted" }
+      ],
+      "effect": {
+        "kind": "return",
+        "outcome": "abstain_for_review",
+        "allowedActions": ["create_programme_task"],
+        "missingFactKeys": ["follow_up_answer"],
+        "explanationKey": "protocol.follow_up.budget_exhausted"
+      },
+      "evidence": {
+        "sourceIds": ["demo_programme_policy_v1"],
+        "rationale": "The round never asks a second follow-up and preserves the missing answer."
+      }
+    },
+    {
+      "id": "illustrative_normal_pulse",
+      "stage": "decision",
+      "priority": 50,
+      "all": [
+        {
+          "kind": "pulse_bpm",
+          "operator": "between_inclusive",
+          "min": 60,
+          "max": 99,
+          "unit": "bpm"
+        }
+      ],
+      "effect": {
+        "kind": "return",
+        "outcome": "programme_review_requested",
+        "allowedActions": ["create_programme_task"],
+        "missingFactKeys": [],
+        "explanationKey": "protocol.pulse.illustrative_normal"
+      },
+      "evidence": {
+        "sourceIds": ["demo_programme_policy_v1"],
+        "rationale": "The illustrative round completes with neutral programme review wording."
+      }
+    },
+    {
+      "id": "illustrative_low_pulse",
+      "stage": "decision",
+      "priority": 50,
+      "all": [{ "kind": "pulse_bpm", "operator": "lt", "value": 60, "unit": "bpm" }],
+      "effect": {
+        "kind": "return",
+        "outcome": "programme_review_requested",
+        "allowedActions": ["create_programme_task"],
+        "missingFactKeys": [],
+        "explanationKey": "protocol.pulse.illustrative_low"
+      },
+      "evidence": {
+        "sourceIds": ["demo_programme_policy_v1"],
+        "rationale": "This threshold is illustrative only and requests neutral programme review."
+      }
+    }
+  ],
+  "fallback": {
+    "id": "unmatched_inputs_abstain",
+    "effect": {
+      "kind": "return",
+      "outcome": "abstain_for_review",
+      "allowedActions": ["create_programme_task"],
+      "missingFactKeys": [],
+      "explanationKey": "protocol.inputs.unmatched"
+    },
+    "evidence": {
+      "sourceIds": ["demo_programme_policy_v1"],
+      "rationale": "Any valid but unhandled combination abstains rather than inferring a decision."
+    }
+  }
+}

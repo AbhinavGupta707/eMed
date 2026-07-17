@@ -9,6 +9,7 @@ import { z } from "zod";
 
 export const RoundMapModuleStatusSchema = z.enum([
   "completed",
+  "completed_without_measurement",
   "current",
   "selected",
   "skipped",
@@ -125,6 +126,8 @@ export function roundMapStatusLabel(status: RoundMapModuleStatus): string {
   switch (status) {
     case "completed":
       return "Completed — confirmed";
+    case "completed_without_measurement":
+      return "Completed — no measurement";
     case "current":
       return "Current — in progress";
     case "selected":
@@ -143,6 +146,8 @@ export function roundMapStatusDescription(module: RoundMapModule): string {
   switch (module.status) {
     case "completed":
       return "Your confirmed information is preserved.";
+    case "completed_without_measurement":
+      return "The evidence step ended without an accepted numeric measurement.";
     case "current":
       return "This evidence step is open now.";
     case "selected":

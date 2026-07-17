@@ -26,6 +26,7 @@ export type AdaptiveRoundMapProps = Readonly<{
 
 const statusSymbols: Readonly<Record<RoundMapModuleStatus, string>> = {
   completed: "✓",
+  completed_without_measurement: "○",
   current: "●",
   selected: "→",
   skipped: "—",

@@ -49,6 +49,25 @@ describe("adaptive Round Map", () => {
     ).toBeVisible();
   });
 
+  it("distinguishes a completed evidence step that produced no measurement", () => {
+    const noMeasurementExperience = RoundMapExperienceSchema.parse({
+      ...MAYA_HAPPY_PATH_ROUND_MAP,
+      modules: MAYA_HAPPY_PATH_ROUND_MAP.modules.map((module) =>
+        module.candidate.id === "pulse.local"
+          ? {
+              ...module,
+              status: "completed_without_measurement",
+              statusDetail: "No numeric pulse measurement was accepted."
+            }
+          : module
+      )
+    });
+    render(createElement(AdaptiveRoundMap, { experience: noMeasurementExperience }));
+
+    expect(screen.getByText("Completed — no measurement")).toBeVisible();
+    expect(screen.getByText("No numeric pulse measurement was accepted.")).toBeVisible();
+  });
+
   it.each([
     ["loading", AISHA_RESILIENCE_ROUND_MAPS.loading, "Checking eligible evidence modules"],
     ["retrying", AISHA_RESILIENCE_ROUND_MAPS.retrying, "Retrying the bounded selection"],

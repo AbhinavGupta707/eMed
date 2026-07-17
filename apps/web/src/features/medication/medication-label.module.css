@@ -246,6 +246,11 @@
   font: inherit;
 }
 
+.reviewItem select,
+.textItem select {
+  height: 44px;
+}
+
 .valueField {
   display: grid;
   gap: 0.4rem;

@@ -220,6 +220,7 @@ pnpm build
 pnpm test:e2e
 pnpm test:e2e:patient
 pnpm test:e2e:clinician
+pnpm test:e2e:ai
 pnpm test:a11y
 pnpm test:performance
 git diff --check

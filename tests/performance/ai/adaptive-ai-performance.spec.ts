@@ -120,6 +120,8 @@ test("provider failure reaches the deterministic route inside the warm API recov
     page.getByRole("heading", { level: 3, name: "AI selection is unavailable" })
   ).toBeVisible();
 
+  const warmup = await page.request.get(`${failureOrigin}/api/rounds/${started.round.id}`);
+  expect(warmup.status()).toBe(200);
   const apiStartedAt = performance.now();
   const persisted = await page.request.get(`${failureOrigin}/api/rounds/${started.round.id}`);
   expect(persisted.status()).toBe(200);

@@ -21,8 +21,8 @@ Heartbeat: `homerounds-orchestration-heartbeat`, active every 20 minutes
 
 ## Checkpoint lane ledger
 
-| Checkpoint | Lane                       | Ownership                                                                                                      | Task/thread | Base        | Status         | Integrated commit |
-| ---------- | -------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------- | ----------- | -------------- | ----------------- |
+| Checkpoint | Lane                       | Ownership                                                                                                      | Task/thread | Base      | Status         | Integrated commit |
+| ---------- | -------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------- | --------- | -------------- | ----------------- |
 | 1          | 1A data/domain/persistence | `packages/domain/**`, `packages/persistence/**`, `packages/clinical-records/**`, `data/fhir/**`, `infra/db/**` | pending     | `b519010` | pending        | —                 |
 | 1          | 1B protocol/planner        | `packages/protocols/**`, `packages/planner/**`, `data/protocols/**`                                            | pending     | `b519010` | pending        | —                 |
 | 1          | 1C local finger PPG        | `packages/assessments/providers/finger-ppg/**`                                                                 | pending     | `b519010` | pending        | —                 |

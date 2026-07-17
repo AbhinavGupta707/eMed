@@ -177,7 +177,11 @@ export function patientWorkflowView(state: PatientWorkflowState): PatientWorkflo
       if (state.availability?.available === true) return "measurement_ready";
       return "processing";
     case "capture_retry":
-      return state.assessmentSession === null ? "resume_recovery" : "capture_retry";
+      // Capture attempts consume their one-time assessment session. Keep the
+      // retry controls visible while the quality result is still present; the
+      // retry/replay actions will create a fresh session themselves. After a
+      // refresh that ephemeral result is absent, fall back to safe recovery.
+      return state.quality === null ? "resume_recovery" : "capture_retry";
     case "assessment_complete":
     case "protocol_ready":
     case "protocol_decided":

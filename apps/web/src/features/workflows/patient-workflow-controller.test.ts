@@ -489,6 +489,8 @@ describe("patient workflow controller", () => {
 
     expect(controller.getSnapshot().round?.state).toBe("capture_retry");
     expect(controller.getSnapshot().measurement).toBeNull();
+    expect(controller.getSnapshot().assessmentSession).toBeNull();
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("capture_retry");
 
     await controller.retryMeasurement();
     expect(patientWorkflowView(controller.getSnapshot())).toBe("action_confirmation");

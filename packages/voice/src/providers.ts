@@ -7,7 +7,7 @@ import {
 } from "@homerounds/contracts/voice";
 import { z } from "zod";
 
-import { SYNTHETIC_TRANSCRIPT_FIXTURES } from "./fixtures";
+import { SYNTHETIC_REPORT_PROPOSAL_FIXTURE, SYNTHETIC_TRANSCRIPT_FIXTURES } from "./fixtures";
 import { VoiceSessionPhaseSchema } from "./session";
 
 export const VoiceAgentClientToolHandlersSchema = z
@@ -140,6 +140,9 @@ export class SyntheticVoiceSessionProvider implements VoiceSessionProvider {
     this.#events.emit({ type: "listening" });
     this.#events.emit(SYNTHETIC_TRANSCRIPT_FIXTURES.tentative);
     this.#events.emit(SYNTHETIC_TRANSCRIPT_FIXTURES.final);
+    if (parsed.clientTools) {
+      await parsed.clientTools.proposePatientReport(SYNTHETIC_REPORT_PROPOSAL_FIXTURE);
+    }
     return { sessionId };
   }
 

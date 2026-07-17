@@ -1,5 +1,5 @@
 import type { VoicePresentationEvent } from "@homerounds/contracts/voice";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   DisabledVoiceSessionProvider,
@@ -59,6 +59,11 @@ describe("synthetic browser voice fixture", () => {
   it("emits identifier-free transcript events without external media", async () => {
     const provider = new SyntheticVoiceSessionProvider(() => "synthetic-session-1");
     const events: VoicePresentationEvent[] = [];
+    const proposePatientReport = vi.fn(async () => ({
+      status: "pending_confirmation" as const,
+      proposalId: "cc80d269-2f79-4328-a129-98cac85219e5",
+      message: "Review the visible proposal before confirming."
+    }));
     provider.subscribe((event) => events.push(event));
 
     await expect(provider.capabilities()).resolves.toEqual({
@@ -69,12 +74,29 @@ describe("synthetic browser voice fixture", () => {
     await provider.start({
       roundId: ROUND_ID,
       phase: "patient_report",
-      signal: new AbortController().signal
+      signal: new AbortController().signal,
+      clientTools: {
+        proposePatientReport,
+        requestNextRoundStep: vi.fn(async () => ({
+          status: "not_ready" as const,
+          reason: "report_not_confirmed" as const,
+          message: "The visible report has not been confirmed."
+        }))
+      }
     });
 
     expect(events).toContainEqual({
       type: "transcript_final",
       text: "I have felt a little weak this morning."
+    });
+    expect(proposePatientReport).toHaveBeenCalledOnce();
+    expect(proposePatientReport).toHaveBeenCalledWith({
+      contractVersion: "voice-report-proposal.v1",
+      weakness: "mild",
+      palpitations: "absent",
+      redFlags: { chestPain: "no", severeBreathlessness: "no", fainted: "no" },
+      note: "Synthetic voice-agent proposal for explicit patient review.",
+      unresolvedFields: []
     });
     expect(JSON.stringify(events)).not.toMatch(/audio|blob|media|patient[_ -]?id/i);
   });

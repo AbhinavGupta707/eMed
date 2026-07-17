@@ -1,6 +1,6 @@
 # HomeRounds orchestration state
 
-Updated: 17 July 2026 03:51 BST  
+Updated: 17 July 2026 04:43 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
 Goal: active  
 Integration branch: `main`
@@ -9,15 +9,17 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 
 ## Current checkpoint
 
-- Checkpoint: 3 — end-to-end patient and clinician experiences
-- Status: active; two exclusive `gpt-5.6-sol`/`xhigh` worktrees are implementing from the exact tested Checkpoint 2 commit while integration owns demo tooling and shared workflow seams
+- Checkpoint: 4 — verification, hardening, operations and security
+- Status: Checkpoint 3 is integrated and tested; Checkpoint 4 Wave A is ready to launch from the exact tested integration commit with three exclusive worktrees
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
-- Current integration head: `b3a1fd3`
+- Current integration head: `5534083`
 - Checkpoint 2 worker launch base: `aae76d3a6fce26ee7ef8b8024839556f3c5570ad`
 - Tested Checkpoint 2 integration commit: `48ab92e` on `main`
 - Checkpoint 3 worker launch base: `48ab92ebad2137390f01ef9976ef8a7d1b248da5`
-- Next gate: review and integrate lanes 3A then 3B, wire only the smallest required server seams, and pass the complete Checkpoint 3 code, database, browser, accessibility, safety, and demo-reset gates
+- Tested Checkpoint 3 integration commit: `5534083` on `main`
+- Checkpoint 4 Wave A launch base: `55340833eb0cfc2ed89f7814bae7234ab594aff4`
+- Next gate: launch 4A `high`, 4B `high`, and 4C `xhigh` concurrently; integrate 4C, 4A, then 4B; fix only centrally owned product defects; then launch 4D `xhigh` from the updated tested base
 - Physical iPhone gate: `pending-physical` (does not block automated implementation)
 - Live ElevenLabs gate: `pending-credentials` (text/disabled provider required)
 - Live VitalLens gate: `pending-explicit-opt-in-and-credentials` (fixture adapter required)
@@ -35,14 +37,19 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 | 2          | 2A voice/text              | `packages/voice/**`, `apps/web/src/features/voice/**`                                                                                              | `019f6d9e-969b-7330-a675-e8ce51f58962` | `aae76d3` | `gpt-5.6-sol`/`xhigh` | integrated; text/no-key and provider failure paths passed   | `1e4428e`         |
 | 2          | 2B API/actions/audit       | `packages/actions/**`, `packages/audit/**`, `packages/api-client/**`, `apps/web/src/app/api/**`, `apps/web/src/server/**`                          | `019f6d9e-96a0-7dd3-867e-287eb53ec786` | `aae76d3` | `gpt-5.6-sol`/`xhigh` | integrated; action/API/audit safety suite passed            | `fcab99d`         |
 | 2          | 2C visual system           | `packages/ui/**`, `apps/web/src/app/globals.css`, `apps/web/src/app/styleguide/**`                                                                 | `019f6d9e-9789-71a3-bc30-3c7f1fbfa11f` | `aae76d3` | `gpt-5.6-sol`/`high`  | integrated after stagnation recovery; browser gate passed   | `bd9b85a`         |
-| 3          | 3A patient experience      | `apps/web/src/app/(patient)/**`, `apps/web/src/features/patient/**`, `apps/web/src/features/workflows/**`, `apps/web/src/features/shared-round/**` | `019f6ddb-9db9-7ce1-b44e-4e25ecee4813` | `48ab92e` | `gpt-5.6-sol`/`xhigh` | active from verified clean exact base                       | pending           |
-| 3          | 3B clinician cockpit       | `apps/web/src/app/(clinician)/**`, `apps/web/src/features/clinician/**`                                                                            | `019f6ddb-9de0-7033-9aad-8adc2f37b5ba` | `48ab92e` | `gpt-5.6-sol`/`xhigh` | active from verified clean exact base                       | pending           |
+| 3          | 3A patient experience      | `apps/web/src/app/(patient)/**`, `apps/web/src/features/patient/**`, `apps/web/src/features/workflows/**`, `apps/web/src/features/shared-round/**` | `019f6ddb-9db9-7ce1-b44e-4e25ecee4813` | `48ab92e` | `gpt-5.6-sol`/`xhigh` | integrated; clean allowlisted handoff and browser evidence  | `20b4206`         |
+| 3          | 3B clinician cockpit       | `apps/web/src/app/(clinician)/**`, `apps/web/src/features/clinician/**`                                                                            | `019f6ddb-9de0-7033-9aad-8adc2f37b5ba` | `48ab92e` | `gpt-5.6-sol`/`xhigh` | integrated; clean allowlisted handoff and browser evidence  | `57c29c7`         |
+| 4          | 4A patient E2E             | `tests/e2e/patient/**`, `tests/accessibility/patient/**`, `tests/performance/patient/**`                                                           | pending                                | `5534083` | `gpt-5.6-sol`/`high`  | ready for Wave A launch                                     | pending           |
+| 4          | 4B clinician E2E           | `tests/e2e/clinician/**`, `tests/accessibility/clinician/**`, `tests/performance/clinician/**`                                                     | pending                                | `5534083` | `gpt-5.6-sol`/`high`  | ready for Wave A launch                                     | pending           |
+| 4          | 4C contract/integration    | `tests/unit/**`, `tests/contract/**`, `tests/integration/**`                                                                                       | pending                                | `5534083` | `gpt-5.6-sol`/`xhigh` | ready for Wave A launch                                     | pending           |
+| 4          | 4D operations/security     | `.github/**`, `infra/deploy/**`, `docs/operations/**`, `docs/security/**`                                                                          | pending                                | Wave A    | `gpt-5.6-sol`/`xhigh` | waits for integrated and tested Wave A base                 | pending           |
 
 ## Integration invariants
 
 - At most three worker tasks active.
 - Effective from Checkpoint 2, every isolated task is explicitly launched with `gpt-5.6-sol`; `high` is used for bounded lanes and `xhigh` for complex lanes according to the frozen matrix in the orchestration plan.
-- Checkpoint 3 runs `3A + 3B` concurrently because their file allowlists are exclusive; the orchestrator alone owns `data/demo/**`, `scripts/demo/**`, `apps/web/public/demo/**`, cross-lane server seams, and integration tests. The plan uses the app-local public directory because that is the static asset root Next.js actually serves.
+- Checkpoint 3 ran `3A + 3B` concurrently with exclusive file allowlists; both handed off clean commits and were integrated in order. The orchestrator retained `data/demo/**`, `scripts/demo/**`, `apps/web/public/demo/**`, cross-lane server seams, and integration tests.
+- Checkpoint 4 Wave A uses exactly three concurrent worktrees from `5534083`: 4A and 4B use `high`; the more complex adversarial/transaction lane 4C uses `xhigh`. Wave B 4D uses `xhigh` and launches only after Wave A is integrated and tested.
 - Workers start from the exact tested checkpoint commit.
 - Integration owns root configuration, the lockfile, shared contracts, provider registry/barrels, cross-lane tests, checkpoint commits, pushes, deployments, and release claims.
 - No checkpoint advances on a failing gate. Human-only/live gates are marked pending and cannot be silently relabelled as passing fixture evidence.
@@ -54,6 +61,7 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 - Release provider is not selected. Local PPG is the no-key default; both adapters are implemented and compared later.
 - ElevenLabs is the hosted voice primary. OpenAI Realtime, LiveKit, browser Web Speech, voice biomarkers, respiratory rate, HRV, OCR, wearables, and live EHR integrations remain out of the hackathon path.
 - Neutral action wording: `programme review requested`; any same-day window is visibly `demo-only` until clinical review.
+- A live `pnpm audit` rerun was denied by the runtime because it would send this private repository's dependency graph and private workspace package names to npm. No workaround was attempted. The previously successful Checkpoint 2 audit remains the latest external advisory result; Checkpoint 4 must add a privacy-approved CI/Dependabot or explicitly user-approved audit route before release evidence is claimed current.
 
 ## Checkpoint 0 evidence
 
@@ -104,3 +112,14 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 - Affected audit, persistence, API-client, and web suites pass; the web suite now has 46 tests, including full poor-quality retry/fail/task and one-follow-up paths. Affected lint and repository-wide strict typecheck pass.
 - A clinician-only task-detail and mutation boundary now exposes the persisted evidence chain and supports note, acknowledgement, contact-attempt, and completion operations with strict role checks, optimistic concurrency, deterministic idempotency keys, immutable audit events, and atomic round completion. The in-memory and live PostgreSQL repositories verify duplicate suppression, stale-write refusal, append-only audit behavior, and `awaiting_clinician` to `outcome_ready` completion in one transaction.
 - The shared-base repository remains green at 13 package suites after these seams: 46 web tests, 57 assessment tests, 20 voice tests, and all domain, protocol, persistence, audit, action, UI, and API-client tests pass. The live/provider/physical gates remain pending rather than simulated.
+
+## Checkpoint 3 integrated experience evidence
+
+- Patient lane `4f3a58f2` and clinician lane `458e5932` were reviewed as clean, exclusive allowlist handoffs and integrated as merge commits `20b4206` then `57c29c7`. Both workers used explicit `gpt-5.6-sol`/`xhigh`; no hidden/default model selection was accepted.
+- The integration adds three deterministic launcher stories, no-key text completion, explicit optical permission and quality recovery, exactly one coached retry, no numeric measurement on failed/unsupported capture, explicit labelled recorded-synthetic recovery, and a structured red-flag hard stop.
+- The patient and clinician surfaces use real local APIs. The clinician queue/detail view exposes evidence provenance and raw-media absence, while note, acknowledgement, contact, and completion mutations use optimistic concurrency, stable operation keys, persisted receipts, and audit references.
+- A patient refresh now receives only its scoped persisted task projection. This prevents a completed poor-quality review task from being misrepresented as still waiting while preserving `abstained_for_review` as the terminal measurement-round state.
+- Repository gates pass: Prettier, 13-package ESLint, strict TypeScript, all 13 package suites, 92 web tests, five demo-tooling tests, and the full production build. Six baseline/style-guide Playwright tests pass across Chromium and iPhone-12 WebKit layout, including axe and overflow checks.
+- A separate full browser journey passed against both the in-memory profile and a fresh PostgreSQL 16 profile: text report, unsupported/no-measurement capture, deterministic task, clinician note/acknowledge/contact/complete, patient completion refresh, zero serious/critical axe findings, zero console/page errors, and no overflow at 1440px or 320px.
+- The PostgreSQL migration applied from empty state and all 13 persistence tests passed with the live repository enabled. The final synthetic poor-quality record contains zero measurements, one completed task, 13 audit events, and zero raw-frame/audio/transcript/key-pattern matches in audit payloads.
+- Client-bundle credential-name, source transcript logging, Git whitespace, tracked-ignored-file, and committed-large-file checks pass. Generated Turbo cache archives are ignored and not committed. The in-app Browser remains unavailable because its runtime fails during initialization; Playwright evidence is not labelled as physical Safari/iPhone evidence.

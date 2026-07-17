@@ -235,8 +235,72 @@ export class ReservedAuditEventError extends Error {
   }
 }
 
+const sensitiveAuditPayloadKeys = new Set([
+  "apikey",
+  "authorization",
+  "authorizationheader",
+  "bearertoken",
+  "cookie",
+  "databaseurl",
+  "password",
+  "refreshtoken",
+  "secret",
+  "token",
+  "accesstoken",
+  "conversationtoken",
+  "transcript",
+  "rawframe",
+  "rawframes",
+  "rawaudio",
+  "rawvideo",
+  "rawimage",
+  "rawmedia",
+  "framebytes",
+  "audiobytes",
+  "videobytes",
+  "imagebytes"
+]);
+
+function normalizedPayloadKey(key: string): string {
+  return key.replaceAll(/[^a-zA-Z0-9]/g, "").toLowerCase();
+}
+
+function sensitiveAuditPayloadPath(value: unknown, path: string[] = []): string | null {
+  if (value === null || typeof value !== "object") return null;
+  if (Array.isArray(value)) {
+    for (const [index, entry] of value.entries()) {
+      const match = sensitiveAuditPayloadPath(entry, [...path, String(index)]);
+      if (match) return match;
+    }
+    return null;
+  }
+
+  for (const [key, entry] of Object.entries(value)) {
+    const normalized = normalizedPayloadKey(key);
+    const explicitAbsenceFlag =
+      entry === false && (normalized.endsWith("stored") || normalized.endsWith("included"));
+    if (!explicitAbsenceFlag && sensitiveAuditPayloadKeys.has(normalized)) {
+      return [...path, key].join(".");
+    }
+    const nestedMatch = sensitiveAuditPayloadPath(entry, [...path, key]);
+    if (nestedMatch) return nestedMatch;
+  }
+  return null;
+}
+
+export class SensitiveAuditPayloadError extends Error {
+  readonly code = "sensitive_audit_payload";
+
+  constructor(readonly payloadPath: string) {
+    super(`Audit payload field ${payloadPath} is forbidden at the persistence boundary.`);
+    this.name = "SensitiveAuditPayloadError";
+  }
+}
+
 export function assertStandaloneAuditEvent(event: DomainEvent): void {
   if (TRANSACTIONAL_AUDIT_EVENT_TYPES.has(event.type)) {
     throw new ReservedAuditEventError(event.type);
   }
+  const sensitivePath = sensitiveAuditPayloadPath(event.payload);
+  if (sensitivePath) throw new SensitiveAuditPayloadError(sensitivePath);
 }

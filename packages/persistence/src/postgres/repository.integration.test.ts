@@ -6,7 +6,11 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { describe, expect, it } from "vitest";
 
-import { TaskOptimisticConcurrencyError, type CommitActionInput } from "../models";
+import {
+  SensitiveAuditPayloadError,
+  TaskOptimisticConcurrencyError,
+  type CommitActionInput
+} from "../models";
 import { PostgresHomeRoundsRepository } from "./repository";
 import * as schema from "./schema";
 
@@ -174,6 +178,16 @@ describe("PostgreSQL repository integration", () => {
             "update audit_events set type = 'forbidden_mutation' where event_id = '56e97030-ea84-43e6-9969-9d36a61392dd'"
           )
         ).rejects.toThrow("audit_events are append-only");
+
+        const sensitiveEvent = event(
+          "f6a2d51a-e2ac-40e6-a9c0-b87abdbeb5b7",
+          "synthetic_privacy_probe",
+          "postgres-sensitive-audit"
+        );
+        sensitiveEvent.payload = { nested: { transcript: "forbidden" } };
+        await expect(repository.appendAuditEvent(sensitiveEvent)).rejects.toBeInstanceOf(
+          SensitiveAuditPayloadError
+        );
       } finally {
         await client.unsafe("set search_path to public");
         await client.unsafe(`drop schema if exists ${quotedSchema} cascade`);

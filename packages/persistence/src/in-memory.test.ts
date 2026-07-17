@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { InMemoryHomeRoundsRepository } from "./in-memory";
-import { OptimisticConcurrencyError, type CommitActionInput } from "./models";
+import {
+  OptimisticConcurrencyError,
+  SensitiveAuditPayloadError,
+  type CommitActionInput
+} from "./models";
 
 const roundId = "14df34c4-8204-4810-8113-37b63c963a91";
 const taskId = "d714e580-4a3c-4360-af40-8e9520c44db6";
@@ -341,5 +345,27 @@ describe("in-memory repository reference behavior", () => {
     await expect(repository.appendAuditEvent(roundStateEvent())).rejects.toThrow(
       "transactional repository method"
     );
+  });
+
+  it("rejects sensitive standalone audit payloads while permitting explicit absence flags", async () => {
+    const repository = new InMemoryHomeRoundsRepository<unknown, unknown>();
+    const safeEvent = makeEvent(
+      "56e97030-ea84-43e6-9969-9d36a61392de",
+      "capture_quality_rejected",
+      "synthetic-correlation-safe-audit"
+    );
+    safeEvent.payload = { rawMediaStored: false, quality: { score: 0.1 } };
+    await expect(repository.appendAuditEvent(safeEvent)).resolves.toBeUndefined();
+
+    const sensitiveEvent = makeEvent(
+      "56e97030-ea84-43e6-9969-9d36a61392df",
+      "synthetic_privacy_probe",
+      "synthetic-correlation-sensitive-audit"
+    );
+    sensitiveEvent.payload = { nested: [{ rawFrame: "forbidden" }] };
+    await expect(repository.appendAuditEvent(sensitiveEvent)).rejects.toBeInstanceOf(
+      SensitiveAuditPayloadError
+    );
+    await expect(repository.listAuditEvents(roundId)).resolves.toHaveLength(1);
   });
 });

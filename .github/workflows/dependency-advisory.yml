@@ -1,0 +1,48 @@
+name: Privacy-approved dependency advisory
+
+on:
+  workflow_dispatch:
+    inputs:
+      privacy_approved:
+        description: I approve sending the workspace dependency graph to the npm advisory service.
+        required: true
+        default: false
+        type: boolean
+      approval_reference:
+        description: Approval or change-record reference (do not enter a secret).
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-advisory-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  approval-required:
+    if: ${{ ! inputs.privacy_approved }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Refuse an unapproved dependency-graph disclosure
+        run: |
+          echo "The advisory query was not run because privacy approval was not confirmed."
+          exit 1
+
+  advisory:
+    if: ${{ inputs.privacy_approved }}
+    environment: dependency-advisory-approved
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out the exact revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-home-rounds
+
+      - name: Query npm advisories at the release threshold
+        run: pnpm audit --audit-level high

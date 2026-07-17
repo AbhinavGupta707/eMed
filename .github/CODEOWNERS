@@ -1,0 +1,5 @@
+# Workflow, deployment, and security controls require repository-owner review.
+/.github/ @AbhinavGupta707
+/infra/deploy/ @AbhinavGupta707
+/docs/operations/ @AbhinavGupta707
+/docs/security/ @AbhinavGupta707

@@ -126,6 +126,14 @@ describe("strict adaptive selection", () => {
       { ...selectionDecisionFixture("followup.timing"), urgency: "emergency" },
       "invalid_proposal"
     ],
+    [
+      "cross-module rationale",
+      {
+        ...selectionDecisionFixture("pulse.local"),
+        rationale: "A pulse check and medication label review would both help."
+      },
+      "invalid_proposal"
+    ],
     ["malformed JSON", "{not-json", "invalid_proposal"],
     ["partial JSON", '{"decision":"select"', "invalid_proposal"]
   ])("rejects an %s", async (_name, content, rejectionReason) => {

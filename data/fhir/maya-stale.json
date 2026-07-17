@@ -1,0 +1,31 @@
+{
+  "resourceType": "Bundle",
+  "id": "synthetic-maya-stale-data",
+  "type": "collection",
+  "meta": {
+    "security": [{ "system": "https://homerounds.example/security", "code": "DEMO-SYNTHETIC" }]
+  },
+  "entry": [
+    { "resource": { "resourceType": "Patient", "id": "synthetic-maya" } },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "pulse-stale-demo",
+        "subject": { "reference": "Patient/synthetic-maya" },
+        "status": "final",
+        "code": { "coding": [{ "code": "8867-4", "display": "Heart rate" }] },
+        "effectiveDateTime": "2025-12-01T10:00:00.000Z",
+        "valueQuantity": { "value": 70, "code": "/min" }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Provenance",
+        "id": "provenance-stale-demo",
+        "target": [{ "reference": "Observation/pulse-stale-demo" }],
+        "recorded": "2025-12-01T12:00:00.000Z",
+        "agent": [{ "who": { "reference": "Organization/synthetic-fixture-curator" } }]
+      }
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "resourceType": "Bundle",
+  "id": "synthetic-maya-conflicting-data",
+  "type": "collection",
+  "meta": {
+    "security": [{ "system": "https://homerounds.example/security", "code": "DEMO-SYNTHETIC" }]
+  },
+  "entry": [
+    { "resource": { "resourceType": "Patient", "id": "synthetic-maya" } },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "pulse-conflict-a",
+        "subject": { "reference": "Patient/synthetic-maya" },
+        "status": "final",
+        "code": { "coding": [{ "code": "8867-4", "display": "Heart rate" }] },
+        "effectiveDateTime": "2026-07-16T10:00:00.000Z",
+        "valueQuantity": { "value": 72, "code": "/min" }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "pulse-conflict-b",
+        "subject": { "reference": "Patient/synthetic-maya" },
+        "status": "final",
+        "code": { "coding": [{ "code": "8867-4", "display": "Heart rate" }] },
+        "effectiveDateTime": "2026-07-16T10:00:00.000Z",
+        "valueQuantity": { "value": 96, "code": "/min" }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Provenance",
+        "id": "provenance-conflicting-demo",
+        "target": [
+          { "reference": "Observation/pulse-conflict-a" },
+          { "reference": "Observation/pulse-conflict-b" }
+        ],
+        "recorded": "2026-07-16T12:00:00.000Z",
+        "agent": [{ "who": { "reference": "Organization/synthetic-fixture-curator" } }]
+      }
+    }
+  ]
+}

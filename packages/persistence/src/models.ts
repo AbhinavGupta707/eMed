@@ -4,7 +4,8 @@ import {
   MeasurementFactSchema,
   RoundStateSchema,
   type ClinicalTask,
-  type DomainEvent
+  type DomainEvent,
+  type Round
 } from "@homerounds/contracts";
 import { z } from "zod";
 
@@ -127,6 +128,23 @@ export type CommitActionResult = {
   auditEvent: DomainEvent;
 };
 
+export type ClinicianMutationCommitInput = {
+  task: ClinicalTask;
+  expectedTaskUpdatedAt: string;
+  event: DomainEvent;
+  roundUpdate?: {
+    round: Round;
+    expectedStateVersion: number;
+    event: RoundStateChangedEvent;
+  };
+};
+
+export type ClinicianMutationCommitResult = {
+  created: boolean;
+  task: ClinicalTask;
+  event: DomainEvent;
+};
+
 export const RoundStateChangedEventSchema = DomainEventSchema.extend({
   type: z.literal("round_state_changed"),
   payload: z.object({
@@ -177,6 +195,18 @@ export class OptimisticConcurrencyError extends Error {
   ) {
     super(`Round ${roundId} is no longer at state version ${expectedVersion}.`);
     this.name = "OptimisticConcurrencyError";
+  }
+}
+
+export class TaskOptimisticConcurrencyError extends Error {
+  readonly code = "task_optimistic_concurrency";
+
+  constructor(
+    readonly taskId: string,
+    readonly expectedUpdatedAt: string
+  ) {
+    super(`Task ${taskId} is no longer at updatedAt ${expectedUpdatedAt}.`);
+    this.name = "TaskOptimisticConcurrencyError";
   }
 }
 

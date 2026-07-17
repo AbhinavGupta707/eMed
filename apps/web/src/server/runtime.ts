@@ -26,6 +26,7 @@ import {
 } from "./providers";
 import { InMemoryRateLimiter } from "./rate-limit";
 import { SnapshotService } from "./snapshots";
+import { ClinicianService } from "./clinician";
 
 type PersistedFact = unknown;
 
@@ -40,6 +41,7 @@ export type ServerRuntime = {
   snapshots: SnapshotService<PersistedFact>;
   elevenLabs: ElevenLabsCredentialService;
   vitalLens: VitalLensProxyService;
+  clinician: ClinicianService<ClinicalSnapshot, PersistedFact>;
 };
 
 export type ServerRuntimeOverrides = {
@@ -146,7 +148,8 @@ export function createServerRuntime(overrides: ServerRuntimeOverrides = {}): Ser
       },
       new FetchVitalLensInferenceTransport(),
       now
-    )
+    ),
+    clinician: new ClinicianService({ repository: selectedRepository.repository, now })
   };
 }
 

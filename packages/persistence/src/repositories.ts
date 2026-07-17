@@ -5,6 +5,8 @@ import type {
   ActionAttempt,
   ClinicalFactRecord,
   ClinicalSnapshotRecord,
+  ClinicianMutationCommitInput,
+  ClinicianMutationCommitResult,
   CommitActionInput,
   CommitActionResult,
   MeasurementFactRecord,
@@ -45,8 +47,15 @@ export type ClinicalSnapshotRepository<TSnapshot, TFact> = {
 };
 
 export type ClinicalTaskRepository = {
+  getTask(taskId: string): Promise<ClinicalTask | null>;
   getTaskByIdempotencyKey(idempotencyKey: string): Promise<ClinicalTask | null>;
   listTasksForRound(roundId: string): Promise<ClinicalTask[]>;
+};
+
+export type ClinicianMutationUnitOfWork = {
+  commitClinicianMutation(
+    input: ClinicianMutationCommitInput
+  ): Promise<ClinicianMutationCommitResult>;
 };
 
 export type ActionAttemptRepository = {
@@ -69,4 +78,5 @@ export type HomeRoundsRepository<TSnapshot, TFact> = RoundRepository &
   ClinicalTaskRepository &
   ActionAttemptRepository &
   AuditEventRepository &
-  ActionUnitOfWork;
+  ActionUnitOfWork &
+  ClinicianMutationUnitOfWork;

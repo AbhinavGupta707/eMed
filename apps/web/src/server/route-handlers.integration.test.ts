@@ -1,6 +1,8 @@
 import {
   ApiSuccessEnvelopeSchema,
   AssessmentSessionDataSchema,
+  ClinicianMutationReceiptSchema,
+  ClinicianTaskDetailDataSchema,
   CreateRoundDataSchema,
   ElevenLabsCredentialDataSchema,
   ExecuteActionDataSchema,
@@ -16,6 +18,8 @@ import { z } from "zod";
 
 import { parseServerEnvironment } from "../env";
 import {
+  handleClinicianTaskDetail,
+  handleClinicianTaskMutation,
   handleCreateRound,
   handleElevenLabsCredential,
   handleExecuteAction,
@@ -254,6 +258,124 @@ describe("repository-backed server API orchestration", () => {
     expect(queue.tasks[0]?.id).toBe(firstAction.task.id);
     expect(queue.scope).toBe("requested_rounds");
 
+    const detailRequest = new Request(
+      `http://localhost:3000/api/clinician/tasks/${firstAction.task.id}`,
+      { headers: { "x-homerounds-demo-role": "clinician" } }
+    );
+    const initialDetail = await success(
+      await handleClinicianTaskDetail(detailRequest, runtime, firstAction.task.id),
+      ClinicianTaskDetailDataSchema
+    );
+    expect(initialDetail).toMatchObject({
+      report: { weakness: "absent" },
+      measurement: { value: 72, quality: { status: "pass" } },
+      protocolResult: { outcome: "programme_review_requested" },
+      note: null,
+      capabilities: { note: true, acknowledge: true, contact: true, complete: true }
+    });
+    expect(initialDetail.timeline.length).toBeGreaterThan(0);
+
+    const noteBody = {
+      kind: "save_note",
+      expectedTaskUpdatedAt: firstAction.task.updatedAt,
+      operationKey: `clinician:${firstAction.task.id}:save-note:0001`,
+      note: "Synthetic demo note: reviewed the structured evidence."
+    };
+    const note = await success(
+      await handleClinicianTaskMutation(
+        apiRequest(
+          `/api/clinician/tasks/${firstAction.task.id}`,
+          noteBody,
+          "correlation-clinician-note",
+          "clinician"
+        ),
+        runtime,
+        firstAction.task.id
+      ),
+      ClinicianMutationReceiptSchema
+    );
+    expect(note).toMatchObject({
+      status: "persisted",
+      kind: "save_note",
+      duplicateSuppressed: false,
+      note: { text: noteBody.note, version: 1 }
+    });
+    const duplicateNote = await success(
+      await handleClinicianTaskMutation(
+        apiRequest(
+          `/api/clinician/tasks/${firstAction.task.id}`,
+          noteBody,
+          "correlation-clinician-note-retry",
+          "clinician"
+        ),
+        runtime,
+        firstAction.task.id
+      ),
+      ClinicianMutationReceiptSchema
+    );
+    expect(duplicateNote.duplicateSuppressed).toBe(true);
+
+    const acknowledged = await success(
+      await handleClinicianTaskMutation(
+        apiRequest(
+          `/api/clinician/tasks/${firstAction.task.id}`,
+          {
+            kind: "acknowledge",
+            expectedTaskUpdatedAt: note.task.updatedAt,
+            operationKey: `clinician:${firstAction.task.id}:acknowledge:0001`,
+            note: null
+          },
+          "correlation-clinician-ack",
+          "clinician"
+        ),
+        runtime,
+        firstAction.task.id
+      ),
+      ClinicianMutationReceiptSchema
+    );
+    expect(acknowledged.task.status).toBe("acknowledged");
+
+    const contacted = await success(
+      await handleClinicianTaskMutation(
+        apiRequest(
+          `/api/clinician/tasks/${firstAction.task.id}`,
+          {
+            kind: "record_contact",
+            expectedTaskUpdatedAt: acknowledged.task.updatedAt,
+            operationKey: `clinician:${firstAction.task.id}:contact:0001`,
+            note: null
+          },
+          "correlation-clinician-contact",
+          "clinician"
+        ),
+        runtime,
+        firstAction.task.id
+      ),
+      ClinicianMutationReceiptSchema
+    );
+    expect(contacted.task.status).toBe("acknowledged");
+
+    const completed = await success(
+      await handleClinicianTaskMutation(
+        apiRequest(
+          `/api/clinician/tasks/${firstAction.task.id}`,
+          {
+            kind: "complete",
+            expectedTaskUpdatedAt: contacted.task.updatedAt,
+            operationKey: `clinician:${firstAction.task.id}:complete:0001`,
+            note: null
+          },
+          "correlation-clinician-complete",
+          "clinician"
+        ),
+        runtime,
+        firstAction.task.id
+      ),
+      ClinicianMutationReceiptSchema
+    );
+    expect(completed.task.status).toBe("completed");
+    expect((await runtime.orchestration.getRound(roundId)).state).toBe("outcome_ready");
+
     const attempts = await runtime.repository.listActionAttempts(firstAction.task.idempotencyKey);
     expect(attempts.map(({ outcome }) => outcome)).toEqual(["created", "duplicate"]);
     const events = await runtime.repository.listAuditEvents(roundId);
@@ -269,7 +391,23 @@ describe("repository-backed server API orchestration", () => {
     expect(JSON.stringify(events)).not.toMatch(
       /transcript|rawFrames|apiKey|authorizationHeader|Bearer/i
     );
-    expect((await runtime.orchestration.getRound(roundId)).state).toBe("awaiting_clinician");
+    const finalDetail = await success(
+      await handleClinicianTaskDetail(detailRequest, runtime, firstAction.task.id),
+      ClinicianTaskDetailDataSchema
+    );
+    expect(finalDetail).toMatchObject({
+      task: { status: "completed" },
+      round: { state: "outcome_ready" },
+      note: { version: 1, text: noteBody.note }
+    });
+    expect(finalDetail.timeline.map(({ type }) => type)).toEqual(
+      expect.arrayContaining([
+        "clinician_save_note",
+        "clinician_acknowledge",
+        "clinician_record_contact",
+        "clinician_complete"
+      ])
+    );
   });
 
   it("returns typed no-key voice unavailability through the authenticated route", async () => {

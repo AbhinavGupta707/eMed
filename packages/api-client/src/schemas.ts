@@ -1,6 +1,7 @@
 import {
   CaptureQualitySchema,
   ClinicalTaskSchema,
+  DomainEventSchema,
   MeasurementFactSchema,
   PatientReportSchema,
   ProtocolResultSchema,
@@ -241,6 +242,82 @@ export const QueueDataSchema = z
   })
   .strict();
 
+export const ClinicianNoteSchema = z
+  .object({
+    text: z.string().trim().max(2_000),
+    version: z.number().int().positive(),
+    updatedAt: z.iso.datetime(),
+    actorId: z.string().min(1).max(120),
+    auditReference: z.uuid()
+  })
+  .strict();
+
+export const ClinicianTaskDetailDataSchema = z
+  .object({
+    task: ClinicalTaskSchema.strict(),
+    round: RoundSchema.strict(),
+    report: StrictPatientReportSchema.nullable(),
+    measurement: MeasurementFactSchema.strict().nullable(),
+    captureQuality: CaptureQualitySchema.strict().nullable(),
+    protocolResult: ProtocolResultSchema.strict().nullable(),
+    timeline: z.array(DomainEventSchema.strict()).max(500),
+    note: ClinicianNoteSchema.nullable(),
+    capabilities: z
+      .object({
+        note: z.literal(true),
+        acknowledge: z.literal(true),
+        contact: z.literal(true),
+        complete: z.literal(true)
+      })
+      .strict()
+  })
+  .strict();
+
+export const ClinicianMutationKindSchema = z.enum([
+  "save_note",
+  "acknowledge",
+  "record_contact",
+  "complete"
+]);
+
+export const ClinicianMutationRequestSchema = z
+  .object({
+    kind: ClinicianMutationKindSchema,
+    expectedTaskUpdatedAt: z.iso.datetime(),
+    operationKey: z.string().min(16).max(200),
+    note: z.string().trim().max(2_000).nullable()
+  })
+  .strict()
+  .superRefine((input, context) => {
+    if (input.kind === "save_note" && input.note === null) {
+      context.addIssue({
+        code: "custom",
+        path: ["note"],
+        message: "save_note requires note content"
+      });
+    }
+    if (input.kind !== "save_note" && input.note !== null) {
+      context.addIssue({
+        code: "custom",
+        path: ["note"],
+        message: "only save_note accepts note content"
+      });
+    }
+  });
+
+export const ClinicianMutationReceiptSchema = z
+  .object({
+    status: z.literal("persisted"),
+    kind: ClinicianMutationKindSchema,
+    task: ClinicalTaskSchema.strict(),
+    event: DomainEventSchema.strict(),
+    persistedAt: z.iso.datetime(),
+    operationKey: z.string().min(16).max(200),
+    duplicateSuppressed: z.boolean(),
+    note: ClinicianNoteSchema.nullable()
+  })
+  .strict();
+
 export const ElevenLabsCredentialDataSchema = z.discriminatedUnion("status", [
   z
     .object({
@@ -267,3 +344,4 @@ export type SubmitAssessmentRequest = z.infer<typeof SubmitAssessmentRequestSche
 export type SubmitCaptureQualityRequest = z.infer<typeof SubmitCaptureQualityRequestSchema>;
 export type SubmitFollowUpRequest = z.infer<typeof SubmitFollowUpRequestSchema>;
 export type ExecuteActionRequest = z.infer<typeof ExecuteActionRequestSchema>;
+export type ClinicianMutationRequest = z.infer<typeof ClinicianMutationRequestSchema>;

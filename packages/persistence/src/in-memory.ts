@@ -12,12 +12,15 @@ import {
   ActionAttemptSchema,
   ClinicalFactRecordSchema,
   ClinicalSnapshotRecordSchema,
+  ClinicianMutationCommitInput,
+  ClinicianMutationCommitResult,
   CommitActionInputSchema,
   DuplicateRecordError,
   MeasurementFactRecordSchema,
   OptimisticConcurrencyError,
   RecordFailedActionInputSchema,
   RoundStateChangedEventSchema,
+  TaskOptimisticConcurrencyError,
   assertStandaloneAuditEvent,
   type ActionAttempt,
   type ClinicalFactRecord,
@@ -171,6 +174,11 @@ export class InMemoryHomeRoundsRepository<TSnapshot, TFact> implements HomeRound
     return task ? structuredClone(task) : null;
   }
 
+  async getTask(taskId: string): Promise<ClinicalTask | null> {
+    const task = this.tasks.get(taskId);
+    return task ? structuredClone(task) : null;
+  }
+
   async listTasksForRound(roundId: string): Promise<ClinicalTask[]> {
     return [...this.tasks.values()]
       .filter((task) => task.roundId === roundId)
@@ -278,5 +286,55 @@ export class InMemoryHomeRoundsRepository<TSnapshot, TFact> implements HomeRound
       this.auditEvents = snapshot.auditEvents;
       throw error;
     }
+  }
+
+  async commitClinicianMutation(
+    input: ClinicianMutationCommitInput
+  ): Promise<ClinicianMutationCommitResult> {
+    const task = ClinicalTaskSchema.parse(input.task);
+    const event = DomainEventSchema.parse(input.event);
+    assertStandaloneAuditEvent(event);
+    if (event.roundId !== task.roundId || event.patientId !== task.patientId) {
+      throw new Error("Clinician mutation event does not match the task.");
+    }
+    const existingEvent = this.auditEvents.get(event.eventId);
+    if (existingEvent) {
+      const existingTask = this.tasks.get(task.id);
+      if (!existingTask) throw new Error("Idempotent clinician mutation task is missing.");
+      return {
+        created: false,
+        task: structuredClone(existingTask),
+        event: structuredClone(existingEvent)
+      };
+    }
+    const currentTask = this.tasks.get(task.id);
+    if (!currentTask || currentTask.updatedAt !== input.expectedTaskUpdatedAt) {
+      throw new TaskOptimisticConcurrencyError(task.id, input.expectedTaskUpdatedAt);
+    }
+
+    const roundUpdate = input.roundUpdate;
+    if (roundUpdate) {
+      const round = RoundSchema.parse(roundUpdate.round);
+      const roundEvent = RoundStateChangedEventSchema.parse(roundUpdate.event);
+      const currentRound = this.rounds.get(round.id);
+      if (
+        !currentRound ||
+        currentRound.stateVersion !== roundUpdate.expectedStateVersion ||
+        round.stateVersion !== roundUpdate.expectedStateVersion + 1 ||
+        roundEvent.roundId !== round.id ||
+        roundEvent.patientId !== round.patientId
+      ) {
+        throw new OptimisticConcurrencyError(round.id, roundUpdate.expectedStateVersion);
+      }
+      if (this.auditEvents.has(roundEvent.eventId)) {
+        throw new DuplicateRecordError(roundEvent.eventId);
+      }
+      this.rounds.set(round.id, structuredClone(round));
+      this.auditEvents.set(roundEvent.eventId, structuredClone(roundEvent));
+    }
+
+    this.tasks.set(task.id, structuredClone(task));
+    this.auditEvents.set(event.eventId, structuredClone(event));
+    return { created: true, task: structuredClone(task), event: structuredClone(event) };
   }
 }

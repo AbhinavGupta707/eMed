@@ -1,5 +1,8 @@
 import {
   AssessmentSessionDataSchema,
+  ClinicianMutationReceiptSchema,
+  ClinicianMutationRequestSchema,
+  ClinicianTaskDetailDataSchema,
   CreateRoundDataSchema,
   CreateRoundRequestSchema,
   ElevenLabsCredentialDataSchema,
@@ -28,6 +31,7 @@ import { ProtocolResultSchema } from "@homerounds/contracts";
 import { z } from "zod";
 
 import { ApiFault } from "./errors";
+import { ClinicianServiceError } from "./clinician";
 import { emptyInputReader, jsonBodyReader, serveApiRoute } from "./http";
 import { OrchestrationError } from "./orchestration";
 import type { VitalLensProxyServiceInput } from "./providers";
@@ -35,6 +39,7 @@ import type { ServerRuntime } from "./runtime";
 
 const roundIdSchema = z.uuid();
 const patientIdSchema = z.string().min(1).max(120);
+const taskIdSchema = z.uuid();
 
 async function serviceCall<T>(operation: () => Promise<T>): Promise<T> {
   try {
@@ -74,6 +79,17 @@ async function serviceCall<T>(operation: () => Promise<T>): Promise<T> {
         case "repository_commit_failed":
         case "failure_audit_failed":
           throw new ApiFault(503, "unavailable", "api.error.action_temporarily_unavailable");
+      }
+    }
+    if (error instanceof ClinicianServiceError) {
+      switch (error.code) {
+        case "task_not_found":
+        case "round_not_found":
+          throw new ApiFault(404, "not_found", `api.error.${error.code}`);
+        case "stale":
+          throw new ApiFault(409, "stale_state", "api.error.clinician_task_stale");
+        case "conflict":
+          throw new ApiFault(409, "conflict", "api.error.clinician_task_conflict");
       }
     }
     throw error;
@@ -474,6 +490,49 @@ export function handleQueue(request: Request, runtime: ServerRuntime): Promise<R
       const roundIds = new URL(context.request.url).searchParams.getAll("roundId");
       return serviceCall(() => runtime.orchestration.listQueue(roundIds));
     }
+  });
+}
+
+export function handleClinicianTaskDetail(
+  request: Request,
+  runtime: ServerRuntime,
+  taskIdInput: string
+): Promise<Response> {
+  return serveApiRoute(request, runtime.hooks, {
+    method: "GET",
+    roles: ["clinician"],
+    mutation: false,
+    rateLimit: { bucket: "clinician-task-detail", limit: 120, windowMs: 60_000 },
+    readInput: emptyInputReader,
+    outputSchema: ClinicianTaskDetailDataSchema,
+    handle: () => serviceCall(() => runtime.clinician.detail(taskIdSchema.parse(taskIdInput)))
+  });
+}
+
+export function handleClinicianTaskMutation(
+  request: Request,
+  runtime: ServerRuntime,
+  taskIdInput: string
+): Promise<Response> {
+  return serveApiRoute<
+    z.infer<typeof ClinicianMutationRequestSchema>,
+    z.infer<typeof ClinicianMutationReceiptSchema>
+  >(request, runtime.hooks, {
+    method: "POST",
+    roles: ["clinician"],
+    mutation: true,
+    rateLimit: { bucket: "clinician-task-mutation", limit: 60, windowMs: 60_000 },
+    readInput: jsonBodyReader(ClinicianMutationRequestSchema, 16_000),
+    outputSchema: ClinicianMutationReceiptSchema,
+    handle: (context, input) =>
+      serviceCall(() =>
+        runtime.clinician.mutate({
+          ...input,
+          taskId: taskIdSchema.parse(taskIdInput),
+          actorId: context.session.sessionId,
+          correlationId: context.correlationId
+        })
+      )
   });
 }
 

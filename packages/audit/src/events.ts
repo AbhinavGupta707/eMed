@@ -41,6 +41,9 @@ const SafeActionPayloadSchema = z
     matchedRuleIds: z.array(z.string().min(1).max(120)).max(64),
     factIds: z.array(z.string().min(1).max(160)).max(64),
     outcome: ProtocolResultSchema.shape.outcome,
+    allowedActions: ProtocolResultSchema.shape.allowedActions,
+    missingFactKeys: ProtocolResultSchema.shape.missingFactKeys,
+    explanationKey: ProtocolResultSchema.shape.explanationKey,
     messageTemplateId: z.string().min(1).max(120)
   })
   .strict();
@@ -121,6 +124,20 @@ export const FollowUpAnsweredPayloadSchema = z
   })
   .strict();
 
+export const ClinicianMutationPayloadSchema = z
+  .object({
+    kind: z.enum(["save_note", "acknowledge", "record_contact", "complete"]),
+    taskId: z.uuid(),
+    operationKey: z.string().min(16).max(200),
+    beforeStatus: z.enum(["open", "acknowledged", "completed"]),
+    afterStatus: z.enum(["open", "acknowledged", "completed"]),
+    noteText: z.string().trim().max(2_000).nullable(),
+    noteVersion: z.number().int().positive().nullable(),
+    previousNoteVersion: z.number().int().nonnegative().nullable(),
+    syntheticDataOnly: z.literal(true)
+  })
+  .strict();
+
 export const RoundStateChangedAuditEventSchema = DomainEventSchema.extend({
   type: z.literal("round_state_changed"),
   payload: z
@@ -172,6 +189,9 @@ function safeActionPayload(input: ActionEventInput): z.infer<typeof SafeActionPa
     matchedRuleIds: [...protocolResult.matchedRuleIds].sort(),
     factIds: [...protocolResult.factIds].sort(),
     outcome: protocolResult.outcome,
+    allowedActions: [...protocolResult.allowedActions],
+    missingFactKeys: [...protocolResult.missingFactKeys],
+    explanationKey: protocolResult.explanationKey,
     messageTemplateId: input.messageTemplateId
   });
 }
@@ -236,6 +256,9 @@ export function createEmergencyGuidancePresentedEvent(
       matchedRuleIds: [...protocolResult.matchedRuleIds].sort(),
       factIds: [...protocolResult.factIds].sort(),
       outcome: protocolResult.outcome,
+      allowedActions: [...protocolResult.allowedActions],
+      missingFactKeys: [...protocolResult.missingFactKeys],
+      explanationKey: protocolResult.explanationKey,
       messageTemplateId: input.messageTemplateId,
       confirmationRecorded: true,
       authorizationScope: "emergency_guidance:present"
@@ -303,6 +326,26 @@ export function createFollowUpAnsweredEvent(
       questionId: input.questionId,
       answer: input.answer,
       answeredAt: input.answeredAt
+    })
+  );
+}
+
+export function createClinicianMutationEvent(
+  input: EventBaseInput & z.infer<typeof ClinicianMutationPayloadSchema>
+): DomainEvent {
+  return event(
+    input,
+    `clinician_${input.kind}`,
+    ClinicianMutationPayloadSchema.parse({
+      kind: input.kind,
+      taskId: input.taskId,
+      operationKey: input.operationKey,
+      beforeStatus: input.beforeStatus,
+      afterStatus: input.afterStatus,
+      noteText: input.noteText,
+      noteVersion: input.noteVersion,
+      previousNoteVersion: input.previousNoteVersion,
+      syntheticDataOnly: input.syntheticDataOnly
     })
   );
 }

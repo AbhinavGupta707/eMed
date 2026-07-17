@@ -4,6 +4,9 @@ import {
   ApiErrorEnvelopeSchema,
   ApiSuccessEnvelopeSchema,
   AssessmentSessionDataSchema,
+  ClinicianMutationReceiptSchema,
+  ClinicianMutationRequestSchema,
+  ClinicianTaskDetailDataSchema,
   CreateRoundDataSchema,
   CreateRoundRequestSchema,
   ElevenLabsCredentialDataSchema,
@@ -22,6 +25,7 @@ import {
   SubmitReportRequestSchema,
   TransitionRoundRequestSchema,
   type CreateRoundRequest,
+  type ClinicianMutationRequest,
   type ExecuteActionRequest,
   type StartAssessmentRequest,
   type SubmitAssessmentRequest,
@@ -151,6 +155,24 @@ export class HomeRoundsApiClient {
     const parsedIds = z.array(z.uuid()).min(1).max(50).parse(roundIds);
     const query = new URLSearchParams(parsedIds.map((roundId) => ["roundId", roundId]));
     return this.#json(`/api/clinician/queue?${query}`, "GET", undefined, QueueDataSchema);
+  }
+
+  getClinicianTask(taskId: string) {
+    return this.#json(
+      `/api/clinician/tasks/${z.uuid().parse(taskId)}`,
+      "GET",
+      undefined,
+      ClinicianTaskDetailDataSchema
+    );
+  }
+
+  mutateClinicianTask(taskId: string, input: ClinicianMutationRequest) {
+    return this.#json(
+      `/api/clinician/tasks/${z.uuid().parse(taskId)}`,
+      "POST",
+      ClinicianMutationRequestSchema.parse(input),
+      ClinicianMutationReceiptSchema
+    );
   }
 
   issueElevenLabsCredential() {

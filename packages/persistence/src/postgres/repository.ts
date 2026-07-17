@@ -16,11 +16,14 @@ import {
   ActionAttemptSchema,
   ClinicalFactRecordSchema,
   ClinicalSnapshotRecordSchema,
+  type ClinicianMutationCommitInput,
+  type ClinicianMutationCommitResult,
   CommitActionInputSchema,
   MeasurementFactRecordSchema,
   OptimisticConcurrencyError,
   RecordFailedActionInputSchema,
   RoundStateChangedEventSchema,
+  TaskOptimisticConcurrencyError,
   assertStandaloneAuditEvent,
   type ActionAttempt,
   type ClinicalFactRecord,
@@ -321,6 +324,15 @@ export class PostgresHomeRoundsRepository<TSnapshot, TFact> implements HomeRound
     return row ? parseTaskRow(row) : null;
   }
 
+  async getTask(taskId: string): Promise<ClinicalTask | null> {
+    const [row] = await this.database
+      .select()
+      .from(clinicalTasks)
+      .where(eq(clinicalTasks.id, taskId))
+      .limit(1);
+    return row ? parseTaskRow(row) : null;
+  }
+
   async listTasksForRound(roundId: string): Promise<ClinicalTask[]> {
     const rows = await this.database
       .select()
@@ -459,6 +471,89 @@ export class PostgresHomeRoundsRepository<TSnapshot, TFact> implements HomeRound
       });
       await transaction.insert(auditEvents).values(auditValues(input.failureEvent));
       return attempt;
+    });
+  }
+
+  async commitClinicianMutation(
+    input: ClinicianMutationCommitInput
+  ): Promise<ClinicianMutationCommitResult> {
+    const task = ClinicalTaskSchema.parse(input.task);
+    const event = DomainEventSchema.parse(input.event);
+    assertStandaloneAuditEvent(event);
+    if (event.roundId !== task.roundId || event.patientId !== task.patientId) {
+      throw new Error("Clinician mutation event does not match the task.");
+    }
+    const roundUpdate = input.roundUpdate
+      ? {
+          round: RoundSchema.parse(input.roundUpdate.round),
+          expectedStateVersion: input.roundUpdate.expectedStateVersion,
+          event: RoundStateChangedEventSchema.parse(input.roundUpdate.event)
+        }
+      : undefined;
+
+    return this.database.transaction(async (transaction) => {
+      const [existingEventRow] = await transaction
+        .select()
+        .from(auditEvents)
+        .where(eq(auditEvents.eventId, event.eventId))
+        .limit(1);
+      if (existingEventRow) {
+        const [existingTaskRow] = await transaction
+          .select()
+          .from(clinicalTasks)
+          .where(eq(clinicalTasks.id, task.id))
+          .limit(1);
+        if (!existingTaskRow) throw new Error("Idempotent clinician mutation task is missing.");
+        return {
+          created: false,
+          task: parseTaskRow(existingTaskRow),
+          event: parseAuditRow(existingEventRow)
+        };
+      }
+
+      const [updatedTask] = await transaction
+        .update(clinicalTasks)
+        .set({ status: task.status, updatedAt: task.updatedAt })
+        .where(
+          and(
+            eq(clinicalTasks.id, task.id),
+            eq(clinicalTasks.updatedAt, input.expectedTaskUpdatedAt)
+          )
+        )
+        .returning();
+      if (!updatedTask) {
+        throw new TaskOptimisticConcurrencyError(task.id, input.expectedTaskUpdatedAt);
+      }
+
+      if (roundUpdate) {
+        const [updatedRound] = await transaction
+          .update(rounds)
+          .set({
+            state: roundUpdate.round.state,
+            stateVersion: roundUpdate.round.stateVersion,
+            burdenSecondsRemaining: roundUpdate.round.burdenSecondsRemaining,
+            updatedAt: roundUpdate.round.updatedAt,
+            closedAt: roundUpdate.round.closedAt
+          })
+          .where(
+            and(
+              eq(rounds.id, roundUpdate.round.id),
+              eq(rounds.stateVersion, roundUpdate.expectedStateVersion),
+              eq(rounds.state, roundUpdate.event.payload.before)
+            )
+          )
+          .returning({ id: rounds.id });
+        if (!updatedRound) {
+          throw new OptimisticConcurrencyError(
+            roundUpdate.round.id,
+            roundUpdate.expectedStateVersion
+          );
+        }
+        await transaction.insert(auditEvents).values(auditValues(roundUpdate.event));
+      }
+
+      await transaction.insert(auditEvents).values(auditValues(event));
+      return { created: true, task: parseTaskRow(updatedTask), event };
     });
   }
 }

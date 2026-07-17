@@ -1,17 +1,17 @@
 # HomeRounds orchestration state
 
-Updated: 17 July 2026 16:19 BST  
+Updated: 17 July 2026 16:22 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
 Goal: Checkpoint 7 pre-flight and launch preparation for live AI-native synthetic-demo inference  
 Integration branch: `main`
 Release-candidate tag: `homerounds-v0.1.0-demo-rc1` on this final ledger commit
-Heartbeat: `homerounds-orchestration-heartbeat`, deactivated after Checkpoint 6; reactivate only when Checkpoint 7 workers launch
+Heartbeat: `homerounds-checkpoint-7-orchestration-heartbeat`, active every 20 minutes on this master task
 Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stopped after final push
 
 ## Current checkpoint
 
 - Checkpoint: 7 — AI-native live inference and external validation, pre-launch
-- Status: Checkpoints 0–6 remain integrated and verified for the bounded local/no-key candidate; Checkpoint 7 pre-flight and integration-owned shared-base freeze pass; Wave A launch is authorized
+- Status: Checkpoints 0–6 remain integrated and verified for the bounded local/no-key candidate; Checkpoint 7 pre-flight and integration-owned shared-base freeze pass; all three Wave A workers are active
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
 - Rehearsed application/package candidate: `99acb5b` before Checkpoint 6 evidence-led documentation updates
@@ -25,7 +25,8 @@ Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stop
 - Tested Checkpoint 4 integration commit: `c46f3f1` on `main`
 - Checkpoint 5 launch base: `8589723e511b65dc849ef36234e7f462966e14a5`
 - Checkpoint 7 tested shared-content base: `231941191ac30c75cdf41253d686da192e0b0ceb`
-- Next gate: launch Wave A lanes 7A/7B/7C from the state-ledger commit, record their task IDs/worktree paths, and activate the task heartbeat
+- Checkpoint 7 Wave A worker launch base: `5410cdb5f557f471244d093f2060e4e23248a605`
+- Next gate: inspect and integrate clean Wave A handoffs in order 7A, 7B, 7C, with narrow checks after each and the full Wave A gate before Wave B
 - Physical iPhone gate: `pending-physical` (does not block automated implementation)
 - Live ElevenLabs gate: `token-preflight-pass-audio-pending` (dedicated private/authenticated zero-retention agent and signed WebRTC token verified; real microphone/transcript/edit-confirm run still pending)
 - Live VitalLens gate: `pending-explicit-opt-in-and-credentials` (fixture adapter required)
@@ -52,6 +53,9 @@ Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stop
 | 4          | 4D operations/security     | `.github/**`, `infra/deploy/**`, `docs/operations/**`, `docs/security/**`                                                                          | `019f6e4c-0272-7342-a18b-2c9caa9d6dbc` | `a2f5482` | `gpt-5.6-sol`/`xhigh` | integrated; central hosted controls reconciled; all gates pass    | `6cf0d7c`         |
 | 5          | 5A submission/claim audit  | `docs/submission/**`                                                                                                                               | `019f6e6f-5e60-7f72-ad87-6b747ff3b469` | `8589723` | `gpt-5.6-sol`/`high`  | integrated; worker `03ba86f`, claims and links reviewed           | `9f2c485`         |
 | 5          | 5B QA/recovery evidence    | `docs/qa/**`, `public/demo-backup/**`                                                                                                              | `019f6e6f-5e60-7f72-ad87-6b95e89e8e58` | `8589723` | `gpt-5.6-sol`/`high`  | integrated; worker `ef8184d`, 33 requirements/17 scenarios mapped | `99acb5b`         |
+| 7          | 7A inference foundation    | `packages/inference/src/**`, `packages/inference/README.md`                                                                                        | `019f70b1-897b-7972-bba8-df86a9c79c1f` | `5410cdb` | `gpt-5.6-sol`/`xhigh` | active in `/Users/abhinavgupta/.codex/worktrees/ce7c/eMed`        | pending           |
+| 7          | 7B medication multimodal   | `packages/assessments/providers/medication-label/**`, `apps/web/src/features/medication/**`                                                        | `019f70b1-8b15-7f13-bb07-338d56f236d1` | `5410cdb` | `gpt-5.6-sol`/`xhigh` | active in `/Users/abhinavgupta/.codex/worktrees/3069/eMed`        | pending           |
+| 7          | 7C adaptive patient UX     | `apps/web/src/features/round-map/**`, `apps/web/src/features/patient/**`                                                                           | `019f70b1-897c-7252-b579-0139e4dad224` | `5410cdb` | `gpt-5.6-sol`/`high`  | active in `/Users/abhinavgupta/.codex/worktrees/a888/eMed`        | pending           |
 
 ## Integration invariants
 

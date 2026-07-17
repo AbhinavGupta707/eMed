@@ -11,15 +11,16 @@ import {
 import { z } from "zod";
 
 import { inferenceFailure } from "./failures";
+import { toFireworksCompatibleJsonSchema } from "./fireworks-schema";
 import type {
   StructuredCompletionAttempt,
   StructuredCompletionTransport
 } from "./structured-transport";
 
 const MAX_STRUCTURED_DECISION_CHARACTERS = 16_384;
-const adaptiveDecisionJsonSchema = z.toJSONSchema(AdaptiveSelectionDecisionSchema, {
-  target: "draft-2020-12"
-});
+const adaptiveDecisionJsonSchema = toFireworksCompatibleJsonSchema(
+  z.toJSONSchema(AdaptiveSelectionDecisionSchema, { target: "draft-2020-12" })
+);
 
 export type AdaptiveSelectionProviderAttempt =
   | { readonly ok: true; readonly envelope: AdaptiveSelectionEnvelope }

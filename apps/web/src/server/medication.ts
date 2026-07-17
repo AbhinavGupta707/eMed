@@ -7,7 +7,10 @@ import {
   MedicationLabelObservationSchema,
   MedicationLabelProposalSchema
 } from "@homerounds/contracts";
-import type { StructuredCompletionTransport } from "@homerounds/inference";
+import {
+  toFireworksCompatibleJsonSchema,
+  type StructuredCompletionTransport
+} from "@homerounds/inference";
 import { z } from "zod";
 
 const MedicationLabelDraftSchema = z
@@ -27,9 +30,9 @@ const MedicationLabelDraftSchema = z
     }
   });
 
-const medicationLabelDraftJsonSchema = z.toJSONSchema(MedicationLabelDraftSchema, {
-  target: "draft-2020-12"
-});
+const medicationLabelDraftJsonSchema = toFireworksCompatibleJsonSchema(
+  z.toJSONSchema(MedicationLabelDraftSchema, { target: "draft-2020-12" })
+);
 
 function dataUrl(request: MedicationLabelTransportRequest): string {
   const encoded = Buffer.from(

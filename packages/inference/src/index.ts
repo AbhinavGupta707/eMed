@@ -25,6 +25,7 @@ export {
 export * from "./adaptive-selection";
 export * from "./baseline";
 export * from "./failures";
+export * from "./fireworks-schema";
 export * from "./fireworks-transport";
 export * from "./model-router";
 export * from "./selection-service";

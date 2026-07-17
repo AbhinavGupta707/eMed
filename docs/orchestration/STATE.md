@@ -5,6 +5,7 @@ Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`
 Goal: active  
 Integration branch: `main`
 Heartbeat: `homerounds-orchestration-heartbeat`, active every 20 minutes
+Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximately 13:19 BST on 17 July 2026; Codex must remain open
 
 ## Current checkpoint
 

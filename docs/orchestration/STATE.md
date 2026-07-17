@@ -8,10 +8,11 @@ Heartbeat: `homerounds-orchestration-heartbeat`, active every 20 minutes
 
 ## Current checkpoint
 
-- Checkpoint: 0 — registration, scaffold, and contract freeze
-- Status: exit gate passed; baseline commit/push pending
-- Integration base: pending first commit
-- Next gate: inspect staged baseline, commit/push `main`, then create Checkpoint 1 wave 1 from that exact commit
+- Checkpoint: 1 — deterministic foundations
+- Status: wave 1 launch pending
+- Tested Checkpoint 0 commit: `b519010`
+- Integration base: `b519010` on `main`, pushed to `origin/main`
+- Next gate: create lanes 1A, 1B, and 1C from the exact Git-backed base; record task IDs before starting 1D
 - Physical iPhone gate: `pending-physical` (does not block automated implementation)
 - Live ElevenLabs gate: `pending-credentials` (text/disabled provider required)
 - Live VitalLens gate: `pending-explicit-opt-in-and-credentials` (fixture adapter required)
@@ -22,10 +23,10 @@ Heartbeat: `homerounds-orchestration-heartbeat`, active every 20 minutes
 
 | Checkpoint | Lane                       | Ownership                                                                                                      | Task/thread | Base        | Status         | Integrated commit |
 | ---------- | -------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------- | ----------- | -------------- | ----------------- |
-| 1          | 1A data/domain/persistence | `packages/domain/**`, `packages/persistence/**`, `packages/clinical-records/**`, `data/fhir/**`, `infra/db/**` | pending     | pending CP0 | pending        | —                 |
-| 1          | 1B protocol/planner        | `packages/protocols/**`, `packages/planner/**`, `data/protocols/**`                                            | pending     | pending CP0 | pending        | —                 |
-| 1          | 1C local finger PPG        | `packages/assessments/providers/finger-ppg/**`                                                                 | pending     | pending CP0 | pending        | —                 |
-| 1          | 1D VitalLens               | `packages/assessments/providers/vitallens/**`                                                                  | pending     | pending CP0 | pending wave 2 | —                 |
+| 1          | 1A data/domain/persistence | `packages/domain/**`, `packages/persistence/**`, `packages/clinical-records/**`, `data/fhir/**`, `infra/db/**` | pending     | `b519010` | pending        | —                 |
+| 1          | 1B protocol/planner        | `packages/protocols/**`, `packages/planner/**`, `data/protocols/**`                                            | pending     | `b519010` | pending        | —                 |
+| 1          | 1C local finger PPG        | `packages/assessments/providers/finger-ppg/**`                                                                 | pending     | `b519010` | pending        | —                 |
+| 1          | 1D VitalLens               | `packages/assessments/providers/vitallens/**`                                                                  | pending     | `b519010` | pending wave 2 | —                 |
 
 ## Integration invariants
 

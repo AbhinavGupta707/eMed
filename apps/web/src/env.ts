@@ -50,6 +50,23 @@ const serverEnvironmentSchema = z
       });
     }
 
+    if (environment.APP_ENV === "demo") {
+      if (!environment.DATABASE_URL) {
+        context.addIssue({
+          code: "custom",
+          message: "Hosted demo mode requires durable PostgreSQL persistence",
+          path: ["DATABASE_URL"]
+        });
+      }
+      if (!environment.DEMO_ACCESS_SECRET) {
+        context.addIssue({
+          code: "custom",
+          message: "Hosted demo mode requires a server-only access secret",
+          path: ["DEMO_ACCESS_SECRET"]
+        });
+      }
+    }
+
     if (environment.VOICE_PROVIDER === "elevenlabs") {
       if (!environment.ELEVENLABS_API_KEY) {
         context.addIssue({

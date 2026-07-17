@@ -33,4 +33,29 @@ describe("server environment safety profile", () => {
       })
     ).toThrow();
   });
+
+  it("fails closed when hosted demo persistence or access control is absent", () => {
+    expect(() => parseServerEnvironment({ APP_ENV: "demo" })).toThrow();
+    expect(() =>
+      parseServerEnvironment({
+        APP_ENV: "demo",
+        DATABASE_URL: "postgresql://example.invalid/homerounds"
+      })
+    ).toThrow();
+    expect(() =>
+      parseServerEnvironment({
+        APP_ENV: "demo",
+        DEMO_ACCESS_SECRET: "synthetic-demo-secret"
+      })
+    ).toThrow();
+
+    expect(
+      parseServerEnvironment({
+        APP_ENV: "demo",
+        APP_BASE_URL: "https://demo.example",
+        DATABASE_URL: "postgresql://example.invalid/homerounds",
+        DEMO_ACCESS_SECRET: "synthetic-demo-secret"
+      }).APP_ENV
+    ).toBe("demo");
+  });
 });

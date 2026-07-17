@@ -36,6 +36,12 @@ function safeEqual(left: string, right: string): boolean {
   return leftBytes.length === rightBytes.length && timingSafeEqual(leftBytes, rightBytes);
 }
 
+export function demoAccessSecretMatches(candidate: string, secret: string): boolean {
+  const candidateDigest = createHmac("sha256", secret).update(candidate).digest("base64url");
+  const expectedDigest = createHmac("sha256", secret).update(secret).digest("base64url");
+  return safeEqual(candidateDigest, expectedDigest);
+}
+
 function cookieValue(request: Request, name: string): string | undefined {
   const cookie = request.headers.get("cookie");
   if (!cookie) return undefined;

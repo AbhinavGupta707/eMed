@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   createDemoSessionAuthenticator,
   createSignedDemoSession,
+  demoAccessSecretMatches,
   type DemoSession
 } from "./identity";
 
@@ -17,6 +18,12 @@ const session: DemoSession = {
 };
 
 describe("synthetic demo session boundary", () => {
+  it("compares the operator access secret without a length-dependent comparison", () => {
+    expect(demoAccessSecretMatches(secret, secret)).toBe(true);
+    expect(demoAccessSecretMatches("wrong", secret)).toBe(false);
+    expect(demoAccessSecretMatches(`${secret}-wrong`, secret)).toBe(false);
+  });
+
   it("authenticates a signed, unexpired, synthetic-only cookie", async () => {
     const value = createSignedDemoSession(session, secret);
     const authenticator = createDemoSessionAuthenticator({

@@ -1,0 +1,99 @@
+import { InMemoryHomeRoundsRepository } from "@homerounds/persistence";
+import { describe, expect, it } from "vitest";
+
+import { parseServerEnvironment } from "../env";
+import { handleDemoAccess, safeDemoDestination } from "./demo-access";
+import { createServerRuntime } from "./runtime";
+
+const NOW = "2026-07-17T12:00:00.000Z";
+const SECRET = "synthetic-hosted-demo-secret";
+
+function runtime() {
+  let id = 0;
+  return createServerRuntime({
+    environment: parseServerEnvironment({
+      APP_ENV: "demo",
+      APP_BASE_URL: "https://demo.example",
+      DATABASE_URL: "postgresql://example.invalid/homerounds",
+      DEMO_ACCESS_SECRET: SECRET
+    }),
+    repository: new InMemoryHomeRoundsRepository(),
+    runtimeProfile: "postgres",
+    now: () => NOW,
+    createId: () => `synthetic-session-${++id}`
+  });
+}
+
+function request(body: unknown, origin = "https://demo.example"): Request {
+  return new Request("https://demo.example/api/demo/session", {
+    method: "POST",
+    headers: { "content-type": "application/json", origin, "x-forwarded-for": "192.0.2.1" },
+    body: JSON.stringify(body)
+  });
+}
+
+describe("hosted demo access boundary", () => {
+  it("issues a bounded signed patient cookie and a safe relative destination", async () => {
+    const server = runtime();
+    const response = await handleDemoAccess(
+      request({
+        accessCode: SECRET,
+        role: "patient",
+        destination: "/round?scenario=maya-poor-quality"
+      }),
+      server
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      data: {
+        role: "patient",
+        redirectTo: "/round?scenario=maya-poor-quality",
+        expiresAt: "2026-07-17T13:00:00.000Z"
+      }
+    });
+    const setCookie = response.headers.get("set-cookie");
+    expect(setCookie).toMatch(/HttpOnly; Secure; SameSite=Strict; Max-Age=3600/);
+    const cookie = setCookie?.split(";")[0];
+    expect(cookie).toBeTruthy();
+    await expect(
+      server.hooks.authenticator.authenticate(
+        new Request("https://demo.example/api/rounds", { headers: { cookie: cookie! } })
+      )
+    ).resolves.toMatchObject({
+      role: "patient",
+      patientId: "synthetic-maya",
+      dataClassification: "synthetic_demo"
+    });
+  });
+
+  it("returns the same generic denial for a wrong access code and rejects another origin", async () => {
+    const server = runtime();
+    const wrongCode = await handleDemoAccess(
+      request({ accessCode: "wrong", role: "clinician" }),
+      server
+    );
+    expect(wrongCode.status).toBe(401);
+    expect(await wrongCode.json()).toEqual({ error: "access_denied" });
+    expect(wrongCode.headers.get("set-cookie")).toBeNull();
+
+    const wrongOrigin = await handleDemoAccess(
+      request({ accessCode: SECRET, role: "clinician" }, "https://attacker.example"),
+      server
+    );
+    expect(wrongOrigin.status).toBe(403);
+    expect(await wrongOrigin.json()).toEqual({ error: "access_denied" });
+  });
+
+  it("never turns a supplied destination into an open or cross-role redirect", () => {
+    expect(safeDemoDestination("patient", "https://attacker.example")).toBe(
+      "/round?scenario=maya-happy-text"
+    );
+    expect(safeDemoDestination("patient", "/clinician")).toBe("/round?scenario=maya-happy-text");
+    expect(
+      safeDemoDestination("clinician", "/clinician?roundId=14df34c4-8204-4810-8113-37b63c963a91")
+    ).toBe("/clinician?roundId=14df34c4-8204-4810-8113-37b63c963a91");
+    expect(safeDemoDestination("clinician", "//attacker.example/clinician")).toBe("/clinician");
+    expect(safeDemoDestination("clinician", "/clinician?role=system")).toBe("/clinician");
+  });
+});

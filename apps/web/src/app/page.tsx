@@ -50,6 +50,12 @@ function clinicianHref(): string {
   return `/clinician?${query.toString()}`;
 }
 
+function protectedDemoHref(role: "patient" | "clinician", destination: string): string {
+  if (process.env.APP_ENV !== "demo") return destination;
+  const query = new URLSearchParams({ role, next: destination });
+  return `/access?${query.toString()}`;
+}
+
 export default function HomePage() {
   return (
     <main className={styles.page}>
@@ -61,7 +67,7 @@ export default function HomePage() {
           </Link>
           <div className={styles.navLinks}>
             <Link href="/styleguide">System</Link>
-            <Link href={clinicianHref()}>Clinician cockpit</Link>
+            <Link href={protectedDemoHref("clinician", clinicianHref())}>Clinician cockpit</Link>
           </div>
         </nav>
 
@@ -79,10 +85,16 @@ export default function HomePage() {
               urgency.
             </p>
             <div className={styles.heroActions}>
-              <Link className={styles.primaryAction} href="/round?scenario=maya-happy-text">
+              <Link
+                className={styles.primaryAction}
+                href={protectedDemoHref("patient", "/round?scenario=maya-happy-text")}
+              >
                 Start the primary demo
               </Link>
-              <Link className={styles.secondaryAction} href={clinicianHref()}>
+              <Link
+                className={styles.secondaryAction}
+                href={protectedDemoHref("clinician", clinicianHref())}
+              >
                 Open clinician view
               </Link>
             </div>
@@ -131,7 +143,9 @@ export default function HomePage() {
               <h3>{story.title}</h3>
               <p>{story.description}</p>
               <strong>{story.proof}</strong>
-              <Link href={`/round?scenario=${story.id}`}>Launch this story</Link>
+              <Link href={protectedDemoHref("patient", `/round?scenario=${story.id}`)}>
+                Launch this story
+              </Link>
             </article>
           ))}
         </div>

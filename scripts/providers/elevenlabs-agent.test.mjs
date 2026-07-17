@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildAgentPatch, desiredToolConfig, loadAgentSpec } from "./elevenlabs-agent.mjs";
+import {
+  buildAgentPatch,
+  desiredToolConfig,
+  loadAgentSpec,
+  toElevenLabsParameters
+} from "./elevenlabs-agent.mjs";
 
 test("the versioned agent spec matches the frozen browser contract", () => {
   const spec = loadAgentSpec();
@@ -28,7 +33,8 @@ test("the report tool rejects extra fields and carries every proposal field", ()
   const config = desiredToolConfig(report);
   assert.equal(config.type, "client");
   assert.equal(config.expects_response, true);
-  assert.equal(config.parameters.additionalProperties, false);
+  assert.equal(report.parameters.additionalProperties, false);
+  assert.equal("additionalProperties" in config.parameters, false);
   assert.deepEqual(config.parameters.required, [
     "contractVersion",
     "weakness",
@@ -44,6 +50,38 @@ test("the report tool rejects extra fields and carries every proposal field", ()
     "severe_breathlessness",
     "fainted"
   ]);
+  assert.deepEqual(config.parameters.properties.note.type, ["string", "null"]);
+  assert.equal("maxItems" in config.parameters.properties.unresolvedFields, false);
+  assert.equal(
+    config.parameters.properties.redFlags.properties.chestPain.description.length > 0,
+    true
+  );
+});
+
+test("the ElevenLabs parameter projection preserves contract shape without unsupported keywords", () => {
+  const projected = toElevenLabsParameters({
+    type: "object",
+    additionalProperties: false,
+    required: ["answer"],
+    properties: {
+      answer: { type: "string", enum: ["yes", "no"] },
+      note: { anyOf: [{ type: "string", maxLength: 10 }, { type: "null" }] },
+      values: {
+        type: "array",
+        maxItems: 2,
+        uniqueItems: true,
+        items: { type: "string", enum: ["one", "two"] }
+      }
+    }
+  });
+  assert.deepEqual(projected.required, ["answer"]);
+  assert.deepEqual(projected.properties.note.type, ["string", "null"]);
+  assert.equal(projected.properties.answer.description.length > 0, true);
+  assert.equal(projected.properties.values.items.description.length > 0, true);
+  assert.doesNotMatch(
+    JSON.stringify(projected),
+    /additionalProperties|maxItems|uniqueItems|maxLength/
+  );
 });
 
 test("the agent patch keeps exactly two non-parallel client tools and private auth", () => {

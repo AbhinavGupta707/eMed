@@ -72,6 +72,55 @@ export function loadAgentSpec(path = SPEC_PATH) {
   return value;
 }
 
+/**
+ * ElevenLabs accepts a documented JSON-schema subset with provider-specific
+ * nullable type tags. The browser still validates the original strict schema;
+ * this projection only helps the model form a candidate tool call.
+ */
+export function toElevenLabsParameters(schema, fallbackDescription = "Structured tool input.") {
+  invariant(plainObject(schema), "Tool parameter schema must be an object.");
+  const description =
+    typeof schema.description === "string" && schema.description.length > 0
+      ? schema.description
+      : fallbackDescription;
+  if (Array.isArray(schema.anyOf)) {
+    const types = schema.anyOf.map((candidate) => candidate?.type).sort();
+    invariant(
+      stableJson(types) === stableJson(["null", "string"]),
+      "Only nullable strings are supported in the provider projection."
+    );
+    return { type: ["string", "null"], description };
+  }
+  switch (schema.type) {
+    case "string":
+      return {
+        type: "string",
+        description,
+        ...(Array.isArray(schema.enum) ? { enum: schema.enum } : {})
+      };
+    case "object":
+      return {
+        type: "object",
+        description,
+        ...(Array.isArray(schema.required) ? { required: schema.required } : {}),
+        properties: Object.fromEntries(
+          Object.entries(schema.properties ?? {}).map(([name, property]) => [
+            name,
+            toElevenLabsParameters(property, `Structured ${name} value.`)
+          ])
+        )
+      };
+    case "array":
+      return {
+        type: "array",
+        description,
+        items: toElevenLabsParameters(schema.items, "One structured list value.")
+      };
+    default:
+      throw new Error(`Unsupported provider parameter type: ${String(schema.type)}.`);
+  }
+}
+
 function loadEnvironmentFile(path) {
   if (!existsSync(path)) return {};
   const entries = [];
@@ -140,6 +189,28 @@ function containsDesired(actual, desired) {
   );
 }
 
+function safeProviderErrorSummary(value) {
+  if (!plainObject(value)) return "provider returned no structured validation detail";
+  const details = Array.isArray(value.detail) ? value.detail : [];
+  const issues = details.slice(0, 8).map((issue) => {
+    if (!plainObject(issue)) return { location: "unknown", message: "validation failed" };
+    const location = Array.isArray(issue.loc)
+      ? issue.loc
+          .filter((part) => typeof part === "string" || typeof part === "number")
+          .map(String)
+          .join(".")
+          .slice(0, 240)
+      : "unknown";
+    const message =
+      typeof issue.msg === "string"
+        ? issue.msg.replaceAll(/[\r\n]/g, " ").slice(0, 320)
+        : "validation failed";
+    const type = typeof issue.type === "string" ? issue.type.slice(0, 120) : undefined;
+    return { location, message, ...(type ? { type } : {}) };
+  });
+  return issues.length > 0 ? JSON.stringify(issues) : "provider returned no safe validation detail";
+}
+
 export function desiredToolConfig(tool) {
   return {
     type: "client",
@@ -148,7 +219,7 @@ export function desiredToolConfig(tool) {
     expects_response: true,
     execution_mode: "immediate",
     interruption_mode: "allow",
-    parameters: tool.parameters,
+    parameters: toElevenLabsParameters(tool.parameters),
     pre_tool_speech: "auto",
     response_timeout_secs: 10,
     tool_error_handling_mode: "auto"
@@ -187,6 +258,13 @@ function safeAgentState(agent, spec, toolIds) {
   const configuration = agent.conversation_config ?? {};
   const prompt = configuration.agent?.prompt ?? {};
   const placeholders = configuration.agent?.dynamic_variables?.dynamic_variable_placeholders ?? {};
+  const inlineToolNames = Array.isArray(prompt.tools)
+    ? prompt.tools
+        .map((tool) => tool?.name ?? tool?.tool_config?.name)
+        .filter((name) => typeof name === "string")
+        .sort()
+    : [];
+  const expectedToolNames = spec.tools.map(({ name }) => name).sort();
   return {
     nameMatches: agent.name === spec.agentName,
     firstMessageMatches: configuration.agent?.first_message === spec.firstMessage,
@@ -197,15 +275,40 @@ function safeAgentState(agent, spec, toolIds) {
     toolIdsMatch:
       Array.isArray(prompt.tool_ids) &&
       stableJson([...prompt.tool_ids].sort()) === stableJson([...toolIds].sort()),
-    inlineToolsAbsent: Array.isArray(prompt.tools) && prompt.tools.length === 0,
+    inlineToolsExactOrAbsent:
+      prompt.tools == null ||
+      (Array.isArray(prompt.tools) &&
+        (prompt.tools.length === 0 ||
+          (prompt.tools.length === expectedToolNames.length &&
+            stableJson(inlineToolNames) === stableJson(expectedToolNames)))),
     parallelToolsDisabled: prompt.enable_parallel_tool_calls === false,
     reasoningSummaryDisabled: prompt.enable_reasoning_summary === false,
     authenticationRequired: agent.platform_settings?.auth?.enable_auth === true
   };
 }
 
+function safeInlineToolsMetadata(agent) {
+  const tools = agent.conversation_config?.agent?.prompt?.tools;
+  if (tools == null) return { representation: "nullish", count: 0, names: [] };
+  if (!Array.isArray(tools)) return { representation: typeof tools, count: 0, names: [] };
+  return {
+    representation: "array",
+    count: tools.length,
+    names: tools
+      .map((tool) => tool?.name ?? tool?.tool_config?.name)
+      .filter((name) => typeof name === "string")
+      .sort()
+  };
+}
+
 function isAgentStateReady(state) {
   return Object.values(state).every(Boolean);
+}
+
+function mismatchedAgentStateKeys(state) {
+  return Object.entries(state)
+    .filter(([, matches]) => !matches)
+    .map(([key]) => key);
 }
 
 async function apiRequest(fetcher, apiKey, path, init = {}) {
@@ -219,8 +322,12 @@ async function apiRequest(fetcher, apiKey, path, init = {}) {
     }
   });
   if (!response.ok) {
+    const validation = await response
+      .json()
+      .then(safeProviderErrorSummary)
+      .catch(() => "provider response was not JSON");
     throw new Error(
-      `ElevenLabs ${init.method ?? "GET"} ${path} failed with status ${response.status}.`
+      `ElevenLabs ${init.method ?? "GET"} ${path} failed with status ${response.status}: ${validation}.`
     );
   }
   return response.status === 204 ? {} : response.json();
@@ -290,20 +397,27 @@ export async function reconcileElevenLabsAgent({
       promptHash: hash(spec.prompt),
       tools: tools.map(({ name, action }) => ({ name, action })),
       agentReady: false,
-      agentAction: "wait_for_tool_ids"
+      agentAction: "wait_for_tool_ids",
+      mismatches: ["toolIdsUnavailable"]
     };
   }
   const patch = buildAgentPatch(spec, knownToolIds);
   const beforeState = safeAgentState(before, spec, knownToolIds);
+  const inlineTools = safeInlineToolsMetadata(before);
   if (mode === "verify") {
-    invariant(isAgentStateReady(beforeState), "ElevenLabs agent configuration drift detected.");
+    invariant(
+      isAgentStateReady(beforeState),
+      `ElevenLabs agent configuration drift detected: ${mismatchedAgentStateKeys(beforeState).join(", ")}.`
+    );
     return {
       mode,
       specHash: hash(spec),
       promptHash: hash(spec.prompt),
       tools: tools.map(({ name, action }) => ({ name, action })),
       agentReady: true,
-      agentAction: "unchanged"
+      agentAction: "unchanged",
+      mismatches: [],
+      inlineTools
     };
   }
   if (apply && !isAgentStateReady(beforeState)) {
@@ -319,7 +433,7 @@ export async function reconcileElevenLabsAgent({
   if (apply)
     invariant(
       isAgentStateReady(afterState),
-      "ElevenLabs agent did not match the versioned spec after update."
+      `ElevenLabs agent did not match the versioned spec after update: ${mismatchedAgentStateKeys(afterState).join(", ")}.`
     );
   return {
     mode,
@@ -327,7 +441,9 @@ export async function reconcileElevenLabsAgent({
     promptHash: hash(spec.prompt),
     tools: tools.map(({ name, action }) => ({ name, action })),
     agentReady: isAgentStateReady(afterState),
-    agentAction: isAgentStateReady(beforeState) ? "unchanged" : apply ? "updated" : "update"
+    agentAction: isAgentStateReady(beforeState) ? "unchanged" : apply ? "updated" : "update",
+    mismatches: mismatchedAgentStateKeys(afterState),
+    inlineTools: safeInlineToolsMetadata(after)
   };
 }
 

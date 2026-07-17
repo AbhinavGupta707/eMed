@@ -14,6 +14,8 @@ pnpm elevenlabs:preview
 
 The preview prints only specification hashes, tool names/actions, and readiness. It does not print the key, agent ID, prompt, provider payload, transcript, or audio.
 
+ElevenLabs accepts a documented JSON-schema subset for client-tool hints. The script projects the versioned strict schema into that provider dialect, including its nullable-string tuple and omission of unsupported keywords. The browser still parses every actual call with the original strict Zod contract, so this projection never widens workflow authority or permits extra fields to mutate state.
+
 Apply only after the matching client-tool code and tests are on the release branch:
 
 ```bash
@@ -22,6 +24,8 @@ pnpm elevenlabs:verify
 ```
 
 The apply command updates exact-name tools in place, creates a missing exact-name tool, refuses duplicate names, and updates the configured agent. It does not delete tools or create a duplicate agent. The final read-back must match the versioned spec or the command fails.
+
+The provider may hydrate the exact referenced tools into the read-back `prompt.tools` array even when the update request sends an empty inline list plus `tool_ids`. Verification accepts only an absent/empty list or exactly the two expected names; any additional or renamed tool is drift.
 
 ## Live evidence gate
 

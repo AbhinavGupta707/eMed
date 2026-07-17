@@ -6,3 +6,7 @@ export type {
   OpticalProviderKind,
   OpticalUnavailableReason
 } from "@homerounds/contracts/assessment";
+
+export * from "../providers/finger-ppg";
+export * from "../providers/vitallens";
+export * from "./registry";

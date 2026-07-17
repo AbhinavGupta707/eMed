@@ -46,6 +46,16 @@ import * as schema from "./schema";
 
 type Database = PostgresJsDatabase<typeof schema>;
 
+function toIsoTimestamp(value: unknown, field: string): string {
+  const date = value instanceof Date ? value : new Date(z.string().parse(value));
+  if (Number.isNaN(date.getTime())) throw new Error(`Invalid PostgreSQL timestamp for ${field}`);
+  return date.toISOString();
+}
+
+function toNullableIsoTimestamp(value: unknown, field: string): string | null {
+  return value === null ? null : toIsoTimestamp(value, field);
+}
+
 function roundValues(round: Round): typeof rounds.$inferInsert {
   return {
     id: round.id,
@@ -97,11 +107,20 @@ function auditValues(event: DomainEvent): typeof auditEvents.$inferInsert {
 }
 
 function parseRoundRow(row: typeof rounds.$inferSelect): Round {
-  return RoundSchema.parse(row);
+  return RoundSchema.parse({
+    ...row,
+    createdAt: toIsoTimestamp(row.createdAt, "round.createdAt"),
+    updatedAt: toIsoTimestamp(row.updatedAt, "round.updatedAt"),
+    closedAt: toNullableIsoTimestamp(row.closedAt, "round.closedAt")
+  });
 }
 
 function parseTaskRow(row: typeof clinicalTasks.$inferSelect): ClinicalTask {
-  return ClinicalTaskSchema.parse(row);
+  return ClinicalTaskSchema.parse({
+    ...row,
+    createdAt: toIsoTimestamp(row.createdAt, "clinicalTask.createdAt"),
+    updatedAt: toIsoTimestamp(row.updatedAt, "clinicalTask.updatedAt")
+  });
 }
 
 function parseAuditRow(row: typeof auditEvents.$inferSelect): DomainEvent {
@@ -109,7 +128,7 @@ function parseAuditRow(row: typeof auditEvents.$inferSelect): DomainEvent {
     eventId: row.eventId,
     type: row.type,
     schemaVersion: row.schemaVersion,
-    occurredAt: row.occurredAt,
+    occurredAt: toIsoTimestamp(row.occurredAt, "auditEvent.occurredAt"),
     actor: { kind: row.actorKind, id: row.actorId },
     patientId: row.patientId,
     roundId: row.roundId,
@@ -212,7 +231,7 @@ export class PostgresHomeRoundsRepository<TSnapshot, TFact> implements HomeRound
           provider: row.provider,
           value: row.value,
           unit: row.unit,
-          observedAt: row.observedAt,
+          observedAt: toIsoTimestamp(row.observedAt, "measurementFact.observedAt"),
           durationMs: row.durationMs,
           algorithmVersion: row.algorithmVersion,
           providerModelVersion: row.providerModelVersion,
@@ -247,7 +266,7 @@ export class PostgresHomeRoundsRepository<TSnapshot, TFact> implements HomeRound
       snapshotId: row.snapshotId,
       patientId: row.patientId,
       snapshotVersion: row.snapshotVersion,
-      asOf: row.asOf,
+      asOf: toIsoTimestamp(row.asOf, "clinicalSnapshot.asOf"),
       document: snapshotSchema.parse(row.document)
     };
   }
@@ -273,7 +292,10 @@ export class PostgresHomeRoundsRepository<TSnapshot, TFact> implements HomeRound
       .where(eq(clinicalFacts.snapshotId, snapshotId))
       .orderBy(asc(clinicalFacts.factId));
     return rows.map((row) => {
-      const envelope = ClinicalFactRecordSchema.parse(row);
+      const envelope = ClinicalFactRecordSchema.parse({
+        ...row,
+        observedAt: toNullableIsoTimestamp(row.observedAt, "clinicalFact.observedAt")
+      });
       return { ...envelope, fact: factSchema.parse(envelope.fact) };
     });
   }
@@ -302,7 +324,12 @@ export class PostgresHomeRoundsRepository<TSnapshot, TFact> implements HomeRound
       .from(actionAttempts)
       .where(eq(actionAttempts.idempotencyKey, idempotencyKey))
       .orderBy(asc(actionAttempts.occurredAt));
-    return rows.map((row) => ActionAttemptSchema.parse(row));
+    return rows.map((row) =>
+      ActionAttemptSchema.parse({
+        ...row,
+        occurredAt: toIsoTimestamp(row.occurredAt, "actionAttempt.occurredAt")
+      })
+    );
   }
 
   async appendAuditEvent(eventInput: DomainEvent): Promise<void> {

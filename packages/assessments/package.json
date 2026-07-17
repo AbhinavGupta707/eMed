@@ -15,5 +15,10 @@
   "dependencies": {
     "@homerounds/contracts": "workspace:*",
     "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@homerounds/clinical-records": "workspace:*",
+    "@homerounds/planner": "workspace:*",
+    "@homerounds/protocols": "workspace:*"
   }
 }

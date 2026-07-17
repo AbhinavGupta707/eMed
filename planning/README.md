@@ -1,7 +1,7 @@
 # HomeRounds planning package
 
 **Prepared:** 16 July 2026  
-**Status:** Checkpoint 0 scaffold and frozen-contract baseline in validation  
+**Status:** Checkpoints 0–6 complete for the bounded local/no-key candidate; Checkpoint 7 launch plan frozen  
 **Scope:** hackathon prototype plus the gated path to a production clinical product
 
 ## Read this first
@@ -21,13 +21,14 @@ The source directory contains an already-extracted `HomeRounds_Source_Package`; 
 7. [06_RESEARCH_AND_SOURCE_AUDIT.md](./06_RESEARCH_AND_SOURCE_AUDIT.md) — source inventory, event facts, research findings, dependency implications, and provenance of key recommendations.
 8. [07_KICKOFF_DECISIONS_AND_INTEGRATIONS.md](./07_KICKOFF_DECISIONS_AND_INTEGRATIONS.md) — resolved kickoff choices, adaptive worktree counts, account/API requirements, iPhone testing, sensor options, protocol explanation, and readiness gate.
 9. [08_VOICE_TEXT_AND_AUTONOMOUS_EXECUTION.md](./08_VOICE_TEXT_AND_AUTONOMOUS_EXECUTION.md) — voice-provider comparison, text-access contract, no-key policy, heartbeat, session choice, and autonomous control loop.
+10. [09_AI_NATIVE_CHECKPOINT_7.md](./09_AI_NATIVE_CHECKPOINT_7.md) — live Fireworks inference, model/reasoning routing, adaptive worktree waves, adversarial gates, hosted setup, and exact launch readiness.
 
 ## Frozen recommendation
 
 - Build one Next.js/TypeScript application with patient and clinician routes in a pnpm/Turborepo monorepo.
 - Implement local rear-camera **finger PPG** and server-proxied VitalLens face rPPG behind one normalized contract; release-select exactly one after physical iPhone comparison. Local PPG is the no-key default.
-- Use a deterministic structured question as the only follow-up module. Do not build medication OCR, respiratory rate, movement, OnePlan, wearable OAuth, or live EHR connectivity during the hackathon.
-- Keep the round manager, protocol evaluator, quality gate, urgency, and action selection in ordinary deterministic TypeScript.
+- Keep the deterministic structured question as the guaranteed follow-up module. Checkpoint 7 may add bounded medication-label extraction only as an unconfirmed, explicitly reviewed multimodal observation; respiratory rate, movement, OnePlan, wearable OAuth, and live EHR connectivity remain outside the hackathon path.
+- Keep the round manager, protocol evaluator, quality gate, urgency, and action selection in ordinary deterministic TypeScript. Checkpoint 7 permits Fireworks to select one allowlisted evidence module and extract unconfirmed medication-label observations behind strict validation and fallback.
 - Use ElevenLabs ElevenAgents as the hosted voice implementation behind `VoiceSessionProvider`, with visible/editable transcript confirmation and a complete `disabled`/text path. Voice cannot diagnose, set urgency, alter medication, or create unregistered actions.
 - Use PostgreSQL with a repository boundary, local container for the primary laptop deployment, and managed PostgreSQL for the hosted HTTPS backup.
 - Store derived values and quality evidence only; raw video storage is off. Local finger PPG sends no frames. A selected VitalLens path may transmit only its documented downsampled inference payload through a server proxy and must disclose that boundary.
@@ -36,7 +37,7 @@ The source directory contains an already-extracted `HomeRounds_Source_Package`; 
 
 ## Execution state
 
-The owner has authorised Checkpoints 0–6, Vercel + Neon, ElevenLabs primary voice, both isolated optical adapters, Maya's hero story, and Aisha's resilience walkthrough. Remaining human-only gates—provider sign-in, VitalLens data-boundary opt-in, physical iPhone acceptance, repository visibility, and clinical wording review—are non-blocking for the no-key local build and are tracked explicitly rather than guessed.
+The owner has authorised Checkpoints 0–7, Vercel + Neon, Fireworks live inference, ElevenLabs primary voice, both isolated optical adapters, Maya's hero story, and Aisha's resilience walkthrough. Fireworks and ElevenLabs replacement credentials have passed bounded live pre-flight checks. The Vercel project, GitHub repository connection, Neon Marketplace resource, migration, and remote repository suite are verified; preview secrets, exact hosted origin, deployment, and hosted browser evidence remain pending. The separate `gh` CLI token is expired and must be refreshed only if authenticated push/PR work is required. VitalLens data-boundary opt-in, physical iPhone acceptance, and clinical wording review remain separate evidence gates rather than guessed passes.
 
 ## Definition of a successful hackathon build
 

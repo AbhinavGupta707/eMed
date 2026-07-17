@@ -18,6 +18,7 @@
     "@homerounds/clinical-records": "workspace:*",
     "@homerounds/contracts": "workspace:*",
     "@homerounds/domain": "workspace:*",
+    "@homerounds/inference": "workspace:*",
     "@homerounds/persistence": "workspace:*",
     "@homerounds/planner": "workspace:*",
     "@homerounds/protocols": "workspace:*",

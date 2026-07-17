@@ -15,9 +15,21 @@ const serverEnvironmentSchema = z
     ELEVENLABS_AGENT_ID: z.string().min(1).optional(),
     ELEVENLABS_SERVER_LOCATION: z
       .enum(["us", "eu-residency", "in-residency", "global"])
-      .default("eu-residency"),
+      .default("global"),
     VOICE_SESSION_MAX_SECONDS: z.coerce.number().int().min(15).max(300).default(120),
     NARRATIVE_MODEL_PROVIDER: z.enum(["disabled"]).default("disabled"),
+    INFERENCE_PROVIDER: z.enum(["disabled", "fake", "fireworks"]).default("disabled"),
+    FIREWORKS_API_KEY: z.string().min(1).optional(),
+    FIREWORKS_SELECTION_MODEL: z
+      .literal("accounts/fireworks/models/deepseek-v4-pro")
+      .default("accounts/fireworks/models/deepseek-v4-pro"),
+    FIREWORKS_VISION_MODEL: z
+      .literal("accounts/fireworks/models/kimi-k2p6")
+      .default("accounts/fireworks/models/kimi-k2p6"),
+    INFERENCE_REQUEST_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(30_000).default(8_000),
+    INFERENCE_MAX_RETRIES: z.coerce.number().int().min(0).max(2).default(1),
+    ADAPTIVE_SELECTION_ENABLED: booleanText.default(false),
+    MEDICATION_LABEL_AI_ENABLED: booleanText.default(false),
     OPTICAL_ASSESSMENT_PROVIDER: z.enum(["finger_ppg", "vitallens"]).default("finger_ppg"),
     VITALLENS_API_KEY: z.string().min(1).optional(),
     VITALLENS_PROXY_ENABLED: booleanText.default(false),
@@ -82,6 +94,25 @@ const serverEnvironmentSchema = z
           path: ["ELEVENLABS_AGENT_ID"]
         });
       }
+    }
+
+    if (environment.INFERENCE_PROVIDER === "fireworks" && !environment.FIREWORKS_API_KEY) {
+      context.addIssue({
+        code: "custom",
+        message: "Fireworks inference requires a server-only API key",
+        path: ["FIREWORKS_API_KEY"]
+      });
+    }
+
+    if (
+      (environment.ADAPTIVE_SELECTION_ENABLED || environment.MEDICATION_LABEL_AI_ENABLED) &&
+      environment.INFERENCE_PROVIDER === "disabled"
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "AI features require the fake or Fireworks inference provider",
+        path: ["INFERENCE_PROVIDER"]
+      });
     }
 
     if (environment.OPTICAL_ASSESSMENT_PROVIDER === "vitallens") {

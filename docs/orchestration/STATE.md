@@ -1,17 +1,17 @@
 # HomeRounds orchestration state
 
-Updated: 17 July 2026 06:40 BST  
+Updated: 17 July 2026 16:12 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
-Goal: complete for the bounded local/no-key synthetic-demo release candidate  
+Goal: Checkpoint 7 pre-flight and launch preparation for live AI-native synthetic-demo inference  
 Integration branch: `main`
 Release-candidate tag: `homerounds-v0.1.0-demo-rc1` on this final ledger commit
-Heartbeat: `homerounds-orchestration-heartbeat`, deactivated after final push
+Heartbeat: `homerounds-orchestration-heartbeat`, deactivated after Checkpoint 6; reactivate only when Checkpoint 7 workers launch
 Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stopped after final push
 
 ## Current checkpoint
 
-- Checkpoint: 6 — release freeze, rehearsal and handoff
-- Status: Checkpoints 0–6 are integrated and verified for the bounded local/no-key synthetic-demo release candidate; named external and human evidence classes remain open
+- Checkpoint: 7 — AI-native live inference and external validation, pre-launch
+- Status: Checkpoints 0–6 remain integrated and verified for the bounded local/no-key candidate; Checkpoint 7 pre-flight passes and integration-owned shared-base freeze is in progress; no implementation worker has launched
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
 - Rehearsed application/package candidate: `99acb5b` before Checkpoint 6 evidence-led documentation updates
@@ -24,11 +24,12 @@ Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stop
 - Checkpoint 4 Wave B launch base: `a2f548250c2f179f1f799c8b23ae3bf2be9550cf`
 - Tested Checkpoint 4 integration commit: `c46f3f1` on `main`
 - Checkpoint 5 launch base: `8589723e511b65dc849ef36234e7f462966e14a5`
-- Next gate: no autonomous implementation checkpoint remains; the next promotion decision depends on the named hosted, physical-device, live-provider, advisory, clinical-review, assistive-technology, Aisha and soak gates below
+- Next gate: commit the Checkpoint 7 plan, complete the central contract/environment/dependency pre-freeze, run the green shared-base gate, record its exact commit, then launch Wave A lanes 7A/7B/7C
 - Physical iPhone gate: `pending-physical` (does not block automated implementation)
-- Live ElevenLabs gate: `pending-credentials` (text/disabled provider required)
+- Live ElevenLabs gate: `token-preflight-pass-audio-pending` (dedicated private/authenticated zero-retention agent and signed WebRTC token verified; real microphone/transcript/edit-confirm run still pending)
 - Live VitalLens gate: `pending-explicit-opt-in-and-credentials` (fixture adapter required)
-- Hosted Vercel/Neon gate: `pending-neon-login-authorization` (Vercel CLI is authenticated with no projects; Neon sign-in is open but sharing GitHub identity requires explicit owner approval; local PostgreSQL profile remains authoritative)
+- Fireworks gate: `credential-and-bounded-live-preflight-pass` (DeepSeek V4 Pro strict selection and Kimi K2.6 vision passed once; Kimi text structured output failed twice; exact three-run release evaluations remain pending)
+- Hosted Vercel/Neon gate: `project-git-neon-preview-config-pass-deploy-pending` (GitHub repository and Neon resource connected; PostgreSQL 17.10, migration, eight tables, 14/14 remote repository tests, and metadata-only Preview provider-variable verification pass; exact origin, deployment, and hosted browser evidence remain pending)
 - GitHub visibility: verified `PUBLIC`; source/fixtures must remain synthetic and secret-free
 
 ## Checkpoint lane ledger
@@ -54,6 +55,7 @@ Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stop
 ## Integration invariants
 
 - At most three worker tasks active.
+- Checkpoint 7 uses adaptive `3 + 2` waves from tested integration commits: 7A/7B/7C concurrently, then 7D/7E concurrently only after Wave A integration passes. Ownership and reasoning are frozen in `planning/09_AI_NATIVE_CHECKPOINT_7.md`.
 - Effective from Checkpoint 2, every isolated task is explicitly launched with `gpt-5.6-sol`; `high` is used for bounded lanes and `xhigh` for complex lanes according to the frozen matrix in the orchestration plan. The completed Checkpoint 1 entries remain truthfully labelled `legacy/pre-policy`; any future relaunch of 1A–1D must use `gpt-5.6-sol`/`xhigh`.
 - Checkpoint 3 ran `3A + 3B` concurrently with exclusive file allowlists; both handed off clean commits and were integrated in order. The orchestrator retained `data/demo/**`, `scripts/demo/**`, `apps/web/public/demo/**`, cross-lane server seams, and integration tests.
 - Checkpoint 4 Wave A uses exactly three concurrent worktrees from `566ab81`: 4A and 4B use `high`; the more complex adversarial/transaction lane 4C uses `xhigh`. Wave B 4D uses `xhigh` and launches only after Wave A is integrated and tested.
@@ -64,8 +66,11 @@ Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stop
 
 ## Blockers and decisions
 
-- None blocking the bounded local/no-key synthetic demo or final repository handoff.
-- Hosted deployment discovery found an authenticated Vercel CLI account with zero existing projects and no Neon credential/CLI/session. Chrome reached Neon sign-in; selecting GitHub would share account identity and create/sign into an external account, so it remains an explicit human authorization gate. No half-configured project or insecure in-memory hosted deployment was created.
+- No blocker prevents local Checkpoint 7 implementation or keyless fixture validation.
+- Vercel project `homerounds` is configured for `apps/web`, outside-root workspace sources, frozen commands, and Node 22.x. Chrome DOM and the owner screenshot both verify the `AbhinavGupta707/eMed` Git connection. Neon Marketplace resource `neon-beige-ferry` is connected; PostgreSQL 17.10 accepted migration `0001_homerounds_foundations.sql`, exposes eight expected public tables, and passed the 14-test remote repository suite with the explicit external-service timeout. The official Vercel API returned HTTP 201 for provider-variable upserts, and a metadata-only read verifies Fireworks/ElevenLabs keys and agent ID as sensitive plus enabled provider switches on all Preview branches. No hosted deployment or browser claim is made yet.
+- The replacement ElevenLabs key is present exactly once in ignored mode-0600 local configuration, absent from tracked source and the browser bundle, authenticates the dedicated private/zero-retention agent, and mints a nonempty signed WebRTC token. Live audio remains pending.
+- The replacement Fireworks key is present exactly once in ignored mode-0600 local configuration, absent from tracked source and the browser bundle, and authenticates the live model catalogue. Earlier bounded evidence remains mixed and unpromoted: DeepSeek V4 Pro passed one strict structured selection; Kimi K2.6 passed one vision extraction but failed both text-JSON attempts by length. The faulty shell pass echo was caught and is not counted. Checkpoint 7 release selection requires exact repeated evaluation.
+- The standalone `gh` CLI token is expired. Read-only Git transport and the Vercel Git connection work; authenticated push/PR creation must be revalidated before handoff and is not a Wave A implementation blocker.
 - In-app Browser initialization failed in the current runtime before page control; Playwright remained accurately labelled. Checkpoint 6 separately used the installed Chrome extension for real user movements against the PostgreSQL-backed local candidate. Neither result is physical Safari/iPhone evidence.
 - Release provider is not selected. Local PPG is the no-key default; both adapters are implemented and compared later.
 - ElevenLabs is the hosted voice primary. OpenAI Realtime, LiveKit, browser Web Speech, voice biomarkers, respiratory rate, HRV, OCR, wearables, and live EHR integrations remain out of the hackathon path.
@@ -173,3 +178,13 @@ Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stop
 - The canonical root recovery storyboard/cue card now have byte-identical mirrors under `apps/web/public/demo-backup/**`. Both returned HTTP 200 from the running app, the storyboard exposed seven semantic headings and persistent recorded-synthetic/not-live boundaries in installed Chrome, and the production web build reran uncached successfully after publication.
 - The final exact-scope reset/check restored all three invited rounds with an empty clinician queue and `postgres` runtime. `W-07` is closed only for this local/no-key candidate evidence class.
 - Hosted Vercel/Neon remains pending explicit Neon account-login authorization; physical iPhone/Safari, live ElevenLabs/VitalLens, current external advisory, qualified clinical review, Aisha, manual assistive technology, and soak evidence remain named open gates. No local evidence is promoted into those classes.
+
+## Checkpoint 7 pre-launch evidence
+
+- Both replacement provider keys exist exactly once and nonempty in ignored mode-0600 `apps/web/.env.local`; neither path nor key is tracked, and credential-name/value scans found no provider secret in source or the existing client bundle.
+- Fireworks model-catalogue authentication returned HTTP 200 with six account-visible models. ElevenLabs agent authentication and signed-token issuance returned HTTP 200 against the dedicated private, authenticated, zero-retention HomeRounds agent. These are connectivity checks; exact release-task repetition and real audio remain pending.
+- The integration task froze strict adaptive-selection, inference provenance/failure, medication image-metadata, observation, review, and confirmation contracts. A new `@homerounds/inference` workspace starts with disabled and deterministic fake providers; the existing planner accepts the medication module while preserving deterministic ranking and burden/follow-up gates.
+- Environment validation fails closed when Fireworks lacks its server key or AI is enabled with no provider. The complete no-key profile remains valid. No new third-party dependency was added.
+- The green shared-base gate covers repository formatting; all 14 packages for lint, strict typecheck, tests, and build; 102 web tests; 13 unit, seven contract, seven integration, five demo-tooling, seven planner, seven shared-contract, and two inference-baseline tests; Git whitespace; and the six-case Chromium/iPhone-layout Playwright matrix. The first browser attempt was blocked only by sandbox `EPERM` on port 3000; the identical approved localhost rerun passed 6/6.
+- The Neon repository test first failed in the network sandbox with DNS denied; the identical approved external run passed 1/1 test file and all 14 repository cases in 7.47 seconds. No secret value was printed.
+- Vercel CLI 54.9.1 incorrectly requested a Preview Git branch even when its documented all-branches form was used, then correctly rejected production branch `main` as a Preview-specific branch. The official Vercel API was used instead: sensitive key/agent upsert and non-secret provider configuration each returned HTTP 201, and a metadata-only GET verified targets and types without returning values.

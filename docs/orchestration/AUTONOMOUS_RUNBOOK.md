@@ -16,6 +16,7 @@ The durable execution design is specified in `planning/02_WORKTREE_ORCHESTRATION
 - Use `thinking: "xhigh"` for complex integration, provider, state-machine, concurrency, persistence, security, or clinical-safety lanes.
 - Record model and reasoning effort in `STATE.md`; do not rely on an inherited default.
 - Allocation: 1A–1D `xhigh` if relaunched (their completed historical runs predate the policy); 2A `xhigh`, 2B `xhigh`, 2C `high`; 3A `xhigh`, 3B `xhigh`; 4A `high`, 4B `high`, 4C `xhigh`, 4D `xhigh`; 5A `high`, 5B `high`.
+- Checkpoint 7 allocation: Wave A 7A inference foundation `xhigh`, 7B medication multimodal `xhigh`, 7C adaptive patient experience `high`; after integration, Wave B 7D adversarial AI evaluation `xhigh` and 7E UX/accessibility/performance `high`. See `planning/09_AI_NATIVE_CHECKPOINT_7.md` for exclusive paths and gates.
 
 ## Integrate
 
@@ -43,4 +44,4 @@ The durable execution design is specified in `planning/02_WORKTREE_ORCHESTRATION
 
 ## Completion
 
-Checkpoint 6 completes only after full checks, three clean automated demo runs, provider/no-key recovery proof, responsive/accessibility review, deployment/local runbook, claim audit, clean Git status, and explicit separation of physical/live evidence from fixture/simulator evidence.
+Checkpoint 7 completes only after the Checkpoint 6 gates remain green, live inference changes an allowlisted evidence route across unseen synthetic contexts, adversarial/fallback tests pass, the exact enabled model/task contracts pass three consecutive live trials, and hosted/live/physical evidence remains explicitly separated from fixture and simulator results.

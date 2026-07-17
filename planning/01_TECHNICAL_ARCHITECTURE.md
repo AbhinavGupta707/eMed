@@ -410,7 +410,7 @@ Red flags run at round start, after every report/result, and before closure. Eme
 VOICE_PROVIDER=disabled|elevenlabs
 ELEVENLABS_API_KEY=                 # server only
 ELEVENLABS_AGENT_ID=
-ELEVENLABS_SERVER_LOCATION=eu-residency
+ELEVENLABS_SERVER_LOCATION=global
 VOICE_SESSION_MAX_SECONDS=120
 NARRATIVE_MODEL_PROVIDER=disabled   # optional and independent
 ```
@@ -495,7 +495,7 @@ FHIR_PROVIDER=fixture
 VOICE_PROVIDER=disabled|elevenlabs
 ELEVENLABS_API_KEY=
 ELEVENLABS_AGENT_ID=
-ELEVENLABS_SERVER_LOCATION=eu-residency
+ELEVENLABS_SERVER_LOCATION=global
 VOICE_SESSION_MAX_SECONDS=120
 NARRATIVE_MODEL_PROVIDER=disabled
 OPTICAL_ASSESSMENT_PROVIDER=finger_ppg|vitallens

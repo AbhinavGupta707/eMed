@@ -7,6 +7,9 @@ describe("server environment safety profile", () => {
     const environment = parseServerEnvironment({});
 
     expect(environment.VOICE_PROVIDER).toBe("disabled");
+    expect(environment.INFERENCE_PROVIDER).toBe("disabled");
+    expect(environment.ADAPTIVE_SELECTION_ENABLED).toBe(false);
+    expect(environment.MEDICATION_LABEL_AI_ENABLED).toBe(false);
     expect(environment.OPTICAL_ASSESSMENT_PROVIDER).toBe("finger_ppg");
     expect(environment.STORE_RAW_MEDIA).toBe(false);
   });
@@ -17,6 +20,22 @@ describe("server environment safety profile", () => {
 
   it("rejects VitalLens release selection without its proxy and key", () => {
     expect(() => parseServerEnvironment({ OPTICAL_ASSESSMENT_PROVIDER: "vitallens" })).toThrow();
+  });
+
+  it("rejects Fireworks selection without a server-only credential", () => {
+    expect(() => parseServerEnvironment({ INFERENCE_PROVIDER: "fireworks" })).toThrow();
+  });
+
+  it("allows keyless fake inference but rejects enabled AI with no provider", () => {
+    expect(
+      parseServerEnvironment({
+        INFERENCE_PROVIDER: "fake",
+        ADAPTIVE_SELECTION_ENABLED: "true",
+        MEDICATION_LABEL_AI_ENABLED: "true"
+      }).INFERENCE_PROVIDER
+    ).toBe("fake");
+    expect(() => parseServerEnvironment({ ADAPTIVE_SELECTION_ENABLED: "true" })).toThrow();
+    expect(() => parseServerEnvironment({ MEDICATION_LABEL_AI_ENABLED: "true" })).toThrow();
   });
 
   it("rejects raw-media storage in every profile", () => {

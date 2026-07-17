@@ -1,3 +1,9 @@
+import {
+  EvidenceFactKeySchema,
+  EvidenceModuleKindSchema,
+  type EvidenceFactKey,
+  type EvidenceModuleKind
+} from "@homerounds/contracts/inference";
 import { z } from "zod";
 
 const IdentifierSchema = z
@@ -6,11 +12,17 @@ const IdentifierSchema = z
   .max(80)
   .regex(/^[a-z][a-z0-9_.-]*$/);
 
-export const ModuleKindSchema = z.enum(["pulse_capture", "structured_follow_up"]);
-export type ModuleKind = z.infer<typeof ModuleKindSchema>;
+export const ModuleKindSchema = EvidenceModuleKindSchema;
+export type ModuleKind = EvidenceModuleKind;
 
-export const NeededFactKeySchema = z.enum(["pulse_bpm", "follow_up_answer"]);
-export type NeededFactKey = z.infer<typeof NeededFactKeySchema>;
+export const NeededFactKeySchema = EvidenceFactKeySchema;
+export type NeededFactKey = EvidenceFactKey;
+
+const PRODUCED_FACT_KEY_BY_KIND: Readonly<Record<ModuleKind, NeededFactKey>> = {
+  pulse_capture: "pulse_bpm",
+  structured_follow_up: "follow_up_answer",
+  medication_label: "medication_label_observation"
+};
 
 export const PlannerCandidateSchema = z
   .object({
@@ -29,11 +41,7 @@ export const PlannerCandidateSchema = z
   })
   .strict()
   .superRefine((candidate, context) => {
-    if (
-      (candidate.kind === "pulse_capture" && candidate.producesFactKey !== "pulse_bpm") ||
-      (candidate.kind === "structured_follow_up" &&
-        candidate.producesFactKey !== "follow_up_answer")
-    ) {
+    if (candidate.producesFactKey !== PRODUCED_FACT_KEY_BY_KIND[candidate.kind]) {
       context.addIssue({
         code: "custom",
         path: ["producesFactKey"],
@@ -44,7 +52,7 @@ export const PlannerCandidateSchema = z
 
 export const PlannerInputSchema = z
   .object({
-    neededFactKeys: z.array(NeededFactKeySchema).max(2),
+    neededFactKeys: z.array(NeededFactKeySchema).max(3),
     burdenSecondsRemaining: z.number().int().nonnegative().max(3_600),
     followUpQuestionsAsked: z.number().int().min(0).max(1),
     candidates: z.array(PlannerCandidateSchema).max(16)
@@ -81,7 +89,8 @@ export type PlannerResult = {
 
 const KIND_TIE_BREAK: Readonly<Record<ModuleKind, number>> = {
   pulse_capture: 0,
-  structured_follow_up: 1
+  structured_follow_up: 1,
+  medication_label: 2
 };
 
 function score(candidate: PlannerCandidate): number {

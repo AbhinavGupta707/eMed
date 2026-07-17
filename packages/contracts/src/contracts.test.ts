@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { MeasurementFactSchema, PatientReportSchema, VoicePresentationEventSchema } from ".";
+import {
+  AdaptiveSelectionDecisionSchema,
+  AdaptiveSelectionInputSchema,
+  ConfirmedMedicationObservationFactSchema,
+  MeasurementFactSchema,
+  MedicationLabelImageMetadataSchema,
+  MedicationLabelObservationSchema,
+  PatientReportSchema,
+  VoicePresentationEventSchema
+} from ".";
 
 describe("frozen cross-lane contracts", () => {
   it("accepts a confirmed bounded patient report", () => {
@@ -38,6 +47,141 @@ describe("frozen cross-lane contracts", () => {
   it("does not define workflow-authority voice events", () => {
     expect(
       VoicePresentationEventSchema.safeParse({ type: "set_urgency", urgency: "emergency" }).success
+    ).toBe(false);
+  });
+
+  it("freezes an available deterministic fallback inside the server candidate allowlist", () => {
+    expect(
+      AdaptiveSelectionInputSchema.safeParse({
+        contractVersion: "adaptive-selection.v1",
+        roundId: "cc80d269-2f79-4328-a129-98cac85219e4",
+        stateVersion: 2,
+        syntheticDataOnly: true,
+        redFlagGate: "clear",
+        neededFactKeys: ["pulse_bpm"],
+        burdenSecondsRemaining: 60,
+        context: [],
+        candidates: [
+          {
+            id: "pulse.local",
+            kind: "pulse_capture",
+            label: "Check pulse",
+            description: "A short local optical pulse check.",
+            producesFactKeys: ["pulse_bpm"],
+            availability: { status: "available" },
+            estimatedBurdenSeconds: 30,
+            deterministicRank: 0
+          }
+        ],
+        deterministicFallbackModuleId: "pulse.local"
+      }).success
+    ).toBe(true);
+
+    expect(
+      AdaptiveSelectionInputSchema.safeParse({
+        contractVersion: "adaptive-selection.v1",
+        roundId: "cc80d269-2f79-4328-a129-98cac85219e4",
+        stateVersion: 2,
+        syntheticDataOnly: true,
+        redFlagGate: "clear",
+        neededFactKeys: ["pulse_bpm"],
+        burdenSecondsRemaining: 60,
+        context: [],
+        candidates: [
+          {
+            id: "pulse.local",
+            kind: "pulse_capture",
+            label: "Check pulse",
+            description: "A short local optical pulse check.",
+            producesFactKeys: ["pulse_bpm"],
+            availability: { status: "unavailable", reason: "unsupported_device" },
+            estimatedBurdenSeconds: 30,
+            deterministicRank: 0
+          }
+        ],
+        deterministicFallbackModuleId: "pulse.local"
+      }).success
+    ).toBe(false);
+  });
+
+  it("accepts only a bounded selection or explicit abstention from the model", () => {
+    expect(
+      AdaptiveSelectionDecisionSchema.safeParse({
+        decision: "select",
+        candidateModuleId: "pulse.local",
+        evidenceReferenceIds: ["patient.report"],
+        rationale: "A pulse check addresses the remaining evidence gap.",
+        uncertainty: "low",
+        missingInformation: []
+      }).success
+    ).toBe(true);
+    expect(
+      AdaptiveSelectionDecisionSchema.safeParse({
+        decision: "set_urgency",
+        candidateModuleId: "emergency",
+        evidenceReferenceIds: [],
+        rationale: "Escalate",
+        uncertainty: "low",
+        missingInformation: []
+      }).success
+    ).toBe(false);
+  });
+
+  it("makes raw medication media unrepresentable and preserves uncertain fields", () => {
+    expect(
+      MedicationLabelImageMetadataSchema.safeParse({
+        requestId: "7fd16467-bfa6-4277-94b5-3673b34a6c4d",
+        captureMode: "camera",
+        mediaType: "image/jpeg",
+        byteLength: 400_000,
+        width: 1_280,
+        height: 720,
+        consentVersion: "medication-label.v1",
+        consentGrantedAt: "2026-07-17T09:00:00.000Z",
+        syntheticDataOnly: true,
+        rawMediaRef: "camera-frame"
+      }).success
+    ).toBe(false);
+    expect(
+      MedicationLabelObservationSchema.safeParse({
+        field: "strength",
+        status: "uncertain",
+        value: "5 mg",
+        confidence: 0.52
+      }).success
+    ).toBe(true);
+  });
+
+  it("requires explicit medication confirmation and consistent text/image provenance", () => {
+    expect(
+      ConfirmedMedicationObservationFactSchema.safeParse({
+        factId: "fb99983d-cc81-454e-9c92-f8e99e0891de",
+        roundId: "cc80d269-2f79-4328-a129-98cac85219e4",
+        proposalId: null,
+        stateVersion: 3,
+        source: "text_entry",
+        reviewItems: [
+          { field: "product_name", disposition: "corrected", reviewedValue: "Demo medicine" }
+        ],
+        explicitlyConfirmed: true,
+        confirmedAt: "2026-07-17T09:00:00.000Z",
+        rawMediaRef: null
+      }).success
+    ).toBe(true);
+    expect(
+      ConfirmedMedicationObservationFactSchema.safeParse({
+        factId: "fb99983d-cc81-454e-9c92-f8e99e0891de",
+        roundId: "cc80d269-2f79-4328-a129-98cac85219e4",
+        proposalId: null,
+        stateVersion: 3,
+        source: "image_review",
+        reviewItems: [
+          { field: "product_name", disposition: "accepted", reviewedValue: "Demo medicine" }
+        ],
+        explicitlyConfirmed: true,
+        confirmedAt: "2026-07-17T09:00:00.000Z",
+        rawMediaRef: null
+      }).success
     ).toBe(false);
   });
 });

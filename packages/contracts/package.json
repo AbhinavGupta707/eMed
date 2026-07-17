@@ -6,6 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./assessment": "./src/assessment.ts",
+    "./inference": "./src/inference.ts",
+    "./medication": "./src/medication.ts",
     "./round": "./src/round.ts",
     "./voice": "./src/voice.ts"
   },

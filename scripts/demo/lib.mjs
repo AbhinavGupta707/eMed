@@ -331,6 +331,7 @@ alter table audit_events disable trigger audit_events_reject_update_or_delete;
 delete from action_attempts where round_id in (select id from homerounds_demo_reset_rounds);
 delete from action_executions where round_id in (select id from homerounds_demo_reset_rounds);
 delete from clinical_tasks where round_id in (select id from homerounds_demo_reset_rounds);
+delete from voice_biomarker_facts where round_id in (select id from homerounds_demo_reset_rounds);
 delete from measurement_facts where round_id in (select id from homerounds_demo_reset_rounds);
 delete from audit_events where round_id in (select id from homerounds_demo_reset_rounds);
 delete from rounds where id in (select id from homerounds_demo_reset_rounds);

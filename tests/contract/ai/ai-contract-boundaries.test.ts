@@ -419,7 +419,9 @@ describe("browser-facing AI contracts expose only bounded projections", () => {
     candidates: input.candidates,
     selectedModuleId: "followup.timing",
     medicationConfirmed: false,
-    medicationSkipped: false
+    medicationSkipped: false,
+    voiceBiomarkerCompleted: false,
+    voiceBiomarkerSkipped: false
   });
 
   it.each([

@@ -3,6 +3,7 @@ import {
   DomainEventSchema,
   MeasurementFactSchema,
   RoundSchema,
+  VoiceBiomarkerFactSchema,
   type ClinicalTask,
   type DomainEvent,
   type Round
@@ -24,6 +25,7 @@ import {
   RecordFailedActionInputSchema,
   RoundStateChangedEventSchema,
   TaskOptimisticConcurrencyError,
+  VoiceBiomarkerFactRecordSchema,
   assertStandaloneAuditEvent,
   type ActionAttempt,
   type ClinicalFactRecord,
@@ -32,7 +34,8 @@ import {
   type CommitActionResult,
   type MeasurementFactRecord,
   type RecordFailedActionInput,
-  type RoundStateChangedEvent
+  type RoundStateChangedEvent,
+  type VoiceBiomarkerFactRecord
 } from "../models";
 import type { HomeRoundsRepository } from "../repositories";
 import {
@@ -43,7 +46,8 @@ import {
   clinicalSnapshots,
   clinicalTasks,
   measurementFacts,
-  rounds
+  rounds,
+  voiceBiomarkerFacts
 } from "./schema";
 import * as schema from "./schema";
 
@@ -251,6 +255,51 @@ export class PostgresHomeRoundsRepository<TSnapshot, TFact> implements HomeRound
           algorithmVersion: row.algorithmVersion,
           providerModelVersion: row.providerModelVersion,
           quality: row.quality,
+          rawMediaRef: row.rawMediaRef
+        })
+      })
+    );
+  }
+
+  async saveVoiceBiomarkerFact(recordInput: VoiceBiomarkerFactRecord): Promise<void> {
+    const record = VoiceBiomarkerFactRecordSchema.parse(recordInput);
+    await this.database.insert(voiceBiomarkerFacts).values({
+      factId: record.fact.factId,
+      roundId: record.roundId,
+      patientId: record.patientId,
+      assessmentSessionId: record.fact.assessmentSessionId,
+      provider: record.fact.provider,
+      observedAt: record.fact.observedAt,
+      durationMs: record.fact.durationMs,
+      algorithmVersion: record.fact.algorithmVersion,
+      features: record.fact.features,
+      quality: record.fact.quality,
+      researchOnly: record.fact.researchOnly,
+      rawMediaRef: record.fact.rawMediaRef
+    });
+  }
+
+  async listVoiceBiomarkerFacts(roundId: string): Promise<VoiceBiomarkerFactRecord[]> {
+    const rows = await this.database
+      .select()
+      .from(voiceBiomarkerFacts)
+      .where(eq(voiceBiomarkerFacts.roundId, roundId))
+      .orderBy(asc(voiceBiomarkerFacts.observedAt));
+    return rows.map((row) =>
+      VoiceBiomarkerFactRecordSchema.parse({
+        roundId: row.roundId,
+        patientId: row.patientId,
+        fact: VoiceBiomarkerFactSchema.parse({
+          factId: row.factId,
+          roundId: row.roundId,
+          assessmentSessionId: row.assessmentSessionId,
+          provider: row.provider,
+          observedAt: toIsoTimestamp(row.observedAt, "voiceBiomarkerFact.observedAt"),
+          durationMs: row.durationMs,
+          algorithmVersion: row.algorithmVersion,
+          features: row.features,
+          quality: row.quality,
+          researchOnly: row.researchOnly,
           rawMediaRef: row.rawMediaRef
         })
       })

@@ -159,6 +159,10 @@ export function createApiClinicianTransport(options: {
           detail.measurement,
           "No quality-passing numeric measurement was accepted for this round."
         ),
+        voiceBiomarkerFact: optionalResource(
+          detail.voiceBiomarkerFact,
+          "No quality-passing research voice signal was accepted for this round."
+        ),
         captureQuality: optionalResource(
           detail.captureQuality,
           "No non-passing capture-quality outcome was recorded for this round."

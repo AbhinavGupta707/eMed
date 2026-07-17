@@ -11,7 +11,8 @@ import type {
   CommitActionResult,
   MeasurementFactRecord,
   RecordFailedActionInput,
-  RoundStateChangedEvent
+  RoundStateChangedEvent,
+  VoiceBiomarkerFactRecord
 } from "./models";
 
 export type RoundRepository = {
@@ -28,6 +29,11 @@ export type RoundRepository = {
 export type MeasurementFactRepository = {
   saveMeasurementFact(record: MeasurementFactRecord): Promise<void>;
   listMeasurementFacts(roundId: string): Promise<MeasurementFactRecord[]>;
+};
+
+export type VoiceBiomarkerFactRepository = {
+  saveVoiceBiomarkerFact(record: VoiceBiomarkerFactRecord): Promise<void>;
+  listVoiceBiomarkerFacts(roundId: string): Promise<VoiceBiomarkerFactRecord[]>;
 };
 
 export type ClinicalSnapshotRepository<TSnapshot, TFact> = {
@@ -74,6 +80,7 @@ export type ActionUnitOfWork = {
 
 export type HomeRoundsRepository<TSnapshot, TFact> = RoundRepository &
   MeasurementFactRepository &
+  VoiceBiomarkerFactRepository &
   ClinicalSnapshotRepository<TSnapshot, TFact> &
   ClinicalTaskRepository &
   ActionAttemptRepository &

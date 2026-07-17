@@ -178,7 +178,7 @@ function MeasurementStep({ detail }: { detail: ClinicianTaskDetail }) {
 function ProtocolStep({ detail }: { detail: ClinicianTaskDetail }) {
   const result = detail.protocolResult;
   return (
-    <ChainStep number="4" source="deterministic protocol evaluator" title="Rule and decision">
+    <ChainStep number="5" source="deterministic protocol evaluator" title="Rule and decision">
       {result.status === "available" ? (
         <EvidenceValues>
           <EvidenceValue
@@ -206,6 +206,62 @@ function ProtocolStep({ detail }: { detail: ClinicianTaskDetail }) {
   );
 }
 
+function VoiceBiomarkerStep({ detail }: { detail: ClinicianTaskDetail }) {
+  const fact = detail.voiceBiomarkerFact;
+  return (
+    <ChainStep
+      number="4"
+      source="local sustained-vowel feature extractor + quality gate"
+      title="Research voice signal"
+    >
+      {fact.status === "available" ? (
+        <EvidenceValues>
+          <EvidenceValue label="Status" value="Research-only baseline signal — not a diagnosis" />
+          <EvidenceValue
+            label="Median fundamental frequency"
+            value={
+              fact.value.features.medianFundamentalFrequencyHz === null
+                ? "Unavailable"
+                : `${fact.value.features.medianFundamentalFrequencyHz.toFixed(1)} Hz`
+            }
+          />
+          <EvidenceValue
+            label="Jitter"
+            value={
+              fact.value.features.jitterPercent === null
+                ? "Unavailable"
+                : `${fact.value.features.jitterPercent.toFixed(2)}%`
+            }
+          />
+          <EvidenceValue
+            label="Shimmer"
+            value={
+              fact.value.features.shimmerPercent === null
+                ? "Unavailable"
+                : `${fact.value.features.shimmerPercent.toFixed(2)}%`
+            }
+          />
+          <EvidenceValue
+            label="Harmonic-to-noise ratio"
+            value={
+              fact.value.features.harmonicToNoiseRatioDb === null
+                ? "Unavailable"
+                : `${fact.value.features.harmonicToNoiseRatioDb.toFixed(1)} dB`
+            }
+          />
+          <EvidenceValue
+            label="Quality"
+            value={`Pass · score ${fact.value.quality.score.toFixed(2)}`}
+          />
+          <EvidenceValue label="Raw audio" value="Absent by contract" />
+        </EvidenceValues>
+      ) : (
+        <ResourceNotice state={fact} />
+      )}
+    </ChainStep>
+  );
+}
+
 function idempotencyStatus(detail: ClinicianTaskDetail): string {
   if (detail.timeline.status !== "available") {
     return "Creation key returned; attempt history is not available in the current response.";
@@ -222,7 +278,7 @@ function idempotencyStatus(detail: ClinicianTaskDetail): string {
 function TaskStep({ detail }: { detail: ClinicianTaskDetail }) {
   const task = detail.task;
   return (
-    <ChainStep number="5" source="action service" title="Task and action">
+    <ChainStep number="6" source="action service" title="Task and action">
       <EvidenceValues>
         <EvidenceValue label="Task ID" value={task.id} />
         <EvidenceValue label="Action type" value={readableToken(task.type)} />
@@ -249,6 +305,7 @@ export function EvidenceChain({ detail }: { detail: ClinicianTaskDetail }) {
         <TriggerStep detail={detail} />
         <ReportStep detail={detail} />
         <MeasurementStep detail={detail} />
+        <VoiceBiomarkerStep detail={detail} />
         <ProtocolStep detail={detail} />
         <TaskStep detail={detail} />
       </ol>

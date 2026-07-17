@@ -9,6 +9,13 @@ async function migrationSql(): Promise<string> {
   );
 }
 
+async function voiceMigrationSql(): Promise<string> {
+  return readFile(
+    new URL("../../../../infra/db/migrations/0002_voice_biomarker_facts.sql", import.meta.url),
+    "utf8"
+  );
+}
+
 describe("PostgreSQL migration invariants", () => {
   it("defines all production persistence tables in one transactional migration", async () => {
     const sql = await migrationSql();
@@ -65,5 +72,17 @@ describe("PostgreSQL migration invariants", () => {
       expect(sql).toContain(indexName);
     }
     expect(sql).toMatch(/clinical_tasks_open_queue_idx[\s\S]*where status <> 'completed'/);
+  });
+
+  it("adds research-only derived voice facts without a raw-media column value", async () => {
+    const sql = await voiceMigrationSql();
+    expect(sql.trimStart()).toMatch(/^begin;/i);
+    expect(sql.trimEnd()).toMatch(/commit;$/i);
+    expect(sql).toContain("create table voice_biomarker_facts");
+    expect(sql).toContain("voice_biomarker_facts_quality_pass");
+    expect(sql).toContain("voice_biomarker_facts_research_only");
+    expect(sql).toContain("voice_biomarker_facts_raw_media_absent");
+    expect(sql).toContain("voice_biomarker_facts_round_observed_idx");
+    expect(sql).toContain("voice_biomarker_facts_patient_observed_idx");
   });
 });

@@ -11,7 +11,10 @@ import {
   PatientReportSchema,
   ProtocolResultSchema,
   RoundSchema,
-  RoundStateSchema
+  RoundStateSchema,
+  VoiceBiomarkerAssessmentResultSchema,
+  VoiceBiomarkerFactSchema,
+  VoiceServerLocationSchema
 } from "@homerounds/contracts";
 import { z } from "zod";
 
@@ -78,7 +81,9 @@ export const AdaptiveEvidenceRouteDataSchema = z
     candidates: z.array(EvidenceModuleCandidateSchema).max(8),
     selectedModuleId: z.string().min(1).max(80).nullable(),
     medicationConfirmed: z.boolean(),
-    medicationSkipped: z.boolean()
+    medicationSkipped: z.boolean(),
+    voiceBiomarkerCompleted: z.boolean(),
+    voiceBiomarkerSkipped: z.boolean()
   })
   .strict()
   .superRefine((route, context) => {
@@ -87,7 +92,9 @@ export const AdaptiveEvidenceRouteDataSchema = z
         route.candidates.length > 0 ||
         route.selectedModuleId !== null ||
         route.medicationConfirmed ||
-        route.medicationSkipped
+        route.medicationSkipped ||
+        route.voiceBiomarkerCompleted ||
+        route.voiceBiomarkerSkipped
       ) {
         context.addIssue({
           code: "custom",
@@ -101,6 +108,13 @@ export const AdaptiveEvidenceRouteDataSchema = z
         code: "custom",
         path: ["medicationSkipped"],
         message: "medication review cannot be both confirmed and skipped"
+      });
+    }
+    if (route.voiceBiomarkerCompleted && route.voiceBiomarkerSkipped) {
+      context.addIssue({
+        code: "custom",
+        path: ["voiceBiomarkerSkipped"],
+        message: "voice signal cannot be both completed and skipped"
       });
     }
     const selected = route.candidates.find(({ id }) => id === route.selectedModuleId);
@@ -119,6 +133,16 @@ export const AdaptiveEvidenceRouteDataSchema = z
         code: "custom",
         path: ["medicationConfirmed"],
         message: "medication status requires the medication-label route"
+      });
+    }
+    if (
+      (route.voiceBiomarkerCompleted || route.voiceBiomarkerSkipped) &&
+      selected?.kind !== "voice_biomarker"
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["voiceBiomarkerCompleted"],
+        message: "voice status requires the voice-biomarker route"
       });
     }
     if (
@@ -149,7 +173,8 @@ export const RoundDataSchema = z
     round: RoundSchema.strict(),
     protocolResult: ProtocolResultSchema.strict().nullable().optional(),
     task: ClinicalTaskSchema.strict().nullable().optional(),
-    evidenceRoute: AdaptiveEvidenceRouteDataSchema.optional()
+    evidenceRoute: AdaptiveEvidenceRouteDataSchema.optional(),
+    voiceBiomarkerFact: VoiceBiomarkerFactSchema.nullable().optional()
   })
   .strict();
 
@@ -225,6 +250,55 @@ export const AssessmentSessionDataSchema = z
     provider: z.enum(["finger_ppg", "vitallens"]),
     attestation: z.string().min(32).max(2_000),
     expiresAt: z.iso.datetime()
+  })
+  .strict();
+
+export const StartVoiceBiomarkerRequestSchema = z
+  .object({ expectedStateVersion: z.number().int().nonnegative() })
+  .strict();
+
+export const VoiceBiomarkerSessionDataSchema = z
+  .object({
+    round: RoundSchema.strict(),
+    assessmentSessionId: z.uuid(),
+    provider: z.literal("local_voice_features"),
+    attestation: z.string().min(32).max(2_000),
+    expiresAt: z.iso.datetime()
+  })
+  .strict();
+
+export const SubmitVoiceBiomarkerRequestSchema = z
+  .object({
+    expectedStateVersion: z.number().int().nonnegative(),
+    result: VoiceBiomarkerAssessmentResultSchema.refine(
+      (result) => result.status !== "unavailable",
+      { message: "unavailable devices use the explicit skip endpoint" }
+    ),
+    attestation: z.string().min(32).max(2_000)
+  })
+  .strict();
+
+export const SubmitVoiceBiomarkerDataSchema = z
+  .object({
+    round: RoundSchema.strict(),
+    result: VoiceBiomarkerAssessmentResultSchema.refine(
+      (result) => result.status !== "unavailable"
+    ),
+    evidenceRoute: AdaptiveEvidenceRouteDataSchema
+  })
+  .strict();
+
+export const SkipVoiceBiomarkerRequestSchema = z
+  .object({
+    expectedStateVersion: z.number().int().nonnegative(),
+    reason: z.enum(["patient_declined", "unsupported_device", "permission_denied"])
+  })
+  .strict();
+
+export const SkipVoiceBiomarkerDataSchema = z
+  .object({
+    round: RoundSchema.strict(),
+    evidenceRoute: AdaptiveEvidenceRouteDataSchema
   })
   .strict();
 
@@ -376,6 +450,7 @@ export const ClinicianTaskDetailDataSchema = z
     round: RoundSchema.strict(),
     report: StrictPatientReportSchema.nullable(),
     measurement: MeasurementFactSchema.strict().nullable(),
+    voiceBiomarkerFact: VoiceBiomarkerFactSchema.nullable(),
     captureQuality: CaptureQualitySchema.strict().nullable(),
     protocolResult: ProtocolResultSchema.strict().nullable(),
     timeline: z.array(DomainEventSchema.strict()).max(500),
@@ -443,7 +518,8 @@ export const ElevenLabsCredentialDataSchema = z.discriminatedUnion("status", [
       token: z.string().min(1).max(8_000),
       agentId: z.string().min(1).max(200),
       expiresAt: z.iso.datetime(),
-      maxSessionSeconds: z.number().int().min(15).max(300)
+      maxSessionSeconds: z.number().int().min(15).max(300),
+      serverLocation: VoiceServerLocationSchema
     })
     .strict(),
   z
@@ -464,6 +540,9 @@ export type ConfirmMedicationObservationRequest = z.infer<
   typeof ConfirmMedicationObservationRequestSchema
 >;
 export type StartAssessmentRequest = z.infer<typeof StartAssessmentRequestSchema>;
+export type StartVoiceBiomarkerRequest = z.infer<typeof StartVoiceBiomarkerRequestSchema>;
+export type SubmitVoiceBiomarkerRequest = z.infer<typeof SubmitVoiceBiomarkerRequestSchema>;
+export type SkipVoiceBiomarkerRequest = z.infer<typeof SkipVoiceBiomarkerRequestSchema>;
 export type SubmitAssessmentRequest = z.infer<typeof SubmitAssessmentRequestSchema>;
 export type SubmitCaptureQualityRequest = z.infer<typeof SubmitCaptureQualityRequestSchema>;
 export type SubmitFollowUpRequest = z.infer<typeof SubmitFollowUpRequestSchema>;

@@ -8,6 +8,7 @@ import {
   ProtocolResultSchema,
   SafeInferenceIdentifierSchema,
   RoundStateSchema,
+  VoiceBiomarkerQualitySchema,
   type DomainEvent,
   type ProtocolResult,
   type RoundState
@@ -191,6 +192,36 @@ export const MedicationObservationConfirmedPayloadSchema = z
 export const MedicationReviewSkippedPayloadSchema = z
   .object({
     reason: z.enum(["patient_declined", "session_timeout"]),
+    deterministicAuthorityRetained: z.literal(true),
+    rawMediaStored: z.literal(false)
+  })
+  .strict();
+
+export const VoiceBiomarkerAcceptedPayloadSchema = z
+  .object({
+    factId: z.uuid(),
+    assessmentSessionId: z.uuid(),
+    provider: z.literal("local_voice_features"),
+    qualityStatus: z.literal("pass"),
+    researchOnly: z.literal(true),
+    rawMediaStored: z.literal(false)
+  })
+  .strict();
+
+export const VoiceBiomarkerQualityRejectedPayloadSchema = z
+  .object({
+    assessmentSessionId: z.uuid(),
+    quality: VoiceBiomarkerQualitySchema.refine(({ status }) => status !== "pass", {
+      message: "a rejected voice capture cannot have passing quality"
+    }),
+    researchOnly: z.literal(true),
+    rawMediaStored: z.literal(false)
+  })
+  .strict();
+
+export const VoiceBiomarkerSkippedPayloadSchema = z
+  .object({
+    reason: z.enum(["patient_declined", "unsupported_device", "permission_denied"]),
     deterministicAuthorityRetained: z.literal(true),
     rawMediaStored: z.literal(false)
   })
@@ -455,6 +486,52 @@ export function createMedicationReviewSkippedEvent(
     input,
     "medication_review_skipped",
     MedicationReviewSkippedPayloadSchema.parse({
+      reason: input.reason,
+      deterministicAuthorityRetained: input.deterministicAuthorityRetained,
+      rawMediaStored: input.rawMediaStored
+    })
+  );
+}
+
+export function createVoiceBiomarkerAcceptedEvent(
+  input: EventBaseInput & z.infer<typeof VoiceBiomarkerAcceptedPayloadSchema>
+): DomainEvent {
+  return event(
+    input,
+    "voice_biomarker_accepted",
+    VoiceBiomarkerAcceptedPayloadSchema.parse({
+      factId: input.factId,
+      assessmentSessionId: input.assessmentSessionId,
+      provider: input.provider,
+      qualityStatus: input.qualityStatus,
+      researchOnly: input.researchOnly,
+      rawMediaStored: input.rawMediaStored
+    })
+  );
+}
+
+export function createVoiceBiomarkerQualityRejectedEvent(
+  input: EventBaseInput & z.infer<typeof VoiceBiomarkerQualityRejectedPayloadSchema>
+): DomainEvent {
+  return event(
+    input,
+    "voice_biomarker_quality_rejected",
+    VoiceBiomarkerQualityRejectedPayloadSchema.parse({
+      assessmentSessionId: input.assessmentSessionId,
+      quality: input.quality,
+      researchOnly: input.researchOnly,
+      rawMediaStored: input.rawMediaStored
+    })
+  );
+}
+
+export function createVoiceBiomarkerSkippedEvent(
+  input: EventBaseInput & z.infer<typeof VoiceBiomarkerSkippedPayloadSchema>
+): DomainEvent {
+  return event(
+    input,
+    "voice_biomarker_skipped",
+    VoiceBiomarkerSkippedPayloadSchema.parse({
       reason: input.reason,
       deterministicAuthorityRetained: input.deterministicAuthorityRetained,
       rawMediaStored: input.rawMediaStored

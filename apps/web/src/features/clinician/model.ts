@@ -6,7 +6,8 @@ import {
   MeasurementFactSchema,
   PatientReportSchema,
   ProtocolResultSchema,
-  RoundSchema
+  RoundSchema,
+  VoiceBiomarkerFactSchema
 } from "@homerounds/contracts";
 import { z } from "zod";
 
@@ -85,6 +86,7 @@ export const ClinicianTaskDetailSchema = z
     snapshot: resourceStateSchema(ClinicalSnapshotSchema.strict()),
     report: resourceStateSchema(PatientReportSchema.strict()),
     measurement: resourceStateSchema(MeasurementFactSchema.strict()),
+    voiceBiomarkerFact: resourceStateSchema(VoiceBiomarkerFactSchema),
     captureQuality: resourceStateSchema(CaptureQualitySchema.strict()),
     protocolResult: resourceStateSchema(ProtocolResultSchema.strict()),
     timeline: resourceStateSchema(z.array(DomainEventSchema.strict()).max(500)),

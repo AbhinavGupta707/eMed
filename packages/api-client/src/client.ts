@@ -16,7 +16,10 @@ import {
   ExecuteActionRequestSchema,
   QueueDataSchema,
   RoundDataSchema,
+  SkipVoiceBiomarkerDataSchema,
+  SkipVoiceBiomarkerRequestSchema,
   StartAssessmentRequestSchema,
+  StartVoiceBiomarkerRequestSchema,
   SubmitAssessmentDataSchema,
   SubmitAssessmentRequestSchema,
   SubmitCaptureQualityDataSchema,
@@ -27,17 +30,23 @@ import {
   SubmitMedicationLabelImageRequestSchema,
   SubmitReportDataSchema,
   SubmitReportRequestSchema,
+  SubmitVoiceBiomarkerDataSchema,
+  SubmitVoiceBiomarkerRequestSchema,
   TransitionRoundRequestSchema,
+  VoiceBiomarkerSessionDataSchema,
   type CreateRoundRequest,
   type ClinicianMutationRequest,
   type ConfirmMedicationObservationRequest,
   type ExecuteActionRequest,
   type StartAssessmentRequest,
+  type StartVoiceBiomarkerRequest,
+  type SkipVoiceBiomarkerRequest,
   type SubmitAssessmentRequest,
   type SubmitCaptureQualityRequest,
   type SubmitFollowUpRequest,
   type SubmitMedicationLabelImageRequest,
   type SubmitReportRequest,
+  type SubmitVoiceBiomarkerRequest,
   type TransitionRoundRequest
 } from "./schemas";
 
@@ -131,6 +140,33 @@ export class HomeRoundsApiClient {
       "POST",
       StartAssessmentRequestSchema.parse(input),
       AssessmentSessionDataSchema
+    );
+  }
+
+  startVoiceBiomarker(roundId: string, input: StartVoiceBiomarkerRequest) {
+    return this.#json(
+      `/api/rounds/${z.uuid().parse(roundId)}/voice-biomarker/session`,
+      "POST",
+      StartVoiceBiomarkerRequestSchema.parse(input),
+      VoiceBiomarkerSessionDataSchema
+    );
+  }
+
+  submitVoiceBiomarker(roundId: string, input: SubmitVoiceBiomarkerRequest) {
+    return this.#json(
+      `/api/rounds/${z.uuid().parse(roundId)}/voice-biomarker`,
+      "POST",
+      SubmitVoiceBiomarkerRequestSchema.parse(input),
+      SubmitVoiceBiomarkerDataSchema
+    );
+  }
+
+  skipVoiceBiomarker(roundId: string, input: SkipVoiceBiomarkerRequest) {
+    return this.#json(
+      `/api/rounds/${z.uuid().parse(roundId)}/voice-biomarker/skip`,
+      "POST",
+      SkipVoiceBiomarkerRequestSchema.parse(input),
+      SkipVoiceBiomarkerDataSchema
     );
   }
 

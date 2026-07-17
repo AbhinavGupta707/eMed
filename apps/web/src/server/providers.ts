@@ -66,6 +66,7 @@ export type ElevenLabsCredentialResult =
       agentId: string;
       expiresAt: string;
       maxSessionSeconds: number;
+      serverLocation: keyof typeof elevenLabsBaseUrls;
     }
   | {
       status: "unavailable";
@@ -116,7 +117,8 @@ export class ElevenLabsCredentialService {
         expiresAt: new Date(
           Date.parse(this.now()) + this.config.maxSessionSeconds * 1_000
         ).toISOString(),
-        maxSessionSeconds: this.config.maxSessionSeconds
+        maxSessionSeconds: this.config.maxSessionSeconds,
+        serverLocation: this.config.serverLocation
       };
     } catch (error: unknown) {
       if (controller.signal.aborted) return { status: "unavailable", reason: "network" };

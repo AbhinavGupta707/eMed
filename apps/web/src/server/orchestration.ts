@@ -6,6 +6,8 @@ import {
   MedicationObservationConfirmedPayloadSchema,
   MedicationLabelProposedPayloadSchema,
   PatientReportConfirmedPayloadSchema,
+  VoiceBiomarkerAcceptedPayloadSchema,
+  VoiceBiomarkerSkippedPayloadSchema,
   createAdaptiveEvidenceRouteSelectedEvent,
   createCaptureQualityRejectedEvent,
   createFollowUpAnsweredEvent,
@@ -14,6 +16,9 @@ import {
   createMedicationObservationConfirmedEvent,
   createMedicationReviewSkippedEvent,
   createPatientReportConfirmedEvent,
+  createVoiceBiomarkerAcceptedEvent,
+  createVoiceBiomarkerQualityRejectedEvent,
+  createVoiceBiomarkerSkippedEvent,
   createRoundStateChangedEvent
 } from "@homerounds/audit";
 import {
@@ -25,6 +30,8 @@ import {
   PatientReportSchema,
   ProtocolResultSchema,
   RoundSchema,
+  VoiceBiomarkerAssessmentResultSchema,
+  VoiceBiomarkerFactSchema,
   type ClinicalTask,
   type AdaptiveSelectionOutcome,
   type CaptureQuality,
@@ -36,7 +43,9 @@ import {
   type PatientReport,
   type ProtocolResult,
   type Round,
-  type RoundState
+  type RoundState,
+  type VoiceBiomarkerAssessmentResult,
+  type VoiceBiomarkerFact
 } from "@homerounds/contracts";
 import { reduceRoundState } from "@homerounds/domain";
 import { createConfirmedMedicationObservationFact } from "@homerounds/assessments";
@@ -46,7 +55,11 @@ import {
   type AdaptiveSelectionAuthorityState,
   type AdaptiveSelectionProvider
 } from "@homerounds/inference";
-import type { HomeRoundsRepository, MeasurementFactRecord } from "@homerounds/persistence";
+import type {
+  HomeRoundsRepository,
+  MeasurementFactRecord,
+  VoiceBiomarkerFactRecord
+} from "@homerounds/persistence";
 import { planNextModule } from "@homerounds/planner";
 import {
   ProtocolDefinitionSchema,
@@ -73,7 +86,9 @@ export type OrchestrationErrorCode =
   | "report_missing"
   | "medication_confirmation_required"
   | "medication_proposal_missing"
-  | "medication_fact_conflict";
+  | "medication_fact_conflict"
+  | "voice_biomarker_confirmation_required"
+  | "voice_biomarker_fact_conflict";
 
 export class OrchestrationError extends Error {
   constructor(
@@ -96,6 +111,7 @@ type CommonDependencies<TSnapshot, TFact> = {
   adaptiveSelectionProvider: AdaptiveSelectionProvider;
   adaptiveSelectionEnabled: boolean;
   medicationLabelEnabled: boolean;
+  voiceBiomarkerEnabled: boolean;
   now?: () => string;
   createId?: IdFactory;
 };
@@ -105,7 +121,7 @@ const AssessmentAttestationPayloadSchema = z
     assessmentSessionId: z.uuid(),
     roundId: z.uuid(),
     patientId: z.string().min(1).max(120),
-    provider: z.enum(["finger_ppg", "vitallens"]),
+    provider: z.enum(["finger_ppg", "vitallens", "local_voice_features"]),
     expiresAt: z.iso.datetime()
   })
   .strict();
@@ -126,6 +142,8 @@ export type AdaptiveEvidenceRouteData = {
   selectedModuleId: string | null;
   medicationConfirmed: boolean;
   medicationSkipped: boolean;
+  voiceBiomarkerCompleted: boolean;
+  voiceBiomarkerSkipped: boolean;
 };
 
 export type MedicationConfirmationResult = {
@@ -147,6 +165,20 @@ export type AssessmentSubmissionResult = {
   round: Round;
   measurement: MeasurementFact;
   decision: ProtocolEvaluationDecision;
+};
+
+export type VoiceBiomarkerSessionResult = {
+  round: Round;
+  assessmentSessionId: string;
+  provider: "local_voice_features";
+  attestation: string;
+  expiresAt: string;
+};
+
+export type VoiceBiomarkerSubmissionResult = {
+  round: Round;
+  result: Exclude<VoiceBiomarkerAssessmentResult, { status: "unavailable" }>;
+  evidenceRoute: AdaptiveEvidenceRouteData;
 };
 
 export type CaptureQualitySubmissionResult =
@@ -173,13 +205,51 @@ function sameMeasurement(left: MeasurementFact, right: MeasurementFact): boolean
   );
 }
 
+function sameVoiceBiomarkerFact(left: VoiceBiomarkerFact, right: VoiceBiomarkerFact): boolean {
+  return (
+    JSON.stringify(VoiceBiomarkerFactSchema.parse(left)) ===
+    JSON.stringify(VoiceBiomarkerFactSchema.parse(right))
+  );
+}
+
+function assertPassingVoiceBiomarkerPolicy(fact: VoiceBiomarkerFact): void {
+  const quality = fact.quality;
+  const features = fact.features;
+  const completeFeatures = [
+    features.medianFundamentalFrequencyHz,
+    features.pitchVariabilitySemitones,
+    features.jitterPercent,
+    features.shimmerPercent,
+    features.harmonicToNoiseRatioDb
+  ].every((value) => value !== null);
+  if (
+    fact.durationMs < 6_000 ||
+    fact.durationMs > 12_000 ||
+    features.phonationDurationMs !== fact.durationMs ||
+    quality.metrics.durationMs !== fact.durationMs ||
+    quality.score < 0.7 ||
+    quality.reasons.length > 0 ||
+    quality.metrics.sampleRateHz < 8_000 ||
+    quality.metrics.sampleRateHz > 192_000 ||
+    quality.metrics.clippingFraction > 0.02 ||
+    quality.metrics.voicedFraction < 0.6 ||
+    quality.metrics.estimatedSnrDb === null ||
+    quality.metrics.estimatedSnrDb < 10 ||
+    !completeFeatures
+  ) {
+    throw new OrchestrationError("voice_biomarker_fact_conflict", false);
+  }
+}
+
 function emptyEvidenceRoute(): AdaptiveEvidenceRouteData {
   return {
     selection: null,
     candidates: [],
     selectedModuleId: null,
     medicationConfirmed: false,
-    medicationSkipped: false
+    medicationSkipped: false,
+    voiceBiomarkerCompleted: false,
+    voiceBiomarkerSkipped: false
   };
 }
 
@@ -187,6 +257,7 @@ function evidenceModuleCandidates(input: {
   selectedProvider: "finger_ppg" | "vitallens";
   pulseAvailable: boolean;
   medicationLabelEnabled: boolean;
+  voiceBiomarkerEnabled: boolean;
 }): EvidenceModuleCandidate[] {
   return EvidenceModuleCandidateSchema.array()
     .min(1)
@@ -220,6 +291,19 @@ function evidenceModuleCandidates(input: {
           : { status: "unavailable", reason: "not_needed" },
         estimatedBurdenSeconds: 60,
         deterministicRank: 1
+      },
+      {
+        id: "voice.local.baseline",
+        kind: "voice_biomarker",
+        label: "Optional research voice signal",
+        description:
+          "A short sustained vowel is analysed locally and accepted only when its quality gate passes.",
+        producesFactKeys: ["voice_biomarker_observation"],
+        availability: input.voiceBiomarkerEnabled
+          ? { status: "available" }
+          : { status: "unavailable", reason: "not_needed" },
+        estimatedBurdenSeconds: 20,
+        deterministicRank: 2
       }
     ]);
 }
@@ -251,6 +335,7 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
   readonly #adaptiveSelection: AdaptiveSelectionService;
   readonly #adaptiveSelectionEnabled: boolean;
   readonly #medicationLabelEnabled: boolean;
+  readonly #voiceBiomarkerEnabled: boolean;
 
   constructor(dependencies: CommonDependencies<TSnapshot, TFact>) {
     this.#repository = dependencies.repository;
@@ -262,6 +347,7 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
     this.#createId = dependencies.createId ?? defaultId;
     this.#adaptiveSelectionEnabled = dependencies.adaptiveSelectionEnabled;
     this.#medicationLabelEnabled = dependencies.medicationLabelEnabled;
+    this.#voiceBiomarkerEnabled = dependencies.voiceBiomarkerEnabled;
     this.#adaptiveSelection = new AdaptiveSelectionService({
       provider: dependencies.adaptiveSelectionProvider,
       readAuthorityState: (roundId, signal) => this.#readAdaptiveAuthorityState(roundId, signal)
@@ -354,12 +440,22 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
       .filter(({ type }) => type === "medication_review_skipped")
       .map(({ payload }) => MedicationReviewSkippedPayloadSchema.safeParse(payload))
       .some((result) => result.success);
+    const voiceBiomarkerCompleted = events
+      .filter(({ type }) => type === "voice_biomarker_accepted")
+      .map(({ payload }) => VoiceBiomarkerAcceptedPayloadSchema.safeParse(payload))
+      .some((result) => result.success);
+    const voiceBiomarkerSkipped = events
+      .filter(({ type }) => type === "voice_biomarker_skipped")
+      .map(({ payload }) => VoiceBiomarkerSkippedPayloadSchema.safeParse(payload))
+      .some((result) => result.success);
     return {
       selection: selected.data.selection,
       candidates: selected.data.candidates,
       selectedModuleId: selected.data.selectedModuleId,
       medicationConfirmed,
-      medicationSkipped
+      medicationSkipped,
+      voiceBiomarkerCompleted,
+      voiceBiomarkerSkipped
     };
   }
 
@@ -670,7 +766,8 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
     const candidates = evidenceModuleCandidates({
       selectedProvider: this.#selectedProvider,
       pulseAvailable: available,
-      medicationLabelEnabled: this.#medicationLabelEnabled
+      medicationLabelEnabled: this.#medicationLabelEnabled,
+      voiceBiomarkerEnabled: this.#voiceBiomarkerEnabled
     });
     const adaptiveInput = AdaptiveSelectionInputSchema.parse({
       contractVersion: "adaptive-selection.v1",
@@ -678,9 +775,11 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
       stateVersion: round.stateVersion,
       syntheticDataOnly: true,
       redFlagGate: "clear",
-      neededFactKeys: this.#medicationLabelEnabled
-        ? ["pulse_bpm", "medication_label_observation"]
-        : ["pulse_bpm"],
+      neededFactKeys: [
+        "pulse_bpm",
+        ...(this.#medicationLabelEnabled ? (["medication_label_observation"] as const) : []),
+        ...(this.#voiceBiomarkerEnabled ? (["voice_biomarker_observation"] as const) : [])
+      ],
       burdenSecondsRemaining: round.burdenSecondsRemaining,
       context: [
         {
@@ -732,9 +831,218 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
         candidates,
         selectedModuleId,
         medicationConfirmed: false,
-        medicationSkipped: false
+        medicationSkipped: false,
+        voiceBiomarkerCompleted: false,
+        voiceBiomarkerSkipped: false
       }
     };
+  }
+
+  async getLatestVoiceBiomarkerFact(roundId: string): Promise<VoiceBiomarkerFact | null> {
+    const facts = await this.#repository.listVoiceBiomarkerFacts(z.uuid().parse(roundId));
+    return (
+      [...facts].sort((left, right) => right.fact.observedAt.localeCompare(left.fact.observedAt))[0]
+        ?.fact ?? null
+    );
+  }
+
+  async startVoiceBiomarker(input: {
+    roundId: string;
+    patientId: string;
+    expectedStateVersion: number;
+  }): Promise<VoiceBiomarkerSessionResult> {
+    const round = await this.getRound(input.roundId);
+    if (round.patientId !== input.patientId) {
+      throw new OrchestrationError("patient_mismatch", false);
+    }
+    if (round.state !== "assessment_selected") {
+      throw new OrchestrationError("invalid_state", false);
+    }
+    if (round.stateVersion !== input.expectedStateVersion) {
+      throw new OrchestrationError("stale_state", true);
+    }
+    const route = await this.getEvidenceRoute(round.id);
+    if (
+      !this.#voiceBiomarkerEnabled ||
+      route.selectedModuleId !== "voice.local.baseline" ||
+      route.voiceBiomarkerCompleted ||
+      route.voiceBiomarkerSkipped
+    ) {
+      throw new OrchestrationError("invalid_state", false);
+    }
+    const assessmentSessionId = this.#createId();
+    const expiresAt = new Date(Date.parse(this.#now()) + 5 * 60_000).toISOString();
+    const payload = AssessmentAttestationPayloadSchema.parse({
+      assessmentSessionId,
+      roundId: round.id,
+      patientId: round.patientId,
+      provider: "local_voice_features",
+      expiresAt
+    });
+    return {
+      round,
+      assessmentSessionId,
+      provider: "local_voice_features",
+      attestation: this.#signAttestation(payload),
+      expiresAt
+    };
+  }
+
+  async submitVoiceBiomarker(input: {
+    roundId: string;
+    patientId: string;
+    expectedStateVersion: number;
+    result: Exclude<VoiceBiomarkerAssessmentResult, { status: "unavailable" }>;
+    attestation: string;
+    actorId: string;
+    correlationId: string;
+  }): Promise<VoiceBiomarkerSubmissionResult> {
+    const parsed = VoiceBiomarkerAssessmentResultSchema.parse(input.result);
+    if (parsed.status === "unavailable") {
+      throw new OrchestrationError("invalid_state", false);
+    }
+    const round = await this.getRound(input.roundId);
+    if (round.patientId !== input.patientId || round.state !== "assessment_selected") {
+      throw new OrchestrationError(
+        round.patientId !== input.patientId ? "patient_mismatch" : "invalid_state",
+        false
+      );
+    }
+    const route = await this.getEvidenceRoute(round.id);
+    if (route.selectedModuleId !== "voice.local.baseline" || route.voiceBiomarkerSkipped) {
+      throw new OrchestrationError("invalid_state", false);
+    }
+
+    if (parsed.status === "completed") {
+      const fact = VoiceBiomarkerFactSchema.parse(parsed.fact);
+      const existingFacts = await this.#repository.listVoiceBiomarkerFacts(round.id);
+      const existing = existingFacts.find(
+        ({ fact: candidate }) =>
+          candidate.factId === fact.factId ||
+          candidate.assessmentSessionId === fact.assessmentSessionId
+      );
+      if (route.voiceBiomarkerCompleted && !existing) {
+        throw new OrchestrationError("voice_biomarker_fact_conflict", false);
+      }
+      const attestation = this.#verifyAttestation(input.attestation, existing !== undefined);
+      if (
+        fact.roundId !== round.id ||
+        attestation.roundId !== round.id ||
+        attestation.patientId !== round.patientId ||
+        attestation.assessmentSessionId !== fact.assessmentSessionId ||
+        attestation.provider !== "local_voice_features" ||
+        fact.provider !== attestation.provider
+      ) {
+        throw new OrchestrationError("assessment_attestation_invalid", false);
+      }
+      if (round.stateVersion !== input.expectedStateVersion && !existing) {
+        throw new OrchestrationError("stale_state", true);
+      }
+      if (existing && !sameVoiceBiomarkerFact(existing.fact, fact)) {
+        throw new OrchestrationError("voice_biomarker_fact_conflict", false);
+      }
+      assertPassingVoiceBiomarkerPolicy(fact);
+      if (!existing) {
+        const record: VoiceBiomarkerFactRecord = {
+          roundId: round.id,
+          patientId: round.patientId,
+          fact
+        };
+        await this.#repository.saveVoiceBiomarkerFact(record);
+      }
+      await this.#ensureStandaloneEvent(
+        createVoiceBiomarkerAcceptedEvent({
+          eventId: deterministicUuid("voice-biomarker-accepted", fact.factId),
+          occurredAt: fact.observedAt,
+          actor: { kind: "patient", id: input.actorId },
+          patientId: round.patientId,
+          roundId: round.id,
+          correlationId: input.correlationId,
+          source: "patient_ui",
+          factId: fact.factId,
+          assessmentSessionId: fact.assessmentSessionId,
+          provider: "local_voice_features",
+          qualityStatus: "pass",
+          researchOnly: true,
+          rawMediaStored: false
+        })
+      );
+    } else {
+      if (round.stateVersion !== input.expectedStateVersion || route.voiceBiomarkerCompleted) {
+        throw new OrchestrationError("stale_state", true);
+      }
+      const attestation = this.#verifyAttestation(input.attestation, false);
+      if (
+        attestation.roundId !== round.id ||
+        attestation.patientId !== round.patientId ||
+        attestation.provider !== "local_voice_features"
+      ) {
+        throw new OrchestrationError("assessment_attestation_invalid", false);
+      }
+      await this.#ensureStandaloneEvent(
+        createVoiceBiomarkerQualityRejectedEvent({
+          eventId: deterministicUuid(
+            "voice-biomarker-quality",
+            attestation.assessmentSessionId,
+            parsed.status
+          ),
+          occurredAt: this.#now(),
+          actor: { kind: "patient", id: input.actorId },
+          patientId: round.patientId,
+          roundId: round.id,
+          correlationId: input.correlationId,
+          source: "patient_ui",
+          assessmentSessionId: attestation.assessmentSessionId,
+          quality: parsed.quality,
+          researchOnly: true,
+          rawMediaStored: false
+        })
+      );
+    }
+    return {
+      round,
+      result: parsed,
+      evidenceRoute: await this.getEvidenceRoute(round.id)
+    };
+  }
+
+  async skipVoiceBiomarker(input: {
+    roundId: string;
+    patientId: string;
+    expectedStateVersion: number;
+    reason: "patient_declined" | "unsupported_device" | "permission_denied";
+    actorId: string;
+    correlationId: string;
+  }): Promise<{ round: Round; evidenceRoute: AdaptiveEvidenceRouteData }> {
+    const round = await this.getRound(input.roundId);
+    if (round.patientId !== input.patientId) {
+      throw new OrchestrationError("patient_mismatch", false);
+    }
+    if (round.state !== "assessment_selected") {
+      throw new OrchestrationError("invalid_state", false);
+    }
+    if (round.stateVersion !== input.expectedStateVersion) {
+      throw new OrchestrationError("stale_state", true);
+    }
+    const route = await this.getEvidenceRoute(round.id);
+    if (route.selectedModuleId !== "voice.local.baseline" || route.voiceBiomarkerCompleted) {
+      throw new OrchestrationError("invalid_state", false);
+    }
+    await this.#ensureStandaloneEvent(
+      createVoiceBiomarkerSkippedEvent({
+        eventId: deterministicUuid("voice-biomarker-skipped", round.id),
+        occurredAt: this.#now(),
+        actor: { kind: "patient", id: input.actorId },
+        patientId: round.patientId,
+        roundId: round.id,
+        correlationId: input.correlationId,
+        source: "patient_ui",
+        reason: input.reason,
+        deterministicAuthorityRetained: true,
+        rawMediaStored: false
+      })
+    );
+    return { round, evidenceRoute: await this.getEvidenceRoute(round.id) };
   }
 
   async startAssessment(input: {
@@ -758,11 +1066,19 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
       evidenceRoute.selectedModuleId === "medication.label.review" &&
       !evidenceRoute.medicationConfirmed &&
       !evidenceRoute.medicationSkipped;
+    const voiceBiomarkerPending =
+      round.state === "assessment_selected" &&
+      evidenceRoute.selectedModuleId === "voice.local.baseline" &&
+      !evidenceRoute.voiceBiomarkerCompleted &&
+      !evidenceRoute.voiceBiomarkerSkipped;
     if (medicationReviewPending && !input.skipMedicationReview) {
       throw new OrchestrationError("medication_confirmation_required", false);
     }
     if (input.skipMedicationReview && !medicationReviewPending) {
       throw new OrchestrationError("invalid_state", false);
+    }
+    if (voiceBiomarkerPending) {
+      throw new OrchestrationError("voice_biomarker_confirmation_required", false);
     }
     const skipEvent = input.skipMedicationReview
       ? createMedicationReviewSkippedEvent({

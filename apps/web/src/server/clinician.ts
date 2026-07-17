@@ -137,11 +137,14 @@ export class ClinicianService<TSnapshot, TFact> {
     if (!task) throw new ClinicianServiceError("task_not_found", false);
     const round = await this.#repository.getRound(task.roundId);
     if (!round) throw new ClinicianServiceError("round_not_found", false);
-    const [timeline, measurements] = await Promise.all([
+    const [timeline, measurements, voiceBiomarkerFacts] = await Promise.all([
       this.#repository.listAuditEvents(round.id),
-      this.#repository.listMeasurementFacts(round.id)
+      this.#repository.listMeasurementFacts(round.id),
+      this.#repository.listVoiceBiomarkerFacts(round.id)
     ]);
     const measurement = latestBy(measurements, ({ fact }) => fact.observedAt)?.fact ?? null;
+    const voiceBiomarkerFact =
+      latestBy(voiceBiomarkerFacts, ({ fact }) => fact.observedAt)?.fact ?? null;
     const qualityEntries = timeline
       .filter(({ type }) => type === "capture_quality_rejected")
       .map((event) => ({
@@ -156,6 +159,7 @@ export class ClinicianService<TSnapshot, TFact> {
       round,
       report: reportFromEvents(round.id, timeline),
       measurement,
+      voiceBiomarkerFact,
       captureQuality,
       protocolResult: protocolResultFromEvents(timeline),
       timeline,

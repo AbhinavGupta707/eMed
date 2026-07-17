@@ -1,4 +1,10 @@
-import type { ClinicalTask, DomainEvent, MeasurementFact, Round } from "@homerounds/contracts";
+import type {
+  ClinicalTask,
+  DomainEvent,
+  MeasurementFact,
+  Round,
+  VoiceBiomarkerFact
+} from "@homerounds/contracts";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
@@ -269,6 +275,56 @@ describe("in-memory repository reference behavior", () => {
       repository.saveMeasurementFact(
         invalid as unknown as Parameters<typeof repository.saveMeasurementFact>[0]
       )
+    ).rejects.toThrow();
+  });
+
+  it("stores only passing research voice features and never raw audio", async () => {
+    const repository = new InMemoryHomeRoundsRepository<unknown, unknown>();
+    const fact: VoiceBiomarkerFact = {
+      factId: "fb99983d-cc81-454e-9c92-f8e99e0891de",
+      roundId,
+      assessmentSessionId: "45906cff-34ea-4a86-a0c0-05967adb20c4",
+      provider: "local_voice_features",
+      observedAt: "2026-07-17T08:09:00.000Z",
+      durationMs: 8_000,
+      algorithmVersion: "local-voice-features.v1",
+      features: {
+        medianFundamentalFrequencyHz: 182,
+        pitchVariabilitySemitones: 1.4,
+        jitterPercent: 1.1,
+        shimmerPercent: 3.2,
+        harmonicToNoiseRatioDb: 18.5,
+        phonationDurationMs: 8_000
+      },
+      quality: {
+        status: "pass",
+        score: 0.91,
+        reasons: [],
+        metrics: {
+          sampleRateHz: 48_000,
+          durationMs: 8_000,
+          clippingFraction: 0.002,
+          voicedFraction: 0.88,
+          estimatedSnrDb: 24
+        }
+      },
+      researchOnly: true,
+      rawMediaRef: null
+    };
+    await repository.saveVoiceBiomarkerFact({
+      roundId,
+      patientId: "synthetic-maya",
+      fact
+    });
+    await expect(repository.listVoiceBiomarkerFacts(roundId)).resolves.toEqual([
+      { roundId, patientId: "synthetic-maya", fact }
+    ]);
+    await expect(
+      repository.saveVoiceBiomarkerFact({
+        roundId,
+        patientId: "synthetic-maya",
+        fact: { ...fact, factId: "e53a8724-a417-4d97-962b-b0c2dfe48df3", researchOnly: false }
+      } as unknown as Parameters<typeof repository.saveVoiceBiomarkerFact>[0])
     ).rejects.toThrow();
   });
 

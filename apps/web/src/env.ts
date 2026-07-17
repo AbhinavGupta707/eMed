@@ -18,6 +18,7 @@ const serverEnvironmentSchema = z
       .enum(["us", "eu-residency", "in-residency", "global"])
       .default("global"),
     VOICE_SESSION_MAX_SECONDS: z.coerce.number().int().min(15).max(300).default(120),
+    VOICE_BIOMARKER_ENABLED: booleanText.default(false),
     NARRATIVE_MODEL_PROVIDER: z.enum(["disabled"]).default("disabled"),
     INFERENCE_PROVIDER: z.enum(["disabled", "fake", "fireworks"]).default("disabled"),
     FAKE_INFERENCE_PROFILE: z

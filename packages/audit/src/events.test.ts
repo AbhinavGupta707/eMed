@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { createPatientReportConfirmedEvent, createProgrammeTaskCreatedEvent } from "./events";
+import {
+  createPatientReportConfirmedEvent,
+  createProgrammeTaskCreatedEvent,
+  createVoiceBiomarkerAcceptedEvent
+} from "./events";
 
 const base = {
   eventId: "22b45117-613b-49e8-baa9-18f227e380a1",
@@ -51,5 +55,23 @@ describe("safe audit event factories", () => {
 
     expect(event.payload).toMatchObject({ freeTextStored: false });
     expect(JSON.stringify(event)).not.toMatch(/transcript|note|audio/i);
+  });
+
+  it("records only bounded voice-feature provenance and no audio or transcript", () => {
+    const event = createVoiceBiomarkerAcceptedEvent({
+      ...base,
+      actor: { kind: "patient", id: "synthetic-session" },
+      source: "patient_ui",
+      factId: "fb99983d-cc81-454e-9c92-f8e99e0891de",
+      assessmentSessionId: "45906cff-34ea-4a86-a0c0-05967adb20c4",
+      provider: "local_voice_features",
+      qualityStatus: "pass",
+      researchOnly: true,
+      rawMediaStored: false
+    });
+
+    expect(event.type).toBe("voice_biomarker_accepted");
+    expect(event.payload).toMatchObject({ researchOnly: true, rawMediaStored: false });
+    expect(JSON.stringify(event)).not.toMatch(/transcript|rawaudio|audiobytes|prompt/i);
   });
 });

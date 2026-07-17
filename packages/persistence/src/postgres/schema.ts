@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   doublePrecision,
   foreignKey,
@@ -76,6 +77,35 @@ export const measurementFacts = pgTable(
     check("measurement_facts_raw_media_absent", sql`${table.rawMediaRef} is null`),
     index("measurement_facts_round_observed_idx").on(table.roundId, table.observedAt),
     index("measurement_facts_patient_observed_idx").on(table.patientId, table.observedAt)
+  ]
+);
+
+export const voiceBiomarkerFacts = pgTable(
+  "voice_biomarker_facts",
+  {
+    factId: uuid("fact_id").primaryKey(),
+    roundId: uuid("round_id")
+      .notNull()
+      .references(() => rounds.id, { onDelete: "restrict" }),
+    patientId: text("patient_id").notNull(),
+    assessmentSessionId: uuid("assessment_session_id").notNull(),
+    provider: text("provider").notNull(),
+    observedAt: timestamptz("observed_at").notNull(),
+    durationMs: integer("duration_ms").notNull(),
+    algorithmVersion: text("algorithm_version").notNull(),
+    features: jsonb("features").notNull().$type<unknown>(),
+    quality: jsonb("quality").notNull().$type<unknown>(),
+    researchOnly: boolean("research_only").notNull(),
+    rawMediaRef: text("raw_media_ref")
+  },
+  (table) => [
+    check("voice_biomarker_facts_provider_local", sql`${table.provider} = 'local_voice_features'`),
+    check("voice_biomarker_facts_duration_positive", sql`${table.durationMs} > 0`),
+    check("voice_biomarker_facts_quality_pass", sql`${table.quality} ->> 'status' = 'pass'`),
+    check("voice_biomarker_facts_research_only", sql`${table.researchOnly} = true`),
+    check("voice_biomarker_facts_raw_media_absent", sql`${table.rawMediaRef} is null`),
+    index("voice_biomarker_facts_round_observed_idx").on(table.roundId, table.observedAt),
+    index("voice_biomarker_facts_patient_observed_idx").on(table.patientId, table.observedAt)
   ]
 );
 

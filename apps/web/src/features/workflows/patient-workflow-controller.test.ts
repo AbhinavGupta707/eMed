@@ -136,7 +136,9 @@ const emptyEvidenceRoute = {
   candidates: [],
   selectedModuleId: null,
   medicationConfirmed: false,
-  medicationSkipped: false
+  medicationSkipped: false,
+  voiceBiomarkerCompleted: false,
+  voiceBiomarkerSkipped: false
 } satisfies EvidenceRoute;
 
 const medicationEvidenceRoute = {
@@ -179,7 +181,9 @@ const medicationEvidenceRoute = {
   ],
   selectedModuleId: "medication.label.review",
   medicationConfirmed: false,
-  medicationSkipped: false
+  medicationSkipped: false,
+  voiceBiomarkerCompleted: false,
+  voiceBiomarkerSkipped: false
 } satisfies EvidenceRoute;
 
 class FakeApi implements PatientRoundApi {

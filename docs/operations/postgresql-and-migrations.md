@@ -1,6 +1,6 @@
 # Local PostgreSQL and migrations
 
-Use only dedicated databases containing synthetic HomeRounds data. PostgreSQL 17 is the target dialect. The repository contains one forward-only bootstrap migration and no automated down migration or migration ledger.
+Use only dedicated databases containing synthetic HomeRounds data. PostgreSQL 17 is the target dialect. The repository contains forward-only migrations and no automated down migration or migration ledger.
 
 ## Start the local database
 
@@ -22,11 +22,13 @@ Apply the checked-in SQL with `psql`; `ON_ERROR_STOP` and the migration's transa
 psql "$DATABASE_URL" --no-psqlrc -v ON_ERROR_STOP=1 \
   -f infra/db/migrations/0001_homerounds_foundations.sql
 psql "$DATABASE_URL" --no-psqlrc -v ON_ERROR_STOP=1 \
-  -c "select to_regclass('public.rounds'), to_regclass('public.audit_events');"
+  -f infra/db/migrations/0002_voice_biomarker_facts.sql
+psql "$DATABASE_URL" --no-psqlrc -v ON_ERROR_STOP=1 \
+  -c "select to_regclass('public.rounds'), to_regclass('public.audit_events'), to_regclass('public.voice_biomarker_facts');"
 DATABASE_URL="$DATABASE_URL" pnpm --filter @homerounds/persistence test
 ```
 
-The bootstrap is intentionally not idempotent. If `rounds` already exists, stop and identify the database and its schema state; do not ignore the error or run `drizzle-kit push`. For a clean rehearsal, create a new database/Neon branch and apply every migration in lexical order exactly once.
+The migrations are intentionally not idempotent. If an expected table already exists, stop and identify the database and its schema state; do not ignore the error or run `drizzle-kit push`. For a clean rehearsal, create a new database/Neon branch and apply every migration in lexical order exactly once.
 
 ## Run and prepare the synthetic demo
 
@@ -36,7 +38,8 @@ Start the web application with the same `DATABASE_URL`:
 APP_ENV=development DEMO_MODE=true \
   APP_BASE_URL=http://127.0.0.1:3000 \
   DATABASE_URL="$DATABASE_URL" \
-  VOICE_PROVIDER=disabled OPTICAL_ASSESSMENT_PROVIDER=finger_ppg \
+  VOICE_PROVIDER=disabled VOICE_BIOMARKER_ENABLED=true \
+  OPTICAL_ASSESSMENT_PROVIDER=finger_ppg \
   pnpm --filter @homerounds/web dev --hostname 127.0.0.1 --port 3000
 ```
 

@@ -124,7 +124,9 @@ const emptyEvidenceRoute = {
   candidates: [],
   selectedModuleId: null,
   medicationConfirmed: false,
-  medicationSkipped: false
+  medicationSkipped: false,
+  voiceBiomarkerCompleted: false,
+  voiceBiomarkerSkipped: false
 };
 
 class UiApi implements PatientRoundApi {

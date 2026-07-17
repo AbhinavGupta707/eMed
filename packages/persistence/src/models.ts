@@ -3,6 +3,7 @@ import {
   DomainEventSchema,
   MeasurementFactSchema,
   RoundStateSchema,
+  VoiceBiomarkerFactSchema,
   type ClinicalTask,
   type DomainEvent,
   type Round
@@ -16,6 +17,14 @@ export const MeasurementFactRecordSchema = z.object({
 });
 
 export type MeasurementFactRecord = z.infer<typeof MeasurementFactRecordSchema>;
+
+export const VoiceBiomarkerFactRecordSchema = z.object({
+  roundId: z.uuid(),
+  patientId: z.string().min(1),
+  fact: VoiceBiomarkerFactSchema
+});
+
+export type VoiceBiomarkerFactRecord = z.infer<typeof VoiceBiomarkerFactRecordSchema>;
 
 export const ClinicalSnapshotRecordSchema = z.object({
   snapshotId: z.uuid(),

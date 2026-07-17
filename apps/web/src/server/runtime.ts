@@ -186,6 +186,7 @@ export function createServerRuntime(overrides: ServerRuntimeOverrides = {}): Ser
     adaptiveSelectionProvider,
     adaptiveSelectionEnabled: environment.ADAPTIVE_SELECTION_ENABLED,
     medicationLabelEnabled: environment.MEDICATION_LABEL_AI_ENABLED,
+    voiceBiomarkerEnabled: environment.VOICE_BIOMARKER_ENABLED,
     now,
     createId
   });

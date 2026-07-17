@@ -147,7 +147,9 @@ function emptyEvidenceRoute(): EvidenceRoute {
     candidates: [],
     selectedModuleId: null,
     medicationConfirmed: false,
-    medicationSkipped: false
+    medicationSkipped: false,
+    voiceBiomarkerCompleted: false,
+    voiceBiomarkerSkipped: false
   };
 }
 

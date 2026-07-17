@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
-import type { ClinicalTask, DomainEvent, Round } from "@homerounds/contracts";
+import type { ClinicalTask, DomainEvent, Round, VoiceBiomarkerFact } from "@homerounds/contracts";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { describe, expect, it } from "vitest";
@@ -114,11 +114,58 @@ describe("PostgreSQL repository integration", () => {
           "utf8"
         );
         await client.unsafe(migration);
+        const voiceMigration = await readFile(
+          new URL(
+            "../../../../infra/db/migrations/0002_voice_biomarker_facts.sql",
+            import.meta.url
+          ),
+          "utf8"
+        );
+        await client.unsafe(voiceMigration);
 
         const repository = new PostgresHomeRoundsRepository<unknown, unknown>(
           drizzle(client, { schema })
         );
         await repository.createRound(round());
+        const voiceFact: VoiceBiomarkerFact = {
+          factId: "fb99983d-cc81-454e-9c92-f8e99e0891de",
+          roundId: "14df34c4-8204-4810-8113-37b63c963a91",
+          assessmentSessionId: "45906cff-34ea-4a86-a0c0-05967adb20c4",
+          provider: "local_voice_features",
+          observedAt: "2026-07-17T08:09:00.000Z",
+          durationMs: 8_000,
+          algorithmVersion: "local-voice-features.v1",
+          features: {
+            medianFundamentalFrequencyHz: 182,
+            pitchVariabilitySemitones: 1.4,
+            jitterPercent: 1.1,
+            shimmerPercent: 3.2,
+            harmonicToNoiseRatioDb: 18.5,
+            phonationDurationMs: 8_000
+          },
+          quality: {
+            status: "pass",
+            score: 0.91,
+            reasons: [],
+            metrics: {
+              sampleRateHz: 48_000,
+              durationMs: 8_000,
+              clippingFraction: 0.002,
+              voicedFraction: 0.88,
+              estimatedSnrDb: 24
+            }
+          },
+          researchOnly: true,
+          rawMediaRef: null
+        };
+        await repository.saveVoiceBiomarkerFact({
+          roundId: voiceFact.roundId,
+          patientId: "synthetic-maya",
+          fact: voiceFact
+        });
+        await expect(repository.listVoiceBiomarkerFacts(voiceFact.roundId)).resolves.toEqual([
+          { roundId: voiceFact.roundId, patientId: "synthetic-maya", fact: voiceFact }
+        ]);
         const results = await Promise.all([
           repository.commitAction(input(1)),
           repository.commitAction(input(2))

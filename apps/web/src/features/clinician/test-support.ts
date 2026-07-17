@@ -167,6 +167,11 @@ export function syntheticDetail(
             },
             rawMediaRef: null
           }),
+    voiceBiomarkerFact: unavailableResource(
+      "missing",
+      "not_recorded",
+      "No quality-passing research voice signal was accepted."
+    ),
     captureQuality:
       input.outcome === "abstain_for_review"
         ? availableResource({

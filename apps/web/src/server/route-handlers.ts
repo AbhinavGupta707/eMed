@@ -12,7 +12,10 @@ import {
   ExecuteActionRequestSchema,
   QueueDataSchema,
   RoundDataSchema,
+  SkipVoiceBiomarkerDataSchema,
+  SkipVoiceBiomarkerRequestSchema,
   StartAssessmentRequestSchema,
+  StartVoiceBiomarkerRequestSchema,
   SubmitAssessmentDataSchema,
   SubmitAssessmentRequestSchema,
   SubmitCaptureQualityDataSchema,
@@ -23,7 +26,10 @@ import {
   SubmitMedicationLabelImageRequestSchema,
   SubmitReportDataSchema,
   SubmitReportRequestSchema,
-  TransitionRoundRequestSchema
+  SubmitVoiceBiomarkerDataSchema,
+  SubmitVoiceBiomarkerRequestSchema,
+  TransitionRoundRequestSchema,
+  VoiceBiomarkerSessionDataSchema
 } from "@homerounds/api-client";
 import { ActionServiceError } from "@homerounds/actions";
 import {
@@ -69,6 +75,8 @@ async function serviceCall<T>(operation: () => Promise<T>): Promise<T> {
         case "medication_confirmation_required":
         case "medication_proposal_missing":
         case "medication_fact_conflict":
+        case "voice_biomarker_confirmation_required":
+        case "voice_biomarker_fact_conflict":
           throw new ApiFault(409, "conflict", `api.error.${error.code}`);
       }
     }
@@ -153,17 +161,18 @@ export function handleGetRound(
       if (context.session.role === "patient") {
         assertPatientScope(context.session.patientId, round.patientId);
       }
-      const [protocolResult, tasks, evidenceRoute] = await Promise.all([
+      const [protocolResult, tasks, evidenceRoute, voiceBiomarkerFact] = await Promise.all([
         serviceCall(() => runtime.orchestration.getProtocolResult(round.id)),
         serviceCall(() => runtime.repository.listTasksForRound(round.id)),
-        serviceCall(() => runtime.orchestration.getEvidenceRoute(round.id))
+        serviceCall(() => runtime.orchestration.getEvidenceRoute(round.id)),
+        serviceCall(() => runtime.orchestration.getLatestVoiceBiomarkerFact(round.id))
       ]);
       const task =
         tasks.toSorted(
           (left, right) =>
             right.updatedAt.localeCompare(left.updatedAt) || right.id.localeCompare(left.id)
         )[0] ?? null;
-      return { round, protocolResult, task, evidenceRoute };
+      return { round, protocolResult, task, evidenceRoute, voiceBiomarkerFact };
     }
   });
 }
@@ -359,6 +368,91 @@ export function handleStartAssessment(
         })
       );
     }
+  });
+}
+
+export function handleStartVoiceBiomarker(
+  request: Request,
+  runtime: ServerRuntime,
+  roundIdInput: string
+): Promise<Response> {
+  return serveApiRoute<
+    z.infer<typeof StartVoiceBiomarkerRequestSchema>,
+    z.infer<typeof VoiceBiomarkerSessionDataSchema>
+  >(request, runtime.hooks, {
+    method: "POST",
+    roles: ["patient"],
+    mutation: true,
+    rateLimit: { bucket: "voice-biomarker-start", limit: 10, windowMs: 60_000 },
+    readInput: jsonBodyReader(StartVoiceBiomarkerRequestSchema),
+    outputSchema: VoiceBiomarkerSessionDataSchema,
+    handle: (context, input) =>
+      serviceCall(() =>
+        runtime.orchestration.startVoiceBiomarker({
+          roundId: roundIdSchema.parse(roundIdInput),
+          patientId: patientIdSchema.parse(context.session.patientId),
+          expectedStateVersion: input.expectedStateVersion
+        })
+      )
+  });
+}
+
+export function handleSubmitVoiceBiomarker(
+  request: Request,
+  runtime: ServerRuntime,
+  roundIdInput: string
+): Promise<Response> {
+  return serveApiRoute<
+    z.infer<typeof SubmitVoiceBiomarkerRequestSchema>,
+    z.infer<typeof SubmitVoiceBiomarkerDataSchema>
+  >(request, runtime.hooks, {
+    method: "POST",
+    roles: ["patient"],
+    mutation: true,
+    rateLimit: { bucket: "voice-biomarker-submit", limit: 20, windowMs: 60_000 },
+    readInput: jsonBodyReader(SubmitVoiceBiomarkerRequestSchema, 64_000),
+    outputSchema: SubmitVoiceBiomarkerDataSchema,
+    handle: (context, input) =>
+      serviceCall(() =>
+        runtime.orchestration.submitVoiceBiomarker({
+          roundId: roundIdSchema.parse(roundIdInput),
+          patientId: patientIdSchema.parse(context.session.patientId),
+          expectedStateVersion: input.expectedStateVersion,
+          result: input.result,
+          attestation: input.attestation,
+          actorId: context.session.sessionId,
+          correlationId: context.correlationId
+        })
+      )
+  });
+}
+
+export function handleSkipVoiceBiomarker(
+  request: Request,
+  runtime: ServerRuntime,
+  roundIdInput: string
+): Promise<Response> {
+  return serveApiRoute<
+    z.infer<typeof SkipVoiceBiomarkerRequestSchema>,
+    z.infer<typeof SkipVoiceBiomarkerDataSchema>
+  >(request, runtime.hooks, {
+    method: "POST",
+    roles: ["patient"],
+    mutation: true,
+    rateLimit: { bucket: "voice-biomarker-skip", limit: 10, windowMs: 60_000 },
+    readInput: jsonBodyReader(SkipVoiceBiomarkerRequestSchema),
+    outputSchema: SkipVoiceBiomarkerDataSchema,
+    handle: (context, input) =>
+      serviceCall(() =>
+        runtime.orchestration.skipVoiceBiomarker({
+          roundId: roundIdSchema.parse(roundIdInput),
+          patientId: patientIdSchema.parse(context.session.patientId),
+          expectedStateVersion: input.expectedStateVersion,
+          reason: input.reason,
+          actorId: context.session.sessionId,
+          correlationId: context.correlationId
+        })
+      )
   });
 }
 

@@ -21,6 +21,7 @@ import {
   RecordFailedActionInputSchema,
   RoundStateChangedEventSchema,
   TaskOptimisticConcurrencyError,
+  VoiceBiomarkerFactRecordSchema,
   assertStandaloneAuditEvent,
   type ActionAttempt,
   type ClinicalFactRecord,
@@ -29,7 +30,8 @@ import {
   type CommitActionResult,
   type MeasurementFactRecord,
   type RecordFailedActionInput,
-  type RoundStateChangedEvent
+  type RoundStateChangedEvent,
+  type VoiceBiomarkerFactRecord
 } from "./models";
 import type { HomeRoundsRepository } from "./repositories";
 
@@ -44,6 +46,7 @@ export class InMemoryHomeRoundsRepository<TSnapshot, TFact> implements HomeRound
 > {
   private rounds = new Map<string, Round>();
   private measurementFacts = new Map<string, MeasurementFactRecord>();
+  private voiceBiomarkerFacts = new Map<string, VoiceBiomarkerFactRecord>();
   private snapshots = new Map<string, ClinicalSnapshotRecord<TSnapshot>>();
   private clinicalFacts = new Map<string, ClinicalFactRecord<TFact>>();
   private tasks = new Map<string, ClinicalTask>();
@@ -118,6 +121,21 @@ export class InMemoryHomeRoundsRepository<TSnapshot, TFact> implements HomeRound
 
   async listMeasurementFacts(roundId: string): Promise<MeasurementFactRecord[]> {
     return [...this.measurementFacts.values()]
+      .filter((record) => record.roundId === roundId)
+      .sort((left, right) => left.fact.observedAt.localeCompare(right.fact.observedAt))
+      .map((record) => structuredClone(record));
+  }
+
+  async saveVoiceBiomarkerFact(recordInput: VoiceBiomarkerFactRecord): Promise<void> {
+    const record = VoiceBiomarkerFactRecordSchema.parse(recordInput);
+    if (this.voiceBiomarkerFacts.has(record.fact.factId)) {
+      throw new DuplicateRecordError(record.fact.factId);
+    }
+    this.voiceBiomarkerFacts.set(record.fact.factId, structuredClone(record));
+  }
+
+  async listVoiceBiomarkerFacts(roundId: string): Promise<VoiceBiomarkerFactRecord[]> {
+    return [...this.voiceBiomarkerFacts.values()]
       .filter((record) => record.roundId === roundId)
       .sort((left, right) => left.fact.observedAt.localeCompare(right.fact.observedAt))
       .map((record) => structuredClone(record));

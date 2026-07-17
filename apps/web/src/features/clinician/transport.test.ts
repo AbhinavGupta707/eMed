@@ -55,6 +55,7 @@ describe("clinician API transport", () => {
           round: completeDetail.round.value,
           report: completeDetail.report.value,
           measurement: completeDetail.measurement.value,
+          voiceBiomarkerFact: null,
           captureQuality: null,
           protocolResult: completeDetail.protocolResult.value,
           timeline: completeDetail.timeline.value,

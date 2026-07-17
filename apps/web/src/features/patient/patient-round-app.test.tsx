@@ -28,6 +28,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SYNTHETIC_MAYA_ROUND } from "../shared-round/patient-round-config";
 import type { PatientRoundApi } from "../workflows/patient-workflow-controller";
+import { MAYA_HAPPY_PATH_ROUND_MAP } from "./adaptive-round-map.fixtures";
 import { PatientRoundApp } from "./patient-round-app";
 
 const ROUND_ID = "14df34c4-8204-4810-8113-37b63c963a91";
@@ -337,6 +338,28 @@ async function completeTextReport(chestPain = "No"): Promise<void> {
 }
 
 describe("patient round app", () => {
+  it("adds a frozen-contract Round Map without changing the invitation workflow", async () => {
+    const api = new UiApi();
+    render(
+      createElement(PatientRoundApp, {
+        api,
+        config: SYNTHETIC_MAYA_ROUND,
+        createId: () => REPORT_ID,
+        createOpticalProvider: () => new UiProvider(),
+        isOnline: () => true,
+        now: () => NOW,
+        roundMapExperience: MAYA_HAPPY_PATH_ROUND_MAP,
+        timeoutMs: 60_000,
+        voiceProvider: new DisabledVoiceSessionProvider("missing_configuration")
+      })
+    );
+
+    expect(await screen.findByRole("heading", { name: "Round Map" })).toBeVisible();
+    expect(screen.getByText("Maya · synthetic happy path")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Your two-minute check is ready" })).toBeVisible();
+    expect(api.calls.submitReport).not.toHaveBeenCalled();
+  });
+
   it("shows clinician completion from the persisted round after refresh", async () => {
     const api = new UiApi();
     api.round = makeRound("abstained_for_review", 9);

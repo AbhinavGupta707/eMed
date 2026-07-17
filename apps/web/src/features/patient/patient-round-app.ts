@@ -37,6 +37,7 @@ import {
   type ReactNode
 } from "react";
 import { VoiceInteractionPanel } from "../voice";
+import { AdaptiveRoundMap, type RoundMapExperience } from "../round-map";
 import type { PatientRoundLaunchConfig } from "../shared-round/patient-round-config";
 import {
   PatientWorkflowController,
@@ -73,6 +74,8 @@ export type PatientRoundAppProps = Readonly<{
   createId?: () => string;
   now?: () => string;
   isOnline?: () => boolean;
+  onRetryAdaptiveSelection?: () => void;
+  roundMapExperience?: RoundMapExperience;
   timeoutMs?: number;
 }>;
 type ChoiceOption = Readonly<{
@@ -1675,6 +1678,8 @@ export function PatientRoundApp({
   createId = browserId,
   now = browserNow,
   isOnline,
+  onRetryAdaptiveSelection,
+  roundMapExperience,
   timeoutMs = 180000
 }: PatientRoundAppProps) {
   const api = useMemo<PatientRoundApi>(
@@ -1782,6 +1787,12 @@ export function PatientRoundApp({
           label: "Round progress",
           steps: progressSteps(view)
         }),
+        roundMapExperience
+          ? createElement(AdaptiveRoundMap, {
+              experience: roundMapExperience,
+              ...(onRetryAdaptiveSelection ? { onRetry: onRetryAdaptiveSelection } : {})
+            })
+          : null,
         createElement(ErrorNotice, {
           controller: controller,
           state: state

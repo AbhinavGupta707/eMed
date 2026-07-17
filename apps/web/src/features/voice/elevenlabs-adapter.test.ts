@@ -386,11 +386,13 @@ describe("ElevenLabs React voice adapter", () => {
     [new VoiceCredentialError("quota"), "quota"]
   ] as const)("keeps text fallback available when credentials fail", async (error, reason) => {
     const startConversation = vi.fn();
+    const requestMicrophonePermission = vi.fn(async () => undefined);
     const provider = new ElevenLabsReactVoiceSessionProvider({
       fetchCredential: vi.fn(async () => {
         throw error;
       }),
       startConversation,
+      requestMicrophonePermission,
       scheduler: new FakeScheduler(),
       createSessionId: () => "local-session"
     });
@@ -404,14 +406,17 @@ describe("ElevenLabs React voice adapter", () => {
     });
 
     expect(events).toContainEqual({ type: "unavailable", reason });
+    expect(requestMicrophonePermission).not.toHaveBeenCalled();
     expect(startConversation).not.toHaveBeenCalled();
     await expect(provider.capabilities()).resolves.toMatchObject({ text: true });
   });
 
   it("normalizes microphone denial without exposing provider details", async () => {
+    const startConversation = vi.fn();
     const provider = new ElevenLabsReactVoiceSessionProvider({
       fetchCredential: vi.fn(async () => credential),
-      startConversation: vi.fn(async () => {
+      startConversation,
+      requestMicrophonePermission: vi.fn(async () => {
         throw new DOMException("Synthetic permission denial", "NotAllowedError");
       }),
       scheduler: new FakeScheduler(),
@@ -431,6 +436,7 @@ describe("ElevenLabs React voice adapter", () => {
       recoverable: false,
       code: "permission_denied"
     });
+    expect(startConversation).not.toHaveBeenCalled();
     expect(JSON.stringify(events)).not.toContain("Synthetic permission denial");
   });
 

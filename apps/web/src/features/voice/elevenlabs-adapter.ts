@@ -444,16 +444,16 @@ export class ElevenLabsReactVoiceSessionProvider implements VoiceSessionProvider
     if (!this.#isCurrent(active)) return;
     const connectionAttempt = ++active.connectionAttempt;
     try {
-      if (!active.microphonePermissionReady) {
-        await this.#requestMicrophonePermission(active.request.signal);
-        if (!this.#isCurrentConnection(active, connectionAttempt)) return;
-        active.microphonePermissionReady = true;
-      }
       const rawCredential = await this.#fetchCredential(active.request);
       if (!this.#isCurrentConnection(active, connectionAttempt)) return;
       const credential = ElevenLabsSessionCredentialSchema.parse(rawCredential);
       if (Date.parse(credential.expiresAt) <= this.#scheduler.now()) {
         throw new VoiceCredentialError("missing_configuration");
+      }
+      if (!active.microphonePermissionReady) {
+        await this.#requestMicrophonePermission(active.request.signal);
+        if (!this.#isCurrentConnection(active, connectionAttempt)) return;
+        active.microphonePermissionReady = true;
       }
 
       const conversation = await this.#startConversation({

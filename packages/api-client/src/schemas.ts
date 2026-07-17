@@ -70,7 +70,8 @@ export const CreateRoundDataSchema = z
 export const RoundDataSchema = z
   .object({
     round: RoundSchema.strict(),
-    protocolResult: ProtocolResultSchema.strict().nullable().optional()
+    protocolResult: ProtocolResultSchema.strict().nullable().optional(),
+    task: ClinicalTaskSchema.strict().nullable().optional()
   })
   .strict();
 

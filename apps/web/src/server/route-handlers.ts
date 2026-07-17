@@ -146,10 +146,16 @@ export function handleGetRound(
       if (context.session.role === "patient") {
         assertPatientScope(context.session.patientId, round.patientId);
       }
-      const protocolResult = await serviceCall(() =>
-        runtime.orchestration.getProtocolResult(round.id)
-      );
-      return { round, protocolResult };
+      const [protocolResult, tasks] = await Promise.all([
+        serviceCall(() => runtime.orchestration.getProtocolResult(round.id)),
+        serviceCall(() => runtime.repository.listTasksForRound(round.id))
+      ]);
+      const task =
+        tasks.toSorted(
+          (left, right) =>
+            right.updatedAt.localeCompare(left.updatedAt) || right.id.localeCompare(left.id)
+        )[0] ?? null;
+      return { round, protocolResult, task };
     }
   });
 }

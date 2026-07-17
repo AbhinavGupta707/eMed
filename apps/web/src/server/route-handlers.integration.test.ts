@@ -611,6 +611,48 @@ describe("repository-backed server API orchestration", () => {
       ExecuteActionDataSchema
     );
     expect(action).toMatchObject({ kind: "programme_task", created: true });
+    if (action.kind !== "programme_task") return;
+
+    const resumedOpen = await success(
+      await handleGetRound(
+        new Request(`http://localhost:3000/api/rounds/${roundId}`),
+        runtime,
+        roundId
+      ),
+      RoundDataSchema
+    );
+    expect(resumedOpen.task).toMatchObject({ id: action.task.id, status: "open" });
+
+    await success(
+      await handleClinicianTaskMutation(
+        apiRequest(
+          `/api/clinician/tasks/${action.task.id}`,
+          {
+            kind: "complete",
+            expectedTaskUpdatedAt: action.task.updatedAt,
+            operationKey: `clinician:${action.task.id}:complete:quality-path`,
+            note: null
+          },
+          "quality-clinician-complete",
+          "clinician"
+        ),
+        runtime,
+        action.task.id
+      ),
+      ClinicianMutationReceiptSchema
+    );
+    const resumedCompleted = await success(
+      await handleGetRound(
+        new Request(`http://localhost:3000/api/rounds/${roundId}`),
+        runtime,
+        roundId
+      ),
+      RoundDataSchema
+    );
+    expect(resumedCompleted).toMatchObject({
+      round: { state: "abstained_for_review" },
+      task: { id: action.task.id, status: "completed" }
+    });
   });
 
   it("accepts exactly one structured follow-up and persists the resulting action-ready state", async () => {

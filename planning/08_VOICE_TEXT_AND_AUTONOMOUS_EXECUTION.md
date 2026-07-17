@@ -9,6 +9,8 @@ HomeRounds uses **ElevenLabs ElevenAgents as its hosted voice implementation**, 
 
 The overnight build remains in the current local Codex task as the master orchestrator. Each substantial checkpoint lane is a fresh Codex-managed worktree task based on the last tested integration commit. Durable files, commits, checkpoint state, and test evidence—not chat memory—are the system of record.
 
+Every isolated lane must be launched explicitly with `model: "gpt-5.6-sol"`. Use `thinking: "high"` for bounded, straightforward work and `thinking: "xhigh"` for complex provider/API, state-machine, persistence/concurrency, security, or clinical-safety work. The checkpoint allocation is frozen in `02_WORKTREE_ORCHESTRATION_PLAN.md`, and the actual selection is recorded beside each task in `docs/orchestration/STATE.md`; an inherited default or lower reasoning effort is not permitted.
+
 ## 2. Voice-option analysis
 
 | Option                                          | Cost/profile                                                                       | Strengths                                                                                                                      | Risks for this build                                                                                                         | Decision                                            |

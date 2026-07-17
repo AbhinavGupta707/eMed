@@ -12,6 +12,7 @@ import type {
   TransitionRoundRequest
 } from "@homerounds/api-client";
 import {
+  ClinicalTaskSchema,
   MeasurementFactSchema,
   ProtocolResultSchema,
   RoundSchema,
@@ -97,12 +98,29 @@ const measurement = MeasurementFactSchema.parse({
   rawMediaRef: null
 });
 
+const completedTask = ClinicalTaskSchema.parse({
+  id: TASK_ID,
+  roundId: ROUND_ID,
+  patientId: "synthetic-maya",
+  idempotencyKey: "synthetic-idempotency-key-0001",
+  type: "programme_review",
+  ownerRole: "programme_clinician",
+  priority: "routine",
+  reasonKey: "protocol.measurement.quality_failed",
+  status: "completed",
+  serviceWindowLabel: "Demo-only review; no response promised.",
+  protocolId: "cardiometabolic_demo",
+  createdAt: NOW,
+  updatedAt: "2026-07-17T11:09:00.000Z"
+});
+
 function nextRound(round: Round, state: RoundState): Round {
   return makeRound(state, round.stateVersion + 1);
 }
 
 class UiApi implements PatientRoundApi {
   round = makeRound();
+  task: typeof completedTask | null = null;
   readonly calls = {
     submitReport: vi.fn(),
     startAssessment: vi.fn(),
@@ -113,8 +131,8 @@ class UiApi implements PatientRoundApi {
     return Promise.resolve({ round: this.round, created: false });
   }
 
-  getRound(): Promise<{ round: Round }> {
-    return Promise.resolve({ round: this.round });
+  getRound(): ReturnType<PatientRoundApi["getRound"]> {
+    return Promise.resolve({ round: this.round, protocolResult: null, task: this.task });
   }
 
   transitionRound(_roundId: string, input: TransitionRoundRequest): Promise<{ round: Round }> {
@@ -319,6 +337,22 @@ async function completeTextReport(chestPain = "No"): Promise<void> {
 }
 
 describe("patient round app", () => {
+  it("shows clinician completion from the persisted round after refresh", async () => {
+    const api = new UiApi();
+    api.round = makeRound("abstained_for_review", 9);
+    api.task = completedTask;
+    renderRound(api);
+
+    expect(
+      await screen.findByRole("heading", { name: "Synthetic review completed" })
+    ).toBeVisible();
+    expect(
+      screen.getByText("The fictional clinician completed this saved demo task.")
+    ).toBeVisible();
+    expect(screen.getByText("Completed in clinician cockpit")).toBeVisible();
+    expect(screen.getByText("This task status comes from persisted task data.")).toBeVisible();
+  });
+
   it("completes the no-key text path through passing capture and explicit action confirmation", async () => {
     const { api } = renderRound();
     await acceptInvitation();

@@ -1220,7 +1220,9 @@ function OutcomePanel({
   state: PatientWorkflowState;
 }>) {
   const action = state.action;
-  if (action?.kind === "programme_task") {
+  const projectedTask = action?.kind === "programme_task" ? action.task : state.task;
+  if (projectedTask) {
+    const completed = projectedTask.status === "completed";
     return createElement(
       "section",
       {
@@ -1237,14 +1239,28 @@ function OutcomePanel({
           {
             id: "outcome-title"
           },
-          action.message.heading
+          completed
+            ? "Synthetic review completed"
+            : (action?.message.heading ?? "Programme review requested")
         ),
-        createElement("p", null, action.message.body)
+        createElement(
+          "p",
+          null,
+          completed
+            ? "The fictional clinician completed this saved demo task."
+            : (action?.message.body ??
+                "Your confirmed synthetic information is waiting in the saved round.")
+        )
       ),
       createRequiredChildrenElement(
         Banner,
         {
-          title: action.created ? "One synthetic task created" : "Existing synthetic task reused",
+          title:
+            action?.kind === "programme_task"
+              ? action.created
+                ? "One synthetic task created"
+                : "Existing synthetic task reused"
+              : "Saved synthetic task restored",
           variant: "success"
         },
         createElement("p", null, "Repeated confirmation does not create duplicate clinical work.")
@@ -1259,7 +1275,9 @@ function OutcomePanel({
           createElement(
             CardDescription,
             null,
-            "This outcome is demo-only and not a medical service."
+            action?.kind === "programme_task"
+              ? "This outcome is demo-only and not a medical service."
+              : "This task status comes from persisted task data."
           )
         ),
         createElement(
@@ -1283,7 +1301,11 @@ function OutcomePanel({
               createElement(
                 "dd",
                 null,
-                action.task.status === "open" ? "Waiting for synthetic review" : action.task.status
+                completed
+                  ? "Completed in clinician cockpit"
+                  : projectedTask.status === "open"
+                    ? "Waiting for synthetic review"
+                    : projectedTask.status
               )
             ),
             createElement(
@@ -1293,7 +1315,9 @@ function OutcomePanel({
               createElement(
                 "dd",
                 null,
-                action.message.serviceWindowLabel ?? action.task.serviceWindowLabel
+                action?.kind === "programme_task"
+                  ? (action.message.serviceWindowLabel ?? projectedTask.serviceWindowLabel)
+                  : projectedTask.serviceWindowLabel
               )
             )
           )
@@ -1337,6 +1361,7 @@ function OutcomePanel({
     );
   }
   const abstained = state.round?.state === "abstained_for_review";
+  const completed = state.round?.state === "outcome_ready" || state.round?.state === "closed";
   return createElement(
     "section",
     {
@@ -1353,14 +1378,20 @@ function OutcomePanel({
         {
           id: "outcome-title"
         },
-        abstained ? "The demo stopped without a measurement" : "Programme review requested"
+        abstained
+          ? "The demo stopped without a measurement"
+          : completed
+            ? "Synthetic review completed"
+            : "Programme review requested"
       ),
       createElement(
         "p",
         null,
         abstained
           ? "HomeRounds preserved the uncertainty and did not invent a camera value."
-          : "Your confirmed synthetic information is waiting in the saved round."
+          : completed
+            ? "The fictional clinician completed this saved demo task."
+            : "Your confirmed synthetic information is waiting in the saved round."
       )
     ),
     createElement(
@@ -1370,11 +1401,7 @@ function OutcomePanel({
         CardHeader,
         null,
         createElement(CardTitle, null, "Saved round status"),
-        createElement(
-          CardDescription,
-          null,
-          "The exact action projection is not available after this refresh."
-        )
+        createElement(CardDescription, null, "This status comes from the persisted round state.")
       ),
       createElement(
         CardContent,
@@ -1391,7 +1418,17 @@ function OutcomePanel({
             createElement(
               "dd",
               null,
-              abstained ? "No review-task owner confirmed" : "Fictional programme team"
+              abstained ? "No review-task owner confirmed" : "Fictional programme clinician"
+            )
+          ),
+          createElement(
+            "div",
+            null,
+            createElement("dt", null, "Status"),
+            createElement(
+              "dd",
+              null,
+              completed ? "Completed in clinician cockpit" : "Waiting for synthetic review"
             )
           ),
           createElement(

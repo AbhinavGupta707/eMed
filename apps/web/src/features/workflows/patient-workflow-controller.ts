@@ -4,6 +4,7 @@ import {
   PatientReportSchema,
   RedFlagAnswerSchema,
   type CaptureQuality,
+  type ClinicalTask,
   type MeasurementFact,
   type OpticalAssessmentProvider,
   type OpticalProviderKind,
@@ -69,6 +70,7 @@ export type PatientWorkflowState = Readonly<{
   decision: ProtocolDecision | null;
   protocolResult: ProtocolResult | null;
   action: ActionResult | null;
+  task: ClinicalTask | null;
   followUpAnswer: "yes" | "no" | "unsure" | null;
   selectedProvider: OpticalProviderKind | null;
   recordedReplayAvailable: boolean;
@@ -151,7 +153,7 @@ function effectiveRoundState(state: PatientWorkflowState): RoundState | null {
 export function patientWorkflowView(state: PatientWorkflowState): PatientWorkflowView {
   const roundState = effectiveRoundState(state);
   if (roundState === null) return "loading";
-  if (state.action !== null) return "outcome";
+  if (state.action !== null || state.task !== null) return "outcome";
 
   switch (roundState) {
     case "invited":
@@ -233,6 +235,7 @@ export class PatientWorkflowController {
       decision: null,
       protocolResult: null,
       action: null,
+      task: null,
       followUpAnswer: null,
       selectedProvider: null,
       recordedReplayAvailable: this.#loadRecordedCaptureReplay !== null,
@@ -270,11 +273,12 @@ export class PatientWorkflowController {
       const result =
         !created.created && created.round.state !== "invited"
           ? await this.#api.getRound(created.round.id)
-          : { round: created.round, protocolResult: null };
+          : { round: created.round, protocolResult: null, task: null };
       if (this.#disposed) return;
       this.#update({
         round: result.round,
         protocolResult: result.protocolResult ?? null,
+        task: result.task ?? null,
         pending: null,
         interrupted: false
       });
@@ -518,7 +522,13 @@ export class PatientWorkflowController {
         // The action response is authoritative and sufficient for the outcome screen.
       }
       if (this.#disposed) return;
-      this.#update({ action, round: refreshed, pending: null, optimisticRoundState: null });
+      this.#update({
+        action,
+        task: action.kind === "programme_task" ? action.task : null,
+        round: refreshed,
+        pending: null,
+        optimisticRoundState: null
+      });
     } catch (error: unknown) {
       await this.#failOperation(error, round);
     }
@@ -548,6 +558,7 @@ export class PatientWorkflowController {
         decision: null,
         protocolResult: refreshed.protocolResult ?? null,
         action: null,
+        task: refreshed.task ?? null,
         followUpAnswer: null,
         selectedProvider: null,
         recordedReplayLabel: null,
@@ -747,6 +758,7 @@ export class PatientWorkflowController {
           decision: null,
           protocolResult: latest.protocolResult ?? null,
           action: null,
+          task: latest.task ?? null,
           selectedProvider: null,
           recordedReplayLabel: null,
           error: mapped

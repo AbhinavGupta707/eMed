@@ -12,10 +12,43 @@ export const PatientRoundLaunchConfigSchema = z
 
 export type PatientRoundLaunchConfig = z.infer<typeof PatientRoundLaunchConfigSchema>;
 
-export const SYNTHETIC_MAYA_ROUND = PatientRoundLaunchConfigSchema.parse({
-  patientId: "synthetic-maya",
-  triggerId: "checkpoint-3-maya-programme-round",
-  purpose: "A short synthetic programme check-in about how you have been feeling.",
-  protocolId: "cardiometabolic_demo",
-  burdenSeconds: 120
-});
+export const PatientScenarioIdSchema = z.enum([
+  "maya-happy-text",
+  "maya-poor-quality",
+  "maya-red-flag"
+]);
+
+export type PatientScenarioId = z.infer<typeof PatientScenarioIdSchema>;
+
+export const SYNTHETIC_MAYA_SCENARIOS: Readonly<
+  Record<PatientScenarioId, PatientRoundLaunchConfig>
+> = {
+  "maya-happy-text": PatientRoundLaunchConfigSchema.parse({
+    patientId: "synthetic-maya",
+    triggerId: "homerounds-demo:v1:maya-happy-text",
+    purpose: "Fictional cardiometabolic programme check-in — happy text path",
+    protocolId: "cardiometabolic_demo",
+    burdenSeconds: 180
+  }),
+  "maya-poor-quality": PatientRoundLaunchConfigSchema.parse({
+    patientId: "synthetic-maya",
+    triggerId: "homerounds-demo:v1:maya-poor-quality",
+    purpose: "Fictional cardiometabolic programme check-in — capture quality recovery",
+    protocolId: "cardiometabolic_demo",
+    burdenSeconds: 180
+  }),
+  "maya-red-flag": PatientRoundLaunchConfigSchema.parse({
+    patientId: "synthetic-maya",
+    triggerId: "homerounds-demo:v1:maya-red-flag",
+    purpose: "Fictional cardiometabolic programme check-in — structured safety path",
+    protocolId: "cardiometabolic_demo",
+    burdenSeconds: 180
+  })
+};
+
+export const SYNTHETIC_MAYA_ROUND = SYNTHETIC_MAYA_SCENARIOS["maya-happy-text"];
+
+export function patientRoundConfigForScenario(value: unknown): PatientRoundLaunchConfig {
+  const parsed = PatientScenarioIdSchema.safeParse(value);
+  return SYNTHETIC_MAYA_SCENARIOS[parsed.success ? parsed.data : "maya-happy-text"];
+}

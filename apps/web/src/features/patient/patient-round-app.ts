@@ -47,6 +47,10 @@ import {
   type PatientWorkflowView
 } from "../workflows/patient-workflow-controller";
 import { createPatientOpticalProvider, createPatientVoiceProvider } from "./provider-factories";
+import {
+  createRecordedCaptureReplayLoader,
+  type RecordedCaptureReplayLoader
+} from "./recorded-capture-replay";
 import styles from "./patient-round.module.css";
 function createRequiredChildrenElement<
   Props extends {
@@ -65,6 +69,7 @@ export type PatientRoundAppProps = Readonly<{
   api?: PatientRoundApi;
   voiceProvider?: VoiceSessionProvider;
   createOpticalProvider?: OpticalProviderFactory;
+  loadRecordedCaptureReplay?: RecordedCaptureReplayLoader | null;
   createId?: () => string;
   now?: () => string;
   isOnline?: () => boolean;
@@ -631,6 +636,8 @@ function MeasurementPanel({ state, controller }: PatientShellProps) {
   }
   if (state.quality) {
     const canRetry = state.round?.state === "capture_retry" && state.quality.status === "retry";
+    const canUseRecordedReplay =
+      canRetry && state.recordedReplayAvailable && state.selectedProvider === "finger_ppg";
     return createElement(
       "section",
       {
@@ -674,6 +681,17 @@ function MeasurementPanel({ state, controller }: PatientShellProps) {
               "Try the camera check once more"
             )
           : null,
+        canUseRecordedReplay
+          ? createRequiredChildrenElement(
+              Button,
+              {
+                disabled: state.pending !== null,
+                onClick: () => void controller.useRecordedDemoCapture(),
+                variant: "secondary"
+              },
+              "Use labelled recorded demo capture"
+            )
+          : null,
         createRequiredChildrenElement(
           Button,
           {
@@ -683,7 +701,14 @@ function MeasurementPanel({ state, controller }: PatientShellProps) {
           },
           "Continue without a measurement"
         )
-      )
+      ),
+      canUseRecordedReplay
+        ? createElement(
+            "p",
+            { className: styles.privacyNote },
+            "Recorded synthetic recovery is optional, never automatic, contains no raw media or patient data, and is not physical-device evidence."
+          )
+        : null
     );
   }
   if (session && state.availability?.available === false) {
@@ -1609,6 +1634,7 @@ export function PatientRoundApp({
   api: providedApi,
   voiceProvider: providedVoice,
   createOpticalProvider = createPatientOpticalProvider,
+  loadRecordedCaptureReplay: providedReplayLoader,
   createId = browserId,
   now = browserNow,
   isOnline,
@@ -1623,16 +1649,27 @@ export function PatientRoundApp({
     () => providedVoice ?? createPatientVoiceProvider(),
     [providedVoice]
   );
+  const recordedCaptureReplayLoader = useMemo(
+    () =>
+      providedReplayLoader === null
+        ? undefined
+        : (providedReplayLoader ?? createRecordedCaptureReplayLoader(browserFetcher)),
+    [providedReplayLoader]
+  );
   const controller = useMemo(
     () =>
       new PatientWorkflowController({
         api,
         config,
         createOpticalProvider,
+        createId,
+        ...(recordedCaptureReplayLoader
+          ? { loadRecordedCaptureReplay: recordedCaptureReplayLoader }
+          : {}),
         now,
         ...(isOnline ? { isOnline } : {})
       }),
-    [api, config, createOpticalProvider, isOnline, now]
+    [api, config, createId, createOpticalProvider, isOnline, now, recordedCaptureReplayLoader]
   );
   const state = useSyncExternalStore(
     controller.subscribe,
@@ -1712,6 +1749,20 @@ export function PatientRoundApp({
           controller: controller,
           state: state
         }),
+        state.recordedReplayLabel
+          ? createRequiredChildrenElement(
+              Banner,
+              {
+                title: state.recordedReplayLabel,
+                variant: "information"
+              },
+              createElement(
+                "p",
+                null,
+                "Explicit recorded synthetic recovery was used after a live-capture failure. It is not physical-device or medical-validation evidence."
+              )
+            )
+          : null,
         createElement(PatientWorkflowContent, {
           controller: controller,
           createId: createId,

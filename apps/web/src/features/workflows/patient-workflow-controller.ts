@@ -1,5 +1,6 @@
 import type { HomeRoundsApiClient } from "@homerounds/api-client";
 import {
+  MeasurementFactSchema,
   PatientReportSchema,
   RedFlagAnswerSchema,
   type CaptureQuality,
@@ -22,6 +23,7 @@ import {
   PatientRoundLaunchConfigSchema,
   type PatientRoundLaunchConfig
 } from "../shared-round/patient-round-config";
+import type { RecordedCaptureReplayLoader } from "../patient/recorded-capture-replay";
 
 export type PatientRoundApi = Pick<
   HomeRoundsApiClient,
@@ -68,6 +70,9 @@ export type PatientWorkflowState = Readonly<{
   protocolResult: ProtocolResult | null;
   action: ActionResult | null;
   followUpAnswer: "yes" | "no" | "unsure" | null;
+  selectedProvider: OpticalProviderKind | null;
+  recordedReplayAvailable: boolean;
+  recordedReplayLabel: string | null;
   interrupted: boolean;
 }>;
 
@@ -94,6 +99,8 @@ export type PatientWorkflowDependencies = Readonly<{
   api: PatientRoundApi;
   config: PatientRoundLaunchConfig;
   createOpticalProvider: OpticalProviderFactory;
+  loadRecordedCaptureReplay?: RecordedCaptureReplayLoader;
+  createId?: () => string;
   now?: () => string;
   isOnline?: () => boolean;
 }>;
@@ -117,6 +124,10 @@ function defaultOnline(): boolean {
   return typeof navigator === "undefined" || typeof navigator.onLine !== "boolean"
     ? true
     : navigator.onLine;
+}
+
+function defaultId(): string {
+  return globalThis.crypto.randomUUID();
 }
 
 function unavailableError(reason: OpticalUnavailableReason): PatientUiError {
@@ -190,6 +201,8 @@ export class PatientWorkflowController {
   readonly #api: PatientRoundApi;
   readonly #config: PatientRoundLaunchConfig;
   readonly #createOpticalProvider: OpticalProviderFactory;
+  readonly #loadRecordedCaptureReplay: RecordedCaptureReplayLoader | null;
+  readonly #createId: () => string;
   readonly #now: () => string;
   readonly #isOnline: () => boolean;
   readonly #listeners = new Set<() => void>();
@@ -203,6 +216,8 @@ export class PatientWorkflowController {
     this.#api = dependencies.api;
     this.#config = PatientRoundLaunchConfigSchema.parse(dependencies.config);
     this.#createOpticalProvider = dependencies.createOpticalProvider;
+    this.#loadRecordedCaptureReplay = dependencies.loadRecordedCaptureReplay ?? null;
+    this.#createId = dependencies.createId ?? defaultId;
     this.#now = dependencies.now ?? defaultNow;
     this.#isOnline = dependencies.isOnline ?? defaultOnline;
     this.#state = {
@@ -219,6 +234,9 @@ export class PatientWorkflowController {
       protocolResult: null,
       action: null,
       followUpAnswer: null,
+      selectedProvider: null,
+      recordedReplayAvailable: this.#loadRecordedCaptureReplay !== null,
+      recordedReplayLabel: null,
       interrupted: false
     };
   }
@@ -317,7 +335,11 @@ export class PatientWorkflowController {
       await this.#disposeProvider();
       const provider = this.#createOpticalProvider(session.provider);
       this.#provider = provider;
-      this.#update({ round: session.round, assessmentSession: session });
+      this.#update({
+        round: session.round,
+        assessmentSession: session,
+        selectedProvider: session.provider
+      });
       const availability = await provider.checkAvailability();
       if (this.#disposed || provider !== this.#provider) return false;
       this.#update({
@@ -374,6 +396,76 @@ export class PatientWorkflowController {
       reasons: [reason],
       metrics: {}
     });
+  }
+
+  async useRecordedDemoCapture(): Promise<void> {
+    const round = this.#state.round;
+    const quality = this.#state.quality;
+    if (
+      !round ||
+      round.state !== "capture_retry" ||
+      !quality ||
+      quality.status === "pass" ||
+      this.#state.selectedProvider !== "finger_ppg" ||
+      this.#loadRecordedCaptureReplay === null ||
+      !this.#requireOnline()
+    ) {
+      return;
+    }
+
+    this.#update({ pending: "preparing_camera", error: null });
+    try {
+      const replay = await this.#loadRecordedCaptureReplay();
+      if (this.#disposed) return;
+      if (replay.measurementPrototype.provider !== this.#state.selectedProvider) {
+        this.#update({ pending: null, error: patientUiError("recorded_replay_unavailable") });
+        return;
+      }
+      const session = await this.#api.startAssessment(round.id, {
+        expectedStateVersion: round.stateVersion
+      });
+      if (this.#disposed) return;
+      if (session.provider !== replay.measurementPrototype.provider) {
+        this.#update({
+          round: session.round,
+          assessmentSession: session,
+          pending: null,
+          error: patientUiError("recorded_replay_unavailable")
+        });
+        return;
+      }
+      const submitted = await this.#api.submitAssessment(round.id, {
+        expectedStateVersion: session.round.stateVersion,
+        measurement: MeasurementFactSchema.parse({
+          ...replay.measurementPrototype,
+          factId: this.#createId(),
+          assessmentSessionId: session.assessmentSessionId,
+          observedAt: this.#now()
+        }),
+        attestation: session.attestation
+      });
+      if (this.#disposed) return;
+      this.#update({
+        round: submitted.round,
+        pending: null,
+        assessmentSession: null,
+        availability: null,
+        quality: submitted.measurement.quality,
+        measurement: submitted.measurement,
+        decision: submitted.decision,
+        protocolResult: submitted.decision.kind === "result" ? submitted.decision.result : null,
+        recordedReplayLabel: replay.label
+      });
+    } catch (error: unknown) {
+      if (this.#disposed) return;
+      this.#update({
+        pending: null,
+        error:
+          error instanceof TypeError
+            ? mapPatientError(error, this.#state.online)
+            : patientUiError("recorded_replay_unavailable")
+      });
+    }
   }
 
   async answerFollowUp(answerInput: "yes" | "no" | "unsure"): Promise<void> {
@@ -457,6 +549,8 @@ export class PatientWorkflowController {
         protocolResult: refreshed.protocolResult ?? null,
         action: null,
         followUpAnswer: null,
+        selectedProvider: null,
+        recordedReplayLabel: null,
         interrupted: false
       });
     } catch (error: unknown) {
@@ -653,6 +747,8 @@ export class PatientWorkflowController {
           decision: null,
           protocolResult: latest.protocolResult ?? null,
           action: null,
+          selectedProvider: null,
+          recordedReplayLabel: null,
           error: mapped
         });
         return;

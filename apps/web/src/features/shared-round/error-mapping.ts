@@ -7,6 +7,7 @@ export type PatientUiErrorCode =
   | "permission_denied"
   | "unsupported_device"
   | "provider_unavailable"
+  | "recorded_replay_unavailable"
   | "timeout"
   | "follow_up_submission_unavailable"
   | "resume_data_unavailable"
@@ -52,6 +53,12 @@ const messages = {
     title: "The selected measurement service is unavailable",
     message:
       "HomeRounds will not switch providers or invent a value. Continue without a measurement or try again later.",
+    recoverable: true
+  },
+  recorded_replay_unavailable: {
+    title: "The recorded demo capture is unavailable",
+    message:
+      "No replay was submitted. You can retry the live camera check or continue without a measurement.",
     recoverable: true
   },
   timeout: {

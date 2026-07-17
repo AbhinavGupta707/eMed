@@ -1,0 +1,353 @@
+.page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 88% 8%, rgb(211 229 219 / 58%), transparent 28rem), var(--background);
+  color: var(--foreground);
+}
+
+.hero,
+.stories,
+.multimodal {
+  width: min(100% - 2rem, 90rem);
+  margin-inline: auto;
+}
+
+.hero {
+  min-height: 44rem;
+  padding-bottom: var(--space-10);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 5.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand,
+.navLinks,
+.heroActions,
+.chips,
+.storyTopline {
+  display: flex;
+  align-items: center;
+}
+
+.brand {
+  gap: 0.75rem;
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+.brand span {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border-radius: 0.75rem;
+  background: var(--primary);
+  color: white;
+}
+
+.navLinks {
+  gap: var(--space-6);
+}
+
+.navLinks a {
+  color: var(--muted-foreground);
+  font-weight: 700;
+  text-underline-offset: 0.25rem;
+}
+
+.heroGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(19rem, 0.75fr);
+  gap: clamp(2rem, 6vw, 7rem);
+  align-items: center;
+  padding-block: clamp(4rem, 10vw, 8rem);
+}
+
+.heroCopy {
+  max-width: 57rem;
+}
+
+.chips,
+.heroActions {
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.kicker {
+  margin: var(--space-7) 0 var(--space-3);
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  max-width: 18ch;
+  margin: 0;
+  font-size: clamp(2.7rem, 7vw, 6.7rem);
+  font-weight: 650;
+  letter-spacing: -0.065em;
+  line-height: 0.96;
+}
+
+.lede {
+  max-width: 47rem;
+  margin: var(--space-6) 0;
+  color: var(--muted-foreground);
+  font-size: clamp(1.05rem, 2vw, 1.35rem);
+  line-height: 1.6;
+}
+
+.heroActions {
+  margin-top: var(--space-7);
+}
+
+.primaryAction,
+.secondaryAction,
+.story a {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.primaryAction {
+  padding: 0.85rem 1.35rem;
+  background: var(--primary);
+  color: white;
+}
+
+.secondaryAction {
+  padding: 0.8rem 1.3rem;
+  border: 1px solid var(--input);
+  color: var(--foreground);
+}
+
+.boundary {
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  border: 1px solid var(--border);
+  border-radius: 1.5rem;
+  background: rgb(255 255 255 / 84%);
+  box-shadow: 0 1.5rem 4rem rgb(30 67 52 / 10%);
+}
+
+.boundaryNumber {
+  margin: 0;
+  color: var(--primary);
+  font-size: clamp(2.4rem, 5vw, 4rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+}
+
+.boundary h2,
+.sectionHeader h2,
+.multimodal h2 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 3.2rem);
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+}
+
+.boundary dl {
+  display: grid;
+  gap: var(--space-4);
+  margin-block: var(--space-7);
+}
+
+.boundary dl div {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.boundary dt {
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.boundary dd {
+  margin: 0.35rem 0 0;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.boundary > p:last-child {
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.stories {
+  padding-block: clamp(4rem, 9vw, 7rem);
+  border-top: 1px solid var(--border);
+}
+
+.sectionHeader {
+  max-width: 54rem;
+}
+
+.sectionHeader > p:last-child {
+  color: var(--muted-foreground);
+  font-size: 1.1rem;
+  line-height: 1.6;
+}
+
+.storyGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+  margin-top: var(--space-8);
+}
+
+.story {
+  display: flex;
+  min-height: 25rem;
+  flex-direction: column;
+  padding: clamp(1.4rem, 3vw, 2.2rem);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: var(--card);
+}
+
+.storyTopline {
+  justify-content: space-between;
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.story h3 {
+  margin: auto 0 var(--space-4);
+  font-size: clamp(1.45rem, 3vw, 2.15rem);
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+
+.story > p {
+  color: var(--muted-foreground);
+  line-height: 1.6;
+}
+
+.story > strong {
+  margin-block: var(--space-5);
+  color: var(--primary);
+  font-size: 0.86rem;
+}
+
+.story a {
+  width: fit-content;
+  padding-inline: 1rem;
+  border: 1px solid var(--input);
+  color: var(--foreground);
+}
+
+.multimodal {
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(2rem, 7vw, 8rem);
+  padding-block: clamp(4rem, 9vw, 8rem);
+  border-top: 1px solid var(--border);
+}
+
+.multimodal ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  padding: 1px;
+  margin: 0;
+  background: var(--border);
+  list-style: none;
+}
+
+.multimodal li {
+  padding: var(--space-6);
+  background: var(--card);
+  color: var(--muted-foreground);
+  line-height: 1.55;
+}
+
+.multimodal li strong {
+  display: block;
+  margin-bottom: var(--space-2);
+  color: var(--foreground);
+}
+
+@media (max-width: 64rem) {
+  .heroGrid,
+  .multimodal {
+    grid-template-columns: 1fr;
+  }
+
+  .storyGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .story {
+    min-height: 20rem;
+  }
+}
+
+@media (max-width: 42rem) {
+  .hero,
+  .stories,
+  .multimodal {
+    width: min(100% - 1.25rem, 90rem);
+  }
+
+  .nav {
+    align-items: flex-start;
+    padding-block: var(--space-4);
+  }
+
+  .navLinks {
+    align-items: flex-end;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .heroGrid {
+    padding-block: 3rem;
+  }
+
+  .multimodal ul {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .primaryAction,
+  .secondaryAction,
+  .story a {
+    transition:
+      transform 160ms ease,
+      box-shadow 160ms ease;
+  }
+
+  .primaryAction:hover,
+  .secondaryAction:hover,
+  .story a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.7rem 1.4rem rgb(30 67 52 / 12%);
+  }
+}
+
+@media (forced-colors: active) {
+  .brand span,
+  .primaryAction {
+    border: 1px solid ButtonText;
+  }
+}

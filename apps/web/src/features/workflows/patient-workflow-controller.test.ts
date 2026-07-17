@@ -22,6 +22,7 @@ import {
 import { describe, expect, it, vi } from "vitest";
 
 import { SYNTHETIC_MAYA_ROUND } from "../shared-round/patient-round-config";
+import type { RecordedCaptureReplay } from "../patient/recorded-capture-replay";
 import {
   PatientWorkflowController,
   patientWorkflowView,
@@ -159,9 +160,7 @@ class FakeApi implements PatientRoundApi {
     return Promise.resolve({ round: this.round, created: false });
   }
 
-  getRound(
-    roundId: string
-  ): Promise<{
+  getRound(roundId: string): Promise<{
     round: Round;
     protocolResult?: typeof programmeResult | typeof abstainResult | null;
   }> {
@@ -353,6 +352,40 @@ function controllerFor(api: FakeApi, provider = new FakeProvider(), online = tru
   return { controller, provider };
 }
 
+const recordedReplay = {
+  schemaVersion: 1,
+  fixtureType: "recorded_valid_capture_replay",
+  dataClassification: "synthetic_demo",
+  label: "Recorded synthetic valid capture — demo recovery only",
+  notClinicallyValidated: true,
+  containsRawMedia: false,
+  containsPatientData: false,
+  automaticFallbackAllowed: false,
+  usePolicy: {
+    requiresDemoMode: true,
+    requiresLiveCaptureFailure: true,
+    requiresExplicitUserSelection: true,
+    mustRemainVisiblyLabelled: true,
+    mustNeverReplaceOrModifyLiveMeasurement: true
+  },
+  measurementPrototype: {
+    provider: "finger_ppg",
+    value: 78,
+    unit: "bpm",
+    durationMs: 20_000,
+    algorithmVersion: "homerounds-finger-ppg-fixture-v1",
+    providerModelVersion: null,
+    quality: { status: "pass", score: 0.92, reasons: [], metrics: { fixtureReplay: 1 } },
+    rawMediaRef: null
+  },
+  provenance: {
+    source: "deterministic_synthetic_engineering_fixture",
+    recordedAt: NOW,
+    physicalDeviceEvidence: false,
+    medicalDeviceValidation: false
+  }
+} satisfies RecordedCaptureReplay;
+
 async function advanceToAssessment(controller: PatientWorkflowController): Promise<void> {
   await controller.initialise();
   await controller.startRound();
@@ -468,6 +501,43 @@ describe("patient workflow controller", () => {
     await controller.confirmAction();
     expect(controller.getSnapshot().action).toMatchObject({ kind: "programme_task" });
     expect(controller.getSnapshot().measurement).toBeNull();
+  });
+
+  it("uses the labelled recorded capture only after an explicit retry-state selection", async () => {
+    const api = new FakeApi();
+    const provider = new FakeProvider();
+    provider.results.push({
+      status: "retry",
+      quality: { ...retryQuality(), status: "retry" }
+    });
+    const controller = new PatientWorkflowController({
+      api,
+      config: SYNTHETIC_MAYA_ROUND,
+      createOpticalProvider: () => provider,
+      loadRecordedCaptureReplay: () => Promise.resolve(recordedReplay),
+      createId: () => FACT_ID,
+      now: () => NOW
+    });
+    await advanceToAssessment(controller);
+    await controller.prepareMeasurement();
+    await controller.captureMeasurement();
+
+    expect(controller.getSnapshot().round?.state).toBe("capture_retry");
+    expect(api.calls.submitAssessment).not.toHaveBeenCalled();
+
+    await controller.useRecordedDemoCapture();
+
+    expect(api.calls.startAssessment).toHaveBeenCalledTimes(2);
+    expect(api.calls.submitAssessment).toHaveBeenCalledTimes(1);
+    expect(api.calls.submitAssessment.mock.calls[0]?.[1]).toMatchObject({
+      measurement: {
+        value: 78,
+        algorithmVersion: "homerounds-finger-ppg-fixture-v1",
+        rawMediaRef: null
+      }
+    });
+    expect(controller.getSnapshot().recordedReplayLabel).toMatch(/Recorded synthetic/i);
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("action_confirmation");
   });
 
   it("pauses safely when the protocol returns its one structured follow-up", async () => {

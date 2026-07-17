@@ -1,13 +1,13 @@
 import { z } from "zod";
 
-import { InferenceProvenanceSchema } from "./inference";
+import { InferenceProvenanceSchema, InferenceProviderFailureSchema } from "./inference";
 
 export const MedicationLabelImageMetadataSchema = z
   .object({
     requestId: z.uuid(),
     captureMode: z.enum(["camera", "file_upload"]),
     mediaType: z.enum(["image/jpeg", "image/png", "image/webp"]),
-    byteLength: z.number().int().positive().max(5_000_000),
+    byteLength: z.number().int().positive().max(3_000_000),
     width: z.number().int().min(320).max(8_192),
     height: z.number().int().min(320).max(8_192),
     consentVersion: z.string().min(1).max(40),
@@ -85,6 +85,24 @@ export const MedicationLabelProposalSchema = z
     }
   });
 export type MedicationLabelProposal = z.infer<typeof MedicationLabelProposalSchema>;
+
+export const MedicationLabelExtractionOutcomeSchema = z.discriminatedUnion("status", [
+  z
+    .object({
+      status: z.literal("proposed"),
+      proposal: MedicationLabelProposalSchema
+    })
+    .strict(),
+  z
+    .object({
+      status: z.literal("failed"),
+      failure: InferenceProviderFailureSchema
+    })
+    .strict()
+]);
+export type MedicationLabelExtractionOutcome = z.infer<
+  typeof MedicationLabelExtractionOutcomeSchema
+>;
 
 export const MedicationReviewItemSchema = z
   .object({

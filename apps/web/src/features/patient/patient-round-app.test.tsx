@@ -119,6 +119,14 @@ function nextRound(round: Round, state: RoundState): Round {
   return makeRound(state, round.stateVersion + 1);
 }
 
+const emptyEvidenceRoute = {
+  selection: null,
+  candidates: [],
+  selectedModuleId: null,
+  medicationConfirmed: false,
+  medicationSkipped: false
+};
+
 class UiApi implements PatientRoundApi {
   round = makeRound();
   task: typeof completedTask | null = null;
@@ -133,7 +141,12 @@ class UiApi implements PatientRoundApi {
   }
 
   getRound(): ReturnType<PatientRoundApi["getRound"]> {
-    return Promise.resolve({ round: this.round, protocolResult: null, task: this.task });
+    return Promise.resolve({
+      round: this.round,
+      protocolResult: null,
+      task: this.task,
+      evidenceRoute: emptyEvidenceRoute
+    });
   }
 
   transitionRound(_roundId: string, input: TransitionRoundRequest): Promise<{ round: Round }> {
@@ -152,7 +165,8 @@ class UiApi implements PatientRoundApi {
         round: this.round,
         next: "emergency_closed",
         selectedModuleId: null,
-        protocolResult: emergencyResult
+        protocolResult: emergencyResult,
+        evidenceRoute: emptyEvidenceRoute
       });
     }
     this.round = nextRound(this.round, "assessment_selected");
@@ -160,7 +174,29 @@ class UiApi implements PatientRoundApi {
       round: this.round,
       next: "assessment_selected",
       selectedModuleId: "capture.finger_ppg.pulse",
-      protocolResult: null
+      protocolResult: null,
+      evidenceRoute: emptyEvidenceRoute
+    });
+  }
+
+  submitMedicationLabelImage(): ReturnType<PatientRoundApi["submitMedicationLabelImage"]> {
+    return Promise.resolve({
+      outcome: {
+        status: "failed",
+        failure: { code: "missing_configuration", retryable: false, retryAfterMs: null }
+      }
+    });
+  }
+
+  confirmMedicationObservation(
+    _roundId: string,
+    input: Parameters<PatientRoundApi["confirmMedicationObservation"]>[1]
+  ): ReturnType<PatientRoundApi["confirmMedicationObservation"]> {
+    return Promise.resolve({
+      round: this.round,
+      fact: input.fact,
+      persisted: true,
+      duplicateSuppressed: false
     });
   }
 

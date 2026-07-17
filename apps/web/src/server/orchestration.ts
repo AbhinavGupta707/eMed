@@ -1,22 +1,37 @@
 import {
+  AdaptiveEvidenceRouteSelectedPayloadSchema,
   CaptureQualityRejectedPayloadSchema,
   FollowUpAnsweredPayloadSchema,
+  MedicationReviewSkippedPayloadSchema,
+  MedicationObservationConfirmedPayloadSchema,
+  MedicationLabelProposedPayloadSchema,
   PatientReportConfirmedPayloadSchema,
+  createAdaptiveEvidenceRouteSelectedEvent,
   createCaptureQualityRejectedEvent,
   createFollowUpAnsweredEvent,
   createMeasurementAcceptedEvent,
+  createMedicationLabelProposedEvent,
+  createMedicationObservationConfirmedEvent,
+  createMedicationReviewSkippedEvent,
   createPatientReportConfirmedEvent,
   createRoundStateChangedEvent
 } from "@homerounds/audit";
 import {
+  AdaptiveSelectionInputSchema,
   CaptureQualitySchema,
+  EvidenceModuleCandidateSchema,
+  ConfirmedMedicationObservationFactSchema,
   MeasurementFactSchema,
   PatientReportSchema,
   ProtocolResultSchema,
   RoundSchema,
   type ClinicalTask,
+  type AdaptiveSelectionOutcome,
   type CaptureQuality,
   type DomainEvent,
+  type EvidenceModuleCandidate,
+  type ConfirmedMedicationObservationFact,
+  type MedicationLabelExtractionOutcome,
   type MeasurementFact,
   type PatientReport,
   type ProtocolResult,
@@ -24,6 +39,13 @@ import {
   type RoundState
 } from "@homerounds/contracts";
 import { reduceRoundState } from "@homerounds/domain";
+import { createConfirmedMedicationObservationFact } from "@homerounds/assessments";
+import {
+  AdaptiveSelectionService,
+  createAdaptiveSelectionFallback,
+  type AdaptiveSelectionAuthorityState,
+  type AdaptiveSelectionProvider
+} from "@homerounds/inference";
 import type { HomeRoundsRepository, MeasurementFactRecord } from "@homerounds/persistence";
 import { planNextModule } from "@homerounds/planner";
 import {
@@ -48,7 +70,10 @@ export type OrchestrationErrorCode =
   | "assessment_attestation_invalid"
   | "assessment_provider_mismatch"
   | "measurement_conflict"
-  | "report_missing";
+  | "report_missing"
+  | "medication_confirmation_required"
+  | "medication_proposal_missing"
+  | "medication_fact_conflict";
 
 export class OrchestrationError extends Error {
   constructor(
@@ -68,6 +93,9 @@ type CommonDependencies<TSnapshot, TFact> = {
   selectedProvider: "finger_ppg" | "vitallens";
   isSelectedProviderAvailable: () => Promise<boolean>;
   assessmentAttestationSecret: string;
+  adaptiveSelectionProvider: AdaptiveSelectionProvider;
+  adaptiveSelectionEnabled: boolean;
+  medicationLabelEnabled: boolean;
   now?: () => string;
   createId?: IdFactory;
 };
@@ -89,6 +117,22 @@ export type ReportOrchestrationResult = {
   next: "assessment_selected" | "emergency_closed" | "abstained_for_review";
   selectedModuleId: string | null;
   protocolResult: ProtocolResult | null;
+  evidenceRoute: AdaptiveEvidenceRouteData;
+};
+
+export type AdaptiveEvidenceRouteData = {
+  selection: AdaptiveSelectionOutcome | null;
+  candidates: EvidenceModuleCandidate[];
+  selectedModuleId: string | null;
+  medicationConfirmed: boolean;
+  medicationSkipped: boolean;
+};
+
+export type MedicationConfirmationResult = {
+  round: Round;
+  fact: ConfirmedMedicationObservationFact;
+  persisted: true;
+  duplicateSuppressed: boolean;
 };
 
 export type AssessmentStartResult = {
@@ -129,6 +173,73 @@ function sameMeasurement(left: MeasurementFact, right: MeasurementFact): boolean
   );
 }
 
+function emptyEvidenceRoute(): AdaptiveEvidenceRouteData {
+  return {
+    selection: null,
+    candidates: [],
+    selectedModuleId: null,
+    medicationConfirmed: false,
+    medicationSkipped: false
+  };
+}
+
+function evidenceModuleCandidates(input: {
+  selectedProvider: "finger_ppg" | "vitallens";
+  pulseAvailable: boolean;
+  medicationLabelEnabled: boolean;
+}): EvidenceModuleCandidate[] {
+  return EvidenceModuleCandidateSchema.array()
+    .min(1)
+    .max(8)
+    .parse([
+      {
+        id: `capture.${input.selectedProvider}.pulse`,
+        kind: "pulse_capture",
+        label:
+          input.selectedProvider === "finger_ppg"
+            ? "Quality-gated finger pulse check"
+            : "Consent-based VitalLens pulse check",
+        description:
+          "A pulse estimate is accepted only when the deterministic capture-quality gate passes.",
+        producesFactKeys: ["pulse_bpm"],
+        availability: input.pulseAvailable
+          ? { status: "available" }
+          : { status: "unavailable", reason: "provider_unavailable" },
+        estimatedBurdenSeconds: 30,
+        deterministicRank: 0
+      },
+      {
+        id: "medication.label.review",
+        kind: "medication_label",
+        label: "Medication label review",
+        description:
+          "Review a synthetic label image or enter visible fields as text, then explicitly confirm them.",
+        producesFactKeys: ["medication_label_observation"],
+        availability: input.medicationLabelEnabled
+          ? { status: "available" }
+          : { status: "unavailable", reason: "not_needed" },
+        estimatedBurdenSeconds: 60,
+        deterministicRank: 1
+      }
+    ]);
+}
+
+function selectedModuleFromOutcome(
+  outcome: AdaptiveSelectionOutcome,
+  deterministicFallbackModuleId: string
+): string {
+  if (outcome.status === "fallback") return outcome.selectedModuleId;
+  return outcome.envelope.decision.decision === "select"
+    ? outcome.envelope.decision.candidateModuleId
+    : deterministicFallbackModuleId;
+}
+
+function boundedPatientContext(report: PatientReport): string {
+  const structured = `Confirmed weakness: ${report.weakness}; confirmed palpitations: ${report.palpitations}.`;
+  const narrative = report.note?.trim();
+  return narrative ? `${structured} Confirmed narrative: ${narrative}`.slice(0, 240) : structured;
+}
+
 export class RoundOrchestrationService<TSnapshot, TFact> {
   readonly #repository: HomeRoundsRepository<TSnapshot, TFact>;
   readonly #protocol: ProtocolDefinition;
@@ -137,6 +248,9 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
   readonly #attestationSecret: string;
   readonly #now: () => string;
   readonly #createId: IdFactory;
+  readonly #adaptiveSelection: AdaptiveSelectionService;
+  readonly #adaptiveSelectionEnabled: boolean;
+  readonly #medicationLabelEnabled: boolean;
 
   constructor(dependencies: CommonDependencies<TSnapshot, TFact>) {
     this.#repository = dependencies.repository;
@@ -146,6 +260,12 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
     this.#attestationSecret = z.string().min(32).parse(dependencies.assessmentAttestationSecret);
     this.#now = dependencies.now ?? defaultNow;
     this.#createId = dependencies.createId ?? defaultId;
+    this.#adaptiveSelectionEnabled = dependencies.adaptiveSelectionEnabled;
+    this.#medicationLabelEnabled = dependencies.medicationLabelEnabled;
+    this.#adaptiveSelection = new AdaptiveSelectionService({
+      provider: dependencies.adaptiveSelectionProvider,
+      readAuthorityState: (roundId, signal) => this.#readAdaptiveAuthorityState(roundId, signal)
+    });
   }
 
   async createRound(input: {
@@ -213,6 +333,176 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
     return round;
   }
 
+  async getEvidenceRoute(roundId: string): Promise<AdaptiveEvidenceRouteData> {
+    const id = z.uuid().parse(roundId);
+    const events = await this.#repository.listAuditEvents(id);
+    const selectedRoutes = events
+      .filter(({ type }) => type === "adaptive_evidence_route_selected")
+      .map((event) => ({
+        occurredAt: event.occurredAt,
+        payload: AdaptiveEvidenceRouteSelectedPayloadSchema.safeParse(event.payload)
+      }))
+      .filter((entry) => entry.payload.success)
+      .sort((left, right) => right.occurredAt.localeCompare(left.occurredAt));
+    const selected = selectedRoutes[0]?.payload;
+    if (!selected?.success) return emptyEvidenceRoute();
+    const medicationConfirmed = events
+      .filter(({ type }) => type === "medication_observation_confirmed")
+      .map(({ payload }) => MedicationObservationConfirmedPayloadSchema.safeParse(payload))
+      .some((result) => result.success && result.data.fact.roundId === id);
+    const medicationSkipped = events
+      .filter(({ type }) => type === "medication_review_skipped")
+      .map(({ payload }) => MedicationReviewSkippedPayloadSchema.safeParse(payload))
+      .some((result) => result.success);
+    return {
+      selection: selected.data.selection,
+      candidates: selected.data.candidates,
+      selectedModuleId: selected.data.selectedModuleId,
+      medicationConfirmed,
+      medicationSkipped
+    };
+  }
+
+  async recordMedicationLabelProposal(input: {
+    roundId: string;
+    patientId: string;
+    expectedStateVersion: number;
+    outcome: MedicationLabelExtractionOutcome;
+    correlationId: string;
+  }): Promise<MedicationLabelExtractionOutcome> {
+    if (input.outcome.status === "failed") return input.outcome;
+    const round = await this.getRound(input.roundId);
+    if (round.patientId !== input.patientId) {
+      throw new OrchestrationError("patient_mismatch", false);
+    }
+    if (round.state !== "assessment_selected") {
+      throw new OrchestrationError("invalid_state", false);
+    }
+    if (round.stateVersion !== input.expectedStateVersion) {
+      throw new OrchestrationError("stale_state", true);
+    }
+    const route = await this.getEvidenceRoute(round.id);
+    if (
+      route.selectedModuleId !== "medication.label.review" ||
+      route.medicationConfirmed ||
+      route.medicationSkipped
+    ) {
+      throw new OrchestrationError("invalid_state", false);
+    }
+    const proposal = input.outcome.proposal;
+    if (proposal.roundId !== round.id || proposal.stateVersion !== round.stateVersion) {
+      throw new OrchestrationError("stale_state", true);
+    }
+    await this.#ensureStandaloneEvent(
+      createMedicationLabelProposedEvent({
+        eventId: deterministicUuid("medication-label-proposed", proposal.proposalId),
+        occurredAt: proposal.provenance.attemptedAt,
+        actor: { kind: "system", id: "homerounds-medication-label-extractor" },
+        patientId: round.patientId,
+        roundId: round.id,
+        correlationId: input.correlationId,
+        source: "system",
+        proposal,
+        explicitlyConfirmed: false,
+        rawMediaStored: false,
+        providerPayloadStored: false
+      })
+    );
+    return input.outcome;
+  }
+
+  async confirmMedicationObservation(input: {
+    roundId: string;
+    patientId: string;
+    expectedStateVersion: number;
+    fact: ConfirmedMedicationObservationFact;
+    actorId: string;
+    correlationId: string;
+  }): Promise<MedicationConfirmationResult> {
+    const fact = ConfirmedMedicationObservationFactSchema.parse(input.fact);
+    const round = await this.getRound(input.roundId);
+    if (round.patientId !== input.patientId || fact.roundId !== round.id) {
+      throw new OrchestrationError("patient_mismatch", false);
+    }
+    if (round.state !== "assessment_selected") {
+      throw new OrchestrationError("invalid_state", false);
+    }
+    if (
+      round.stateVersion !== input.expectedStateVersion ||
+      fact.stateVersion !== round.stateVersion
+    ) {
+      throw new OrchestrationError("stale_state", true);
+    }
+    const route = await this.getEvidenceRoute(round.id);
+    if (route.selectedModuleId !== "medication.label.review" || route.medicationSkipped) {
+      throw new OrchestrationError("invalid_state", false);
+    }
+    const events = await this.#repository.listAuditEvents(round.id);
+    const priorConfirmations = events
+      .filter(({ type }) => type === "medication_observation_confirmed")
+      .map(({ payload }) => MedicationObservationConfirmedPayloadSchema.safeParse(payload))
+      .filter((result) => result.success)
+      .map((result) => result.data.fact);
+    const existing = priorConfirmations[0];
+    if (existing) {
+      if (JSON.stringify(existing) !== JSON.stringify(fact)) {
+        throw new OrchestrationError("medication_fact_conflict", false);
+      }
+      return { round, fact, persisted: true, duplicateSuppressed: true };
+    }
+
+    let proposalVerified = false;
+    let reconstructed: ConfirmedMedicationObservationFact | null;
+    if (fact.source === "image_review") {
+      const proposal = events
+        .filter(({ type }) => type === "medication_label_proposed")
+        .map(({ payload }) => MedicationLabelProposedPayloadSchema.safeParse(payload))
+        .filter((result) => result.success)
+        .map((result) => result.data.proposal)
+        .find(({ proposalId }) => proposalId === fact.proposalId);
+      if (!proposal) throw new OrchestrationError("medication_proposal_missing", false);
+      reconstructed = createConfirmedMedicationObservationFact({
+        source: "image_review",
+        proposal,
+        roundId: round.id,
+        stateVersion: round.stateVersion,
+        reviewItems: fact.reviewItems,
+        explicitlyConfirmed: true,
+        createId: () => fact.factId,
+        now: () => fact.confirmedAt
+      });
+      proposalVerified = true;
+    } else {
+      reconstructed = createConfirmedMedicationObservationFact({
+        source: "text_entry",
+        roundId: round.id,
+        stateVersion: round.stateVersion,
+        reviewItems: fact.reviewItems,
+        explicitlyConfirmed: true,
+        createId: () => fact.factId,
+        now: () => fact.confirmedAt
+      });
+    }
+    if (!reconstructed || JSON.stringify(reconstructed) !== JSON.stringify(fact)) {
+      throw new OrchestrationError("medication_fact_conflict", false);
+    }
+    await this.#ensureStandaloneEvent(
+      createMedicationObservationConfirmedEvent({
+        eventId: deterministicUuid("medication-observation-confirmed", fact.factId),
+        occurredAt: fact.confirmedAt,
+        actor: { kind: "patient", id: input.actorId },
+        patientId: round.patientId,
+        roundId: round.id,
+        correlationId: input.correlationId,
+        source: "patient_ui",
+        fact,
+        proposalVerified,
+        rawMediaStored: false
+      })
+    );
+    return { round, fact, persisted: true, duplicateSuppressed: false };
+  }
+
   async transition(input: {
     roundId: string;
     patientId: string | null;
@@ -273,6 +563,7 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
     expectedStateVersion: number;
     actorId: string;
     correlationId: string;
+    signal?: AbortSignal;
   }): Promise<ReportOrchestrationResult> {
     const report = PatientReportSchema.strict().parse(input.report);
     const round = await this.getRound(input.roundId);
@@ -334,7 +625,8 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
         round: nextRound,
         next: to,
         selectedModuleId: null,
-        protocolResult: initialDecision.result
+        protocolResult: initialDecision.result,
+        evidenceRoute: emptyEvidenceRoute()
       };
     }
 
@@ -371,9 +663,55 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
         round: nextRound,
         next: "abstained_for_review",
         selectedModuleId: null,
-        protocolResult: initialDecision.result
+        protocolResult: initialDecision.result,
+        evidenceRoute: emptyEvidenceRoute()
       };
     }
+    const candidates = evidenceModuleCandidates({
+      selectedProvider: this.#selectedProvider,
+      pulseAvailable: available,
+      medicationLabelEnabled: this.#medicationLabelEnabled
+    });
+    const adaptiveInput = AdaptiveSelectionInputSchema.parse({
+      contractVersion: "adaptive-selection.v1",
+      roundId: round.id,
+      stateVersion: round.stateVersion,
+      syntheticDataOnly: true,
+      redFlagGate: "clear",
+      neededFactKeys: this.#medicationLabelEnabled
+        ? ["pulse_bpm", "medication_label_observation"]
+        : ["pulse_bpm"],
+      burdenSecondsRemaining: round.burdenSecondsRemaining,
+      context: [
+        {
+          referenceId: "patient.report",
+          summary: boundedPatientContext(report),
+          factIds: [report.reportId]
+        }
+      ],
+      candidates,
+      deterministicFallbackModuleId: plan.selected.id
+    });
+    const signal = input.signal ?? new AbortController().signal;
+    const selection = this.#adaptiveSelectionEnabled
+      ? await this.#adaptiveSelection.select(adaptiveInput, signal)
+      : createAdaptiveSelectionFallback(adaptiveInput, "disabled", null);
+    const selectedModuleId = selectedModuleFromOutcome(selection, plan.selected.id);
+    const routeEvent = createAdaptiveEvidenceRouteSelectedEvent({
+      eventId: deterministicUuid("adaptive-route-selected", report.reportId),
+      occurredAt: this.#now(),
+      actor: { kind: "system", id: "homerounds-adaptive-selector" },
+      patientId: round.patientId,
+      roundId: round.id,
+      correlationId: input.correlationId,
+      source: "system",
+      selection,
+      candidates,
+      selectedModuleId,
+      deterministicAuthorityRetained: true,
+      promptStored: false,
+      providerPayloadStored: false
+    });
     const nextRound = await this.transition({
       roundId: round.id,
       patientId: round.patientId,
@@ -381,13 +719,21 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
       expectedStateVersion: round.stateVersion,
       actor: { kind: "system", id: "homerounds-planner" },
       source: "system",
-      correlationId: input.correlationId
+      correlationId: input.correlationId,
+      additionalEvents: [routeEvent]
     });
     return {
       round: nextRound,
       next: "assessment_selected",
-      selectedModuleId: plan.selected.id,
-      protocolResult: null
+      selectedModuleId,
+      protocolResult: null,
+      evidenceRoute: {
+        selection,
+        candidates,
+        selectedModuleId,
+        medicationConfirmed: false,
+        medicationSkipped: false
+      }
     };
   }
 
@@ -395,6 +741,7 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
     roundId: string;
     patientId: string;
     expectedStateVersion: number;
+    skipMedicationReview: boolean;
     actorId: string;
     correlationId: string;
   }): Promise<AssessmentStartResult> {
@@ -405,6 +752,32 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
     if (round.state !== "assessment_selected" && round.state !== "capture_retry") {
       throw new OrchestrationError("invalid_state", false);
     }
+    const evidenceRoute = await this.getEvidenceRoute(round.id);
+    const medicationReviewPending =
+      round.state === "assessment_selected" &&
+      evidenceRoute.selectedModuleId === "medication.label.review" &&
+      !evidenceRoute.medicationConfirmed &&
+      !evidenceRoute.medicationSkipped;
+    if (medicationReviewPending && !input.skipMedicationReview) {
+      throw new OrchestrationError("medication_confirmation_required", false);
+    }
+    if (input.skipMedicationReview && !medicationReviewPending) {
+      throw new OrchestrationError("invalid_state", false);
+    }
+    const skipEvent = input.skipMedicationReview
+      ? createMedicationReviewSkippedEvent({
+          eventId: deterministicUuid("medication-review-skipped", round.id),
+          occurredAt: this.#now(),
+          actor: { kind: "patient", id: input.actorId },
+          patientId: round.patientId,
+          roundId: round.id,
+          correlationId: input.correlationId,
+          source: "patient_ui",
+          reason: "patient_declined",
+          deterministicAuthorityRetained: true,
+          rawMediaStored: false
+        })
+      : undefined;
     const assessmentSessionId = this.#createId();
     const expiresAt = new Date(Date.parse(this.#now()) + 5 * 60_000).toISOString();
     const nextRound = await this.transition({
@@ -414,7 +787,8 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
       expectedStateVersion: input.expectedStateVersion,
       actor: { kind: "patient", id: input.actorId },
       source: "patient_ui",
-      correlationId: input.correlationId
+      correlationId: input.correlationId,
+      ...(skipEvent ? { additionalEvents: [skipEvent] } : {})
     });
     const payload = AssessmentAttestationPayloadSchema.parse({
       assessmentSessionId,
@@ -814,6 +1188,38 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
     ) {
       throw new OrchestrationError("round_conflict", false);
     }
+  }
+
+  async #readAdaptiveAuthorityState(
+    roundId: string,
+    signal: AbortSignal
+  ): Promise<AdaptiveSelectionAuthorityState | null> {
+    if (signal.aborted) return null;
+    const round = await this.#repository.getRound(roundId);
+    if (!round || signal.aborted) return null;
+    let redFlagGate: AdaptiveSelectionAuthorityState["redFlagGate"] = "uncertain";
+    try {
+      const report = await this.#confirmedReport(round.id);
+      const decision = evaluateProtocol(this.#protocol, {
+        now: this.#now(),
+        report,
+        measurement: { status: "missing" },
+        followUp: { status: "not_asked" },
+        followUpQuestionsAsked: 0
+      });
+      const matchedRuleId =
+        decision.kind === "result" ? decision.result.matchedRuleIds[0] : decision.matchedRuleIds[0];
+      const matchedRule = this.#protocol.rules.find(({ id }) => id === matchedRuleId);
+      redFlagGate = matchedRule?.stage === "red_flag" ? "blocked" : "clear";
+    } catch {
+      redFlagGate = "uncertain";
+    }
+    return {
+      roundId: round.id,
+      stateVersion: round.stateVersion,
+      syntheticDataOnly: true,
+      redFlagGate
+    };
   }
 
   async #systemTransition(round: Round, to: RoundState, correlationId: string): Promise<Round> {

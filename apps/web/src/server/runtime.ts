@@ -2,6 +2,12 @@ import { createHash, randomBytes } from "node:crypto";
 
 import { ActionService } from "@homerounds/actions";
 import {
+  TransportMedicationLabelProvider,
+  createDisabledMedicationLabelProvider,
+  createFakeMedicationLabelProvider,
+  type MedicationLabelProvider
+} from "@homerounds/assessments";
+import {
   FhirBundleClinicalRecordAdapter,
   type ClinicalSnapshot
 } from "@homerounds/clinical-records";
@@ -10,6 +16,14 @@ import {
   connectPostgresRepository,
   type HomeRoundsRepository
 } from "@homerounds/persistence";
+import {
+  DisabledAdaptiveSelectionProvider,
+  FakeAdaptiveSelectionProvider,
+  FireworksChatCompletionsTransport,
+  StructuredAdaptiveSelectionProvider,
+  createRuntimeFireworksDependencies,
+  type AdaptiveSelectionProvider
+} from "@homerounds/inference";
 import { ProtocolDefinitionSchema, type ProtocolDefinition } from "@homerounds/protocols";
 
 import fhirFixture from "../../../../data/fhir/maya-bundle.json";
@@ -18,6 +32,7 @@ import { parseServerEnvironment, type ServerEnvironment } from "../env";
 import { createDemoSessionAuthenticator } from "./identity";
 import type { ApiRouteHooks, RuntimeProfile } from "./http";
 import { RoundOrchestrationService } from "./orchestration";
+import { StructuredMedicationLabelTransport } from "./medication";
 import {
   ElevenLabsCredentialService,
   FetchElevenLabsTokenTransport,
@@ -42,6 +57,7 @@ export type ServerRuntime = {
   elevenLabs: ElevenLabsCredentialService;
   vitalLens: VitalLensProxyService;
   clinician: ClinicianService<ClinicalSnapshot, PersistedFact>;
+  medicationLabel: MedicationLabelProvider;
 };
 
 export type ServerRuntimeOverrides = {
@@ -51,6 +67,8 @@ export type ServerRuntimeOverrides = {
   now?: () => string;
   createId?: () => string;
   assessmentAttestationSecret?: string;
+  adaptiveSelectionProvider?: AdaptiveSelectionProvider;
+  medicationLabelProvider?: MedicationLabelProvider;
 };
 
 function derivedSecret(source: string | undefined): string {
@@ -62,7 +80,13 @@ function repositoryFor(environment: ServerEnvironment): {
   repository: HomeRoundsRepository<ClinicalSnapshot, PersistedFact>;
   profile: Extract<RuntimeProfile, "postgres" | "in_memory_demo_fallback">;
 } {
-  if (environment.DATABASE_URL) {
+  if (
+    environment.PERSISTENCE_PROVIDER === "postgres" ||
+    (environment.PERSISTENCE_PROVIDER === "auto" && environment.DATABASE_URL)
+  ) {
+    if (!environment.DATABASE_URL) {
+      throw new Error("PostgreSQL persistence requires server-only DATABASE_URL configuration.");
+    }
     return {
       repository: connectPostgresRepository<ClinicalSnapshot, PersistedFact>(
         environment.DATABASE_URL
@@ -95,6 +119,58 @@ export function createServerRuntime(overrides: ServerRuntimeOverrides = {}): Ser
       return structuredClone(fhirFixture);
     }
   });
+  const fireworksTransport =
+    environment.INFERENCE_PROVIDER === "fireworks"
+      ? new FireworksChatCompletionsTransport({
+          apiKey: environment.FIREWORKS_API_KEY,
+          dependencies: createRuntimeFireworksDependencies(),
+          policy: {
+            timeoutMs: environment.INFERENCE_REQUEST_TIMEOUT_MS,
+            maxAttempts: environment.INFERENCE_MAX_RETRIES + 1
+          }
+        })
+      : null;
+  const adaptiveSelectionProvider =
+    overrides.adaptiveSelectionProvider ??
+    (environment.ADAPTIVE_SELECTION_ENABLED && fireworksTransport
+      ? new StructuredAdaptiveSelectionProvider(fireworksTransport)
+      : environment.ADAPTIVE_SELECTION_ENABLED && environment.INFERENCE_PROVIDER === "fake"
+        ? new FakeAdaptiveSelectionProvider({ createId, now })
+        : new DisabledAdaptiveSelectionProvider());
+  const medicationLabel =
+    overrides.medicationLabelProvider ??
+    (environment.MEDICATION_LABEL_AI_ENABLED && fireworksTransport
+      ? new TransportMedicationLabelProvider(
+          new StructuredMedicationLabelTransport(fireworksTransport, createId)
+        )
+      : environment.MEDICATION_LABEL_AI_ENABLED && environment.INFERENCE_PROVIDER === "fake"
+        ? createFakeMedicationLabelProvider(
+            {
+              observations: [
+                {
+                  field: "product_name",
+                  status: "detected",
+                  value: "Synthetic Demo Tablets",
+                  confidence: 0.98
+                },
+                {
+                  field: "strength",
+                  status: "uncertain",
+                  value: "10 mg",
+                  confidence: 0.62
+                },
+                {
+                  field: "directions",
+                  status: "missing",
+                  value: null,
+                  confidence: null
+                }
+              ],
+              missingInformation: ["Directions are not visible on the synthetic label"]
+            },
+            { createId, now }
+          )
+        : createDisabledMedicationLabelProvider());
   const orchestration = new RoundOrchestrationService({
     repository: selectedRepository.repository,
     protocol,
@@ -103,6 +179,9 @@ export function createServerRuntime(overrides: ServerRuntimeOverrides = {}): Ser
       environment.OPTICAL_ASSESSMENT_PROVIDER === "finger_ppg" ||
       (environment.VITALLENS_PROXY_ENABLED && Boolean(environment.VITALLENS_API_KEY)),
     assessmentAttestationSecret: attestationSecret,
+    adaptiveSelectionProvider,
+    adaptiveSelectionEnabled: environment.ADAPTIVE_SELECTION_ENABLED,
+    medicationLabelEnabled: environment.MEDICATION_LABEL_AI_ENABLED,
     now,
     createId
   });
@@ -149,7 +228,8 @@ export function createServerRuntime(overrides: ServerRuntimeOverrides = {}): Ser
       new FetchVitalLensInferenceTransport(),
       now
     ),
-    clinician: new ClinicianService({ repository: selectedRepository.repository, now })
+    clinician: new ClinicianService({ repository: selectedRepository.repository, now }),
+    medicationLabel
   };
 }
 

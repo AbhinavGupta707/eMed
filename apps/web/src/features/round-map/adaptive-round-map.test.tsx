@@ -143,4 +143,18 @@ describe("adaptive Round Map", () => {
       rationaleSource: "deterministic_template"
     });
   });
+
+  it("keeps an atomically server-committed route accepted as later round steps advance", () => {
+    const committed = RoundMapExperienceSchema.parse({
+      ...MAYA_HAPPY_PATH_ROUND_MAP,
+      currentRoundVersion: 5,
+      selection: { ...MAYA_HAPPY_PATH_ROUND_MAP.selection, committed: true }
+    });
+
+    expect(roundMapSelectionPresentation(committed)).toMatchObject({
+      kind: "accepted",
+      retryable: false,
+      rationaleSource: "ai_checked"
+    });
+  });
 });

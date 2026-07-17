@@ -1,8 +1,13 @@
 import {
+  AdaptiveSelectionOutcomeSchema,
   CaptureQualitySchema,
   ClinicalTaskSchema,
+  ConfirmedMedicationObservationFactSchema,
   DomainEventSchema,
+  EvidenceModuleCandidateSchema,
   MeasurementFactSchema,
+  MedicationLabelExtractionOutcomeSchema,
+  MedicationLabelImageMetadataSchema,
   PatientReportSchema,
   ProtocolResultSchema,
   RoundSchema,
@@ -67,11 +72,84 @@ export const CreateRoundDataSchema = z
   .object({ round: RoundSchema.strict(), created: z.boolean() })
   .strict();
 
+export const AdaptiveEvidenceRouteDataSchema = z
+  .object({
+    selection: AdaptiveSelectionOutcomeSchema.nullable(),
+    candidates: z.array(EvidenceModuleCandidateSchema).max(8),
+    selectedModuleId: z.string().min(1).max(80).nullable(),
+    medicationConfirmed: z.boolean(),
+    medicationSkipped: z.boolean()
+  })
+  .strict()
+  .superRefine((route, context) => {
+    if (route.selection === null) {
+      if (
+        route.candidates.length > 0 ||
+        route.selectedModuleId !== null ||
+        route.medicationConfirmed ||
+        route.medicationSkipped
+      ) {
+        context.addIssue({
+          code: "custom",
+          message: "a missing selection cannot expose an evidence route"
+        });
+      }
+      return;
+    }
+    if (route.medicationConfirmed && route.medicationSkipped) {
+      context.addIssue({
+        code: "custom",
+        path: ["medicationSkipped"],
+        message: "medication review cannot be both confirmed and skipped"
+      });
+    }
+    const selected = route.candidates.find(({ id }) => id === route.selectedModuleId);
+    if (!selected || selected.availability.status !== "available") {
+      context.addIssue({
+        code: "custom",
+        path: ["selectedModuleId"],
+        message: "the selected module must be an available server candidate"
+      });
+    }
+    if (
+      (route.medicationConfirmed || route.medicationSkipped) &&
+      selected?.kind !== "medication_label"
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["medicationConfirmed"],
+        message: "medication status requires the medication-label route"
+      });
+    }
+    if (
+      route.selection.status === "fallback" &&
+      route.selection.selectedModuleId !== route.selectedModuleId
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["selectedModuleId"],
+        message: "fallback route must match the deterministic selection"
+      });
+    }
+    if (
+      route.selection.status === "accepted" &&
+      route.selection.envelope.decision.decision === "select" &&
+      route.selection.envelope.decision.candidateModuleId !== route.selectedModuleId
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["selectedModuleId"],
+        message: "accepted route must match the validated model proposal"
+      });
+    }
+  });
+
 export const RoundDataSchema = z
   .object({
     round: RoundSchema.strict(),
     protocolResult: ProtocolResultSchema.strict().nullable().optional(),
-    task: ClinicalTaskSchema.strict().nullable().optional()
+    task: ClinicalTaskSchema.strict().nullable().optional(),
+    evidenceRoute: AdaptiveEvidenceRouteDataSchema.optional()
   })
   .strict();
 
@@ -98,12 +176,46 @@ export const SubmitReportDataSchema = z
     round: RoundSchema.strict(),
     next: z.enum(["assessment_selected", "emergency_closed", "abstained_for_review"]),
     selectedModuleId: z.string().min(1).max(120).nullable(),
-    protocolResult: ProtocolResultSchema.strict().nullable()
+    protocolResult: ProtocolResultSchema.strict().nullable(),
+    evidenceRoute: AdaptiveEvidenceRouteDataSchema
+  })
+  .strict();
+
+export const SubmitMedicationLabelImageRequestSchema = z
+  .object({
+    expectedStateVersion: z.number().int().nonnegative(),
+    metadata: MedicationLabelImageMetadataSchema,
+    bytesBase64: z.string().min(4).max(4_000_000)
+  })
+  .strict();
+
+export const SubmitMedicationLabelImageDataSchema = z
+  .object({
+    outcome: MedicationLabelExtractionOutcomeSchema
+  })
+  .strict();
+
+export const ConfirmMedicationObservationRequestSchema = z
+  .object({
+    expectedStateVersion: z.number().int().nonnegative(),
+    fact: ConfirmedMedicationObservationFactSchema
+  })
+  .strict();
+
+export const ConfirmMedicationObservationDataSchema = z
+  .object({
+    round: RoundSchema.strict(),
+    fact: ConfirmedMedicationObservationFactSchema,
+    persisted: z.literal(true),
+    duplicateSuppressed: z.boolean()
   })
   .strict();
 
 export const StartAssessmentRequestSchema = z
-  .object({ expectedStateVersion: z.number().int().nonnegative() })
+  .object({
+    expectedStateVersion: z.number().int().nonnegative(),
+    skipMedicationReview: z.literal(true).optional()
+  })
   .strict();
 
 export const AssessmentSessionDataSchema = z
@@ -345,6 +457,12 @@ export const ElevenLabsCredentialDataSchema = z.discriminatedUnion("status", [
 export type CreateRoundRequest = z.infer<typeof CreateRoundRequestSchema>;
 export type TransitionRoundRequest = z.infer<typeof TransitionRoundRequestSchema>;
 export type SubmitReportRequest = z.infer<typeof SubmitReportRequestSchema>;
+export type SubmitMedicationLabelImageRequest = z.infer<
+  typeof SubmitMedicationLabelImageRequestSchema
+>;
+export type ConfirmMedicationObservationRequest = z.infer<
+  typeof ConfirmMedicationObservationRequestSchema
+>;
 export type StartAssessmentRequest = z.infer<typeof StartAssessmentRequestSchema>;
 export type SubmitAssessmentRequest = z.infer<typeof SubmitAssessmentRequestSchema>;
 export type SubmitCaptureQualityRequest = z.infer<typeof SubmitCaptureQualityRequestSchema>;

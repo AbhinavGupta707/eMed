@@ -1,5 +1,6 @@
 "use client";
 import { HomeRoundsApiClient } from "@homerounds/api-client";
+import type { MedicationLabelProvider } from "@homerounds/assessments";
 import { PatientReportSchema, RedFlagAnswerSchema, type RoundState } from "@homerounds/contracts";
 import {
   createConfirmedPatientReport,
@@ -37,7 +38,9 @@ import {
   type ReactNode
 } from "react";
 import { VoiceInteractionPanel } from "../voice";
-import { AdaptiveRoundMap, type RoundMapExperience } from "../round-map";
+import { MedicationLabelPanel } from "../medication";
+import { AdaptiveRoundMap, RoundMapExperienceSchema, type RoundMapExperience } from "../round-map";
+import { ApiMedicationLabelProvider } from "../shared-round/medication-label-api-provider";
 import type { PatientRoundLaunchConfig } from "../shared-round/patient-round-config";
 import {
   PatientWorkflowController,
@@ -76,6 +79,7 @@ export type PatientRoundAppProps = Readonly<{
   isOnline?: () => boolean;
   onRetryAdaptiveSelection?: () => void;
   roundMapExperience?: RoundMapExperience;
+  medicationLabelProvider?: MedicationLabelProvider;
   timeoutMs?: number;
 }>;
 type ChoiceOption = Readonly<{
@@ -130,6 +134,7 @@ function stepIndex(view: PatientWorkflowView): number {
     case "invitation":
     case "report":
       return 0;
+    case "medication_review":
     case "measurement_prepare":
     case "measurement_ready":
     case "measurement_unavailable":
@@ -146,6 +151,109 @@ function stepIndex(view: PatientWorkflowView): number {
     case "cancelled":
       return 3;
   }
+}
+
+const POST_ASSESSMENT_STATES = new Set<RoundState>([
+  "assessment_complete",
+  "follow_up_selected",
+  "protocol_ready",
+  "protocol_decided",
+  "action_pending",
+  "awaiting_clinician",
+  "outcome_ready",
+  "closed",
+  "abstained_for_review"
+]);
+
+function liveRoundMapExperience(state: PatientWorkflowState): RoundMapExperience | undefined {
+  const round = state.round;
+  const route = state.evidenceRoute;
+  if (!round || !route.selection || !route.selectedModuleId || route.candidates.length === 0) {
+    return undefined;
+  }
+  const assessmentComplete = POST_ASSESSMENT_STATES.has(round.state);
+  const assessmentCurrent = round.state === "capturing" || round.state === "capture_retry";
+  const modules = [
+    {
+      candidate: {
+        id: "patient.report",
+        kind: "structured_follow_up",
+        label: "Confirmed symptom check-in",
+        description: "The structured answers you explicitly confirmed for this synthetic round.",
+        producesFactKeys: ["follow_up_answer"],
+        availability: { status: "available" },
+        estimatedBurdenSeconds: 35,
+        deterministicRank: 0
+      },
+      status: "completed",
+      statusDetail: "Your confirmed structured answers are saved; narrative text is not retained."
+    },
+    ...route.candidates.map((candidate) => {
+      if (candidate.availability.status === "unavailable") {
+        return { candidate, status: "unavailable" as const, statusDetail: null };
+      }
+      if (candidate.kind === "medication_label") {
+        if (route.selectedModuleId !== candidate.id) {
+          return {
+            candidate,
+            status: "skipped" as const,
+            statusDetail: "The validated route did not require this optional evidence step."
+          };
+        }
+        if (route.medicationSkipped) {
+          return {
+            candidate,
+            status: "skipped" as const,
+            statusDetail: "You skipped this optional evidence step; no label observation was saved."
+          };
+        }
+        return route.medicationConfirmed
+          ? {
+              candidate,
+              status: "completed" as const,
+              statusDetail: "Your reviewed synthetic label observations were explicitly confirmed."
+            }
+          : {
+              candidate,
+              status: "current" as const,
+              statusDetail: "Review and confirm visible label fields before continuing."
+            };
+      }
+      if (assessmentComplete) {
+        return {
+          candidate,
+          status: "completed" as const,
+          statusDetail: "A quality-passing pulse estimate was confirmed for this round."
+        };
+      }
+      if (assessmentCurrent) {
+        return {
+          candidate,
+          status: "current" as const,
+          statusDetail: "The deterministic capture-quality gate is checking this step."
+        };
+      }
+      const pulseReady =
+        route.selectedModuleId === candidate.id ||
+        (route.selectedModuleId === "medication.label.review" &&
+          (route.medicationConfirmed || route.medicationSkipped));
+      return {
+        candidate,
+        status: pulseReady ? ("selected" as const) : ("next" as const),
+        statusDetail: pulseReady
+          ? "This quality-gated step is ready."
+          : "This deterministic fallback remains next after the selected review step."
+      };
+    })
+  ];
+  return RoundMapExperienceSchema.parse({
+    currentRoundVersion: round.stateVersion,
+    modules,
+    resumedConfirmedProgress:
+      state.interrupted || route.medicationConfirmed || route.medicationSkipped,
+    selection: { status: "settled", outcome: route.selection, committed: true },
+    syntheticStoryLabel: "Live synthetic adaptive route"
+  });
 }
 function progressSteps(view: PatientWorkflowView): readonly ProgressStep[] {
   const current = stepIndex(view);
@@ -428,13 +536,15 @@ function ReportPanel({
       fields: PatientReportSchema.pick({
         weakness: true,
         palpitations: true,
-        redFlags: true
+        redFlags: true,
+        note: true
       })
         .strict()
         .parse({
           weakness,
           palpitations,
-          redFlags: { chestPain, severeBreathlessness, fainted }
+          redFlags: { chestPain, severeBreathlessness, fainted },
+          ...(confirmation.text.length <= 500 ? { note: confirmation.text } : {})
         })
     });
     void controller.submitConfirmedReport(report);
@@ -555,7 +665,7 @@ function ReportPanel({
       {
         className: styles.privacyNote
       },
-      "The confirmed narrative remains ephemeral in this slice. HomeRounds submits only your structured answers and whether you used confirmed voice or text."
+      "The confirmed narrative remains ephemeral. Up to 500 confirmed characters may inform the bounded evidence-module proposal, but narrative text is never stored; structured safety answers remain authoritative."
     ),
     createElement(
       "div",
@@ -1597,16 +1707,46 @@ function LoadingPanel({ state, controller }: PatientShellProps) {
 function assertNever(value: never): never {
   throw new Error(`Unhandled patient workflow view: ${String(value)}`);
 }
+
+function MedicationReviewPanel({
+  state,
+  controller,
+  provider,
+  createId,
+  now
+}: PatientShellProps & {
+  provider: MedicationLabelProvider;
+  createId: () => string;
+  now: () => string;
+}) {
+  const round = state.round;
+  if (!round) return null;
+  return createElement(MedicationLabelPanel, {
+    roundId: round.id,
+    stateVersion: round.stateVersion,
+    consentVersion: "homerounds-synthetic-medication-label-v1",
+    provider,
+    onConfirmed: (fact) => controller.confirmMedicationFact(fact),
+    onSkipped: () => controller.skipMedicationReview(),
+    createId,
+    now
+  });
+}
+
 function PatientWorkflowContent({
   view,
   state,
   controller,
   voiceProvider,
-  createId
+  createId,
+  now,
+  medicationLabelProvider
 }: PatientShellProps & {
   view: PatientWorkflowView;
   voiceProvider: VoiceSessionProvider;
   createId: () => string;
+  now: () => string;
+  medicationLabelProvider: MedicationLabelProvider;
 }): ReactNode {
   switch (view) {
     case "loading":
@@ -1625,6 +1765,14 @@ function PatientWorkflowContent({
         createId: createId,
         state: state,
         voiceProvider: voiceProvider
+      });
+    case "medication_review":
+      return createElement(MedicationReviewPanel, {
+        controller,
+        state,
+        provider: medicationLabelProvider,
+        createId,
+        now
       });
     case "measurement_prepare":
     case "measurement_ready":
@@ -1679,7 +1827,8 @@ export function PatientRoundApp({
   now = browserNow,
   isOnline,
   onRetryAdaptiveSelection,
-  roundMapExperience,
+  roundMapExperience: providedRoundMapExperience,
+  medicationLabelProvider: providedMedicationLabelProvider,
   timeoutMs = 180000
 }: PatientRoundAppProps) {
   const api = useMemo<PatientRoundApi>(
@@ -1690,6 +1839,10 @@ export function PatientRoundApp({
   const voiceProvider = useMemo(
     () => providedVoice ?? createPatientVoiceProvider(),
     [providedVoice]
+  );
+  const medicationLabelProvider = useMemo(
+    () => providedMedicationLabelProvider ?? new ApiMedicationLabelProvider(api),
+    [api, providedMedicationLabelProvider]
   );
   const recordedCaptureReplayLoader = useMemo(
     () =>
@@ -1719,6 +1872,10 @@ export function PatientRoundApp({
     controller.getSnapshot
   );
   const view = patientWorkflowView(state);
+  const roundMapExperience = useMemo(
+    () => providedRoundMapExperience ?? liveRoundMapExperience(state),
+    [providedRoundMapExperience, state]
+  );
   useEffect(() => {
     const online = () => controller.setOnline(true);
     const offline = () => controller.setOnline(false);
@@ -1816,7 +1973,9 @@ export function PatientRoundApp({
           createId: createId,
           state: state,
           view: view,
-          voiceProvider: voiceProvider
+          voiceProvider: voiceProvider,
+          medicationLabelProvider,
+          now
         })
       )
     )

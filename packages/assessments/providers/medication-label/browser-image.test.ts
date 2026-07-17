@@ -80,9 +80,9 @@ describe("medication image preparation", () => {
     expect(imageDecoder.createPreviewUrl).not.toHaveBeenCalled();
   });
 
-  it("rejects files over five megabytes before decoding", async () => {
+  it("rejects files over the hosted three-megabyte envelope before decoding", async () => {
     const imageDecoder = decoder();
-    const oversized = new Blob([new Uint8Array(5_000_001)], { type: "image/png" });
+    const oversized = new Blob([new Uint8Array(3_000_001)], { type: "image/png" });
 
     await expect(
       prepareMedicationLabelImage(prepareInput(oversized, imageDecoder))

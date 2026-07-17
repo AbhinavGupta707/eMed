@@ -8,5 +8,6 @@ export type {
 } from "@homerounds/contracts/assessment";
 
 export * from "../providers/finger-ppg";
+export * from "../providers/medication-label";
 export * from "../providers/vitallens";
 export * from "./registry";

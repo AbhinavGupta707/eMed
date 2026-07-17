@@ -1,6 +1,7 @@
 import {
   ApiSuccessEnvelopeSchema,
   AssessmentSessionDataSchema,
+  ConfirmMedicationObservationDataSchema,
   ClinicianMutationReceiptSchema,
   ClinicianTaskDetailDataSchema,
   CreateRoundDataSchema,
@@ -11,8 +12,12 @@ import {
   SubmitAssessmentDataSchema,
   SubmitCaptureQualityDataSchema,
   SubmitFollowUpDataSchema,
+  SubmitMedicationLabelImageDataSchema,
   SubmitReportDataSchema
 } from "@homerounds/api-client";
+import { createConfirmedMedicationObservationFact } from "@homerounds/assessments";
+import { AdaptiveSelectionEnvelopeSchema } from "@homerounds/contracts";
+import type { AdaptiveSelectionProvider } from "@homerounds/inference";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
@@ -21,6 +26,7 @@ import {
   handleClinicianTaskDetail,
   handleClinicianTaskMutation,
   handleCreateRound,
+  handleConfirmMedicationObservation,
   handleElevenLabsCredential,
   handleExecuteAction,
   handleGetRound,
@@ -29,6 +35,7 @@ import {
   handleSubmitAssessment,
   handleSubmitCaptureQuality,
   handleSubmitFollowUp,
+  handleSubmitMedicationLabelImage,
   handleSubmitReport,
   handleTransitionRound
 } from "./route-handlers";
@@ -62,6 +69,87 @@ function apiRequest(
 async function success<T>(response: Response, dataSchema: z.ZodType<T>): Promise<T> {
   expect(response.status, await response.clone().text()).toBe(200);
   return ApiSuccessEnvelopeSchema(dataSchema).parse(await response.json()).data;
+}
+
+function medicationSelectingProvider(): AdaptiveSelectionProvider {
+  return {
+    async select(input) {
+      return {
+        ok: true,
+        envelope: AdaptiveSelectionEnvelopeSchema.parse({
+          roundId: input.roundId,
+          stateVersion: input.stateVersion,
+          decision: {
+            decision: "select",
+            candidateModuleId: "medication.label.review",
+            evidenceReferenceIds: ["patient.report"],
+            rationale:
+              "A synthetic medication-label review may resolve the confirmed uncertainty before the pulse check.",
+            uncertainty: "medium",
+            missingInformation: ["Visible synthetic label fields"]
+          },
+          provenance: {
+            attemptId: "8e0c2e47-5d75-4e1f-a157-4016e728ac59",
+            provider: "fake",
+            task: "adaptive_module_selection",
+            modelAlias: "fake-medication-route-v1",
+            contractVersion: "adaptive-selection.v1",
+            attemptedAt: NOW,
+            durationMs: 1,
+            tokenUsage: null
+          }
+        })
+      };
+    }
+  };
+}
+
+async function createCollectingRound(
+  runtime: ReturnType<typeof createServerRuntime>,
+  triggerId: string
+) {
+  const created = await success(
+    await handleCreateRound(
+      apiRequest(
+        "/api/rounds",
+        {
+          patientId: "synthetic-maya",
+          triggerId,
+          purpose: "Synthetic adaptive medication check",
+          protocolId: "cardiometabolic_demo",
+          burdenSeconds: 120
+        },
+        `${triggerId}-create`
+      ),
+      runtime
+    ),
+    CreateRoundDataSchema
+  );
+  const screen = await success(
+    await handleTransitionRound(
+      apiRequest(
+        `/api/rounds/${created.round.id}/transition`,
+        { to: "red_flag_screen", expectedStateVersion: created.round.stateVersion },
+        `${triggerId}-screen`
+      ),
+      runtime,
+      created.round.id
+    ),
+    RoundDataSchema
+  );
+  const collecting = await success(
+    await handleTransitionRound(
+      apiRequest(
+        `/api/rounds/${created.round.id}/transition`,
+        { to: "collecting_report", expectedStateVersion: screen.round.stateVersion },
+        `${triggerId}-collecting`
+      ),
+      runtime,
+      created.round.id
+    ),
+    RoundDataSchema
+  );
+  return { roundId: created.round.id, collecting: collecting.round };
 }
 
 describe("repository-backed server API orchestration", () => {
@@ -143,6 +231,12 @@ describe("repository-backed server API orchestration", () => {
       SubmitReportDataSchema
     );
     expect(report).toMatchObject({ next: "assessment_selected", protocolResult: null });
+    expect(report.evidenceRoute).toMatchObject({
+      selection: { status: "fallback", reason: "disabled" },
+      selectedModuleId: "capture.finger_ppg.pulse",
+      medicationConfirmed: false,
+      medicationSkipped: false
+    });
 
     const assessment = await success(
       await handleStartAssessment(
@@ -419,6 +513,254 @@ describe("repository-backed server API orchestration", () => {
         "clinician_complete"
       ])
     );
+  });
+
+  it("runs an adaptive medication proposal through explicit review, durable confirmation, and idempotent resume", async () => {
+    const runtime = createServerRuntime({
+      environment: parseServerEnvironment({
+        INFERENCE_PROVIDER: "fake",
+        ADAPTIVE_SELECTION_ENABLED: "true",
+        MEDICATION_LABEL_AI_ENABLED: "true"
+      }),
+      adaptiveSelectionProvider: medicationSelectingProvider(),
+      now: () => NOW,
+      createId: idFactory(),
+      assessmentAttestationSecret: "assessment-attestation-secret-value"
+    });
+    const { roundId, collecting } = await createCollectingRound(
+      runtime,
+      "trigger-adaptive-medication-confirm"
+    );
+    const privateNarrative = "synthetic-private-narrative-never-persist";
+    const report = await success(
+      await handleSubmitReport(
+        apiRequest(
+          `/api/rounds/${roundId}/report`,
+          {
+            report: {
+              reportId: "f1690ba4-d4f4-4da0-8fac-3c5fb3ab7bd4",
+              roundId,
+              weakness: "mild",
+              palpitations: "unknown",
+              redFlags: { chestPain: "no", severeBreathlessness: "no", fainted: "no" },
+              note: privateNarrative,
+              inputMode: "text",
+              confirmedAt: NOW
+            },
+            expectedStateVersion: collecting.stateVersion
+          },
+          "adaptive-medication-report"
+        ),
+        runtime,
+        roundId
+      ),
+      SubmitReportDataSchema
+    );
+    expect(report.evidenceRoute).toMatchObject({
+      selection: {
+        status: "accepted",
+        envelope: { decision: { candidateModuleId: "medication.label.review" } }
+      },
+      selectedModuleId: "medication.label.review",
+      medicationConfirmed: false,
+      medicationSkipped: false
+    });
+
+    const blocked = await handleStartAssessment(
+      apiRequest(
+        `/api/rounds/${roundId}/assessments/session`,
+        { expectedStateVersion: report.round.stateVersion },
+        "adaptive-medication-blocked"
+      ),
+      runtime,
+      roundId
+    );
+    expect(blocked.status).toBe(409);
+
+    const imageBytes = new Uint8Array([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x01, 0x02, 0x03, 0x04
+    ]);
+    const bytesBase64 = Buffer.from(imageBytes).toString("base64");
+    const extraction = await success(
+      await handleSubmitMedicationLabelImage(
+        apiRequest(
+          `/api/rounds/${roundId}/medication/label`,
+          {
+            expectedStateVersion: report.round.stateVersion,
+            metadata: {
+              requestId: "fd45b87c-3894-4e18-a978-e5779b982988",
+              captureMode: "file_upload",
+              mediaType: "image/png",
+              byteLength: imageBytes.byteLength,
+              width: 640,
+              height: 640,
+              consentVersion: "synthetic-demo-v1",
+              consentGrantedAt: NOW,
+              syntheticDataOnly: true,
+              rawMediaRef: null
+            },
+            bytesBase64
+          },
+          "adaptive-medication-extract"
+        ),
+        runtime,
+        roundId
+      ),
+      SubmitMedicationLabelImageDataSchema
+    );
+    expect(extraction.outcome.status).toBe("proposed");
+    if (extraction.outcome.status !== "proposed") return;
+
+    const reviewItems = extraction.outcome.proposal.observations.map((observation) =>
+      observation.value === null
+        ? { field: observation.field, disposition: "not_visible" as const, reviewedValue: null }
+        : {
+            field: observation.field,
+            disposition: "accepted" as const,
+            reviewedValue: observation.value
+          }
+    );
+    const fact = createConfirmedMedicationObservationFact({
+      source: "image_review",
+      proposal: extraction.outcome.proposal,
+      roundId,
+      stateVersion: report.round.stateVersion,
+      reviewItems,
+      explicitlyConfirmed: true,
+      createId: () => "536be42b-63a5-4ee1-9a89-ea087591b165",
+      now: () => NOW
+    });
+    expect(fact).not.toBeNull();
+    if (!fact) return;
+    const confirmationBody = {
+      expectedStateVersion: report.round.stateVersion,
+      fact
+    };
+    const confirmed = await success(
+      await handleConfirmMedicationObservation(
+        apiRequest(
+          `/api/rounds/${roundId}/medication/confirmation`,
+          confirmationBody,
+          "adaptive-medication-confirm"
+        ),
+        runtime,
+        roundId
+      ),
+      ConfirmMedicationObservationDataSchema
+    );
+    expect(confirmed).toMatchObject({ persisted: true, duplicateSuppressed: false });
+    const duplicate = await success(
+      await handleConfirmMedicationObservation(
+        apiRequest(
+          `/api/rounds/${roundId}/medication/confirmation`,
+          confirmationBody,
+          "adaptive-medication-confirm-retry"
+        ),
+        runtime,
+        roundId
+      ),
+      ConfirmMedicationObservationDataSchema
+    );
+    expect(duplicate.duplicateSuppressed).toBe(true);
+
+    const resumed = await success(
+      await handleGetRound(
+        new Request(`http://localhost:3000/api/rounds/${roundId}`),
+        runtime,
+        roundId
+      ),
+      RoundDataSchema
+    );
+    expect(resumed.evidenceRoute).toMatchObject({
+      selectedModuleId: "medication.label.review",
+      medicationConfirmed: true,
+      medicationSkipped: false
+    });
+    await success(
+      await handleStartAssessment(
+        apiRequest(
+          `/api/rounds/${roundId}/assessments/session`,
+          { expectedStateVersion: report.round.stateVersion },
+          "adaptive-medication-assessment"
+        ),
+        runtime,
+        roundId
+      ),
+      AssessmentSessionDataSchema
+    );
+
+    const events = await runtime.repository.listAuditEvents(roundId);
+    expect(events.filter(({ type }) => type === "medication_label_proposed")).toHaveLength(1);
+    expect(events.filter(({ type }) => type === "medication_observation_confirmed")).toHaveLength(
+      1
+    );
+    const persisted = JSON.stringify(events);
+    expect(persisted).not.toContain(bytesBase64);
+    expect(persisted).not.toContain(privateNarrative);
+    expect(persisted).not.toMatch(/data:image|chain.of.thought/i);
+    expect(events.find(({ type }) => type === "medication_label_proposed")?.payload).toMatchObject({
+      rawMediaStored: false,
+      providerPayloadStored: false
+    });
+  });
+
+  it("atomically records an optional medication-review skip before the quality-gated pulse path", async () => {
+    const runtime = createServerRuntime({
+      environment: parseServerEnvironment({
+        INFERENCE_PROVIDER: "fake",
+        ADAPTIVE_SELECTION_ENABLED: "true",
+        MEDICATION_LABEL_AI_ENABLED: "true"
+      }),
+      adaptiveSelectionProvider: medicationSelectingProvider(),
+      now: () => NOW,
+      createId: idFactory(),
+      assessmentAttestationSecret: "assessment-attestation-secret-value"
+    });
+    const { roundId, collecting } = await createCollectingRound(
+      runtime,
+      "trigger-adaptive-medication-skip"
+    );
+    const report = await success(
+      await handleSubmitReport(
+        apiRequest(
+          `/api/rounds/${roundId}/report`,
+          {
+            report: {
+              reportId: "671d9b87-e18e-4b4d-aeb2-3216e1cf1f1f",
+              roundId,
+              weakness: "mild",
+              palpitations: "unknown",
+              redFlags: { chestPain: "no", severeBreathlessness: "no", fainted: "no" },
+              inputMode: "text",
+              confirmedAt: NOW
+            },
+            expectedStateVersion: collecting.stateVersion
+          },
+          "adaptive-medication-skip-report"
+        ),
+        runtime,
+        roundId
+      ),
+      SubmitReportDataSchema
+    );
+    const assessment = await success(
+      await handleStartAssessment(
+        apiRequest(
+          `/api/rounds/${roundId}/assessments/session`,
+          { expectedStateVersion: report.round.stateVersion, skipMedicationReview: true },
+          "adaptive-medication-skip-assessment"
+        ),
+        runtime,
+        roundId
+      ),
+      AssessmentSessionDataSchema
+    );
+    expect(assessment.round.state).toBe("capturing");
+    const route = await runtime.orchestration.getEvidenceRoute(roundId);
+    expect(route).toMatchObject({ medicationConfirmed: false, medicationSkipped: true });
+    const events = await runtime.repository.listAuditEvents(roundId);
+    expect(events.filter(({ type }) => type === "medication_review_skipped")).toHaveLength(1);
+    expect(events.filter(({ type }) => type === "medication_label_proposed")).toHaveLength(0);
   });
 
   it("returns typed no-key voice unavailability through the authenticated route", async () => {

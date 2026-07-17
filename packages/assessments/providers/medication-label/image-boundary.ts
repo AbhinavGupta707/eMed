@@ -3,7 +3,9 @@ import {
   type MedicationLabelImageMetadata
 } from "@homerounds/contracts/medication";
 
-export const MEDICATION_LABEL_MAX_BYTES = 5_000_000;
+// A 3 MB binary image expands to roughly 4 MB as JSON base64. This leaves a
+// deliberate envelope below Vercel's 4.5 MB Function request-body limit.
+export const MEDICATION_LABEL_MAX_BYTES = 3_000_000;
 export const MEDICATION_LABEL_MIN_DIMENSION = 320;
 export const MEDICATION_LABEL_MAX_DIMENSION = 8_192;
 export const MEDICATION_LABEL_MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;

@@ -7,6 +7,7 @@ describe("server environment safety profile", () => {
     const environment = parseServerEnvironment({});
 
     expect(environment.VOICE_PROVIDER).toBe("disabled");
+    expect(environment.PERSISTENCE_PROVIDER).toBe("auto");
     expect(environment.INFERENCE_PROVIDER).toBe("disabled");
     expect(environment.ADAPTIVE_SELECTION_ENABLED).toBe(false);
     expect(environment.MEDICATION_LABEL_AI_ENABLED).toBe(false);
@@ -40,6 +41,24 @@ describe("server environment safety profile", () => {
 
   it("rejects raw-media storage in every profile", () => {
     expect(() => parseServerEnvironment({ STORE_RAW_MEDIA: "true" })).toThrow();
+  });
+
+  it("allows explicit in-memory test isolation only in development", () => {
+    expect(
+      parseServerEnvironment({
+        DATABASE_URL: "postgresql://example.invalid/homerounds",
+        PERSISTENCE_PROVIDER: "memory"
+      }).PERSISTENCE_PROVIDER
+    ).toBe("memory");
+    expect(() =>
+      parseServerEnvironment({
+        APP_ENV: "demo",
+        DATABASE_URL: "postgresql://example.invalid/homerounds",
+        DEMO_ACCESS_SECRET: "synthetic-demo-secret",
+        PERSISTENCE_PROVIDER: "memory"
+      })
+    ).toThrow();
+    expect(() => parseServerEnvironment({ PERSISTENCE_PROVIDER: "postgres" })).toThrow();
   });
 
   it("rejects demo or fixture behavior in production", () => {

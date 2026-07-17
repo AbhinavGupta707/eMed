@@ -294,6 +294,34 @@ describe("medication label panel", () => {
     expect(onConfirmed).toHaveBeenCalledTimes(1);
   });
 
+  it("waits for one durable skip and keeps the optional path explicit", async () => {
+    let resolveSkip: (() => void) | undefined;
+    const skip = new Promise<void>((resolve) => {
+      resolveSkip = resolve;
+    });
+    const onSkipped = vi.fn(() => skip);
+    render(createElement(MedicationLabelPanel, baseProps({ onSkipped })));
+
+    const skipButton = screen.getByRole("button", {
+      name: "Skip label review and continue"
+    });
+    expect(screen.getByText(/does not control safety or urgency/i)).toBeVisible();
+    fireEvent.click(skipButton);
+    fireEvent.click(skipButton);
+
+    expect(onSkipped).toHaveBeenCalledTimes(1);
+    expect(skipButton).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent(/Recording your choice to skip/i);
+
+    resolveSkip?.();
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        /No image or label observation was retained/i
+      )
+    );
+    expect(onSkipped).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps the exact image review retryable after asynchronous rejection", async () => {
     const handle = preparedImage();
     const onConfirmed = vi.fn(async () => {
@@ -465,6 +493,6 @@ describe("medication label panel", () => {
       "accept",
       "image/jpeg,image/png,image/webp"
     );
-    expect(screen.getByText(/maximum 5 MB; 320–8,192 pixels/i)).toBeVisible();
+    expect(screen.getByText(/maximum 3 MB; 320–8,192 pixels/i)).toBeVisible();
   });
 });

@@ -7,6 +7,7 @@ const serverEnvironmentSchema = z
     APP_ENV: z.enum(["development", "demo", "production"]).default("development"),
     APP_BASE_URL: z.url().default("http://localhost:3000"),
     DATABASE_URL: z.string().min(1).optional(),
+    PERSISTENCE_PROVIDER: z.enum(["auto", "memory", "postgres"]).default("auto"),
     DEMO_MODE: booleanText.default(true),
     DEMO_ACCESS_SECRET: z.string().min(16).optional(),
     FHIR_PROVIDER: z.enum(["fixture"]).default("fixture"),
@@ -77,6 +78,22 @@ const serverEnvironmentSchema = z
           path: ["DEMO_ACCESS_SECRET"]
         });
       }
+    }
+
+    if (environment.PERSISTENCE_PROVIDER === "postgres" && !environment.DATABASE_URL) {
+      context.addIssue({
+        code: "custom",
+        message: "The PostgreSQL persistence profile requires DATABASE_URL",
+        path: ["DATABASE_URL"]
+      });
+    }
+
+    if (environment.APP_ENV !== "development" && environment.PERSISTENCE_PROVIDER === "memory") {
+      context.addIssue({
+        code: "custom",
+        message: "In-memory persistence is restricted to development and automated tests",
+        path: ["PERSISTENCE_PROVIDER"]
+      });
     }
 
     if (environment.VOICE_PROVIDER === "elevenlabs") {

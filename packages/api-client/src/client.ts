@@ -4,6 +4,8 @@ import {
   ApiErrorEnvelopeSchema,
   ApiSuccessEnvelopeSchema,
   AssessmentSessionDataSchema,
+  ConfirmMedicationObservationDataSchema,
+  ConfirmMedicationObservationRequestSchema,
   ClinicianMutationReceiptSchema,
   ClinicianMutationRequestSchema,
   ClinicianTaskDetailDataSchema,
@@ -21,16 +23,20 @@ import {
   SubmitCaptureQualityRequestSchema,
   SubmitFollowUpDataSchema,
   SubmitFollowUpRequestSchema,
+  SubmitMedicationLabelImageDataSchema,
+  SubmitMedicationLabelImageRequestSchema,
   SubmitReportDataSchema,
   SubmitReportRequestSchema,
   TransitionRoundRequestSchema,
   type CreateRoundRequest,
   type ClinicianMutationRequest,
+  type ConfirmMedicationObservationRequest,
   type ExecuteActionRequest,
   type StartAssessmentRequest,
   type SubmitAssessmentRequest,
   type SubmitCaptureQualityRequest,
   type SubmitFollowUpRequest,
+  type SubmitMedicationLabelImageRequest,
   type SubmitReportRequest,
   type TransitionRoundRequest
 } from "./schemas";
@@ -93,6 +99,29 @@ export class HomeRoundsApiClient {
       "POST",
       SubmitReportRequestSchema.parse(input),
       SubmitReportDataSchema
+    );
+  }
+
+  submitMedicationLabelImage(
+    roundId: string,
+    input: SubmitMedicationLabelImageRequest,
+    signal?: AbortSignal
+  ) {
+    return this.#json(
+      `/api/rounds/${z.uuid().parse(roundId)}/medication/label`,
+      "POST",
+      SubmitMedicationLabelImageRequestSchema.parse(input),
+      SubmitMedicationLabelImageDataSchema,
+      signal
+    );
+  }
+
+  confirmMedicationObservation(roundId: string, input: ConfirmMedicationObservationRequest) {
+    return this.#json(
+      `/api/rounds/${z.uuid().parse(roundId)}/medication/confirmation`,
+      "POST",
+      ConfirmMedicationObservationRequestSchema.parse(input),
+      ConfirmMedicationObservationDataSchema
     );
   }
 
@@ -210,9 +239,14 @@ export class HomeRoundsApiClient {
     path: string,
     method: "GET" | "POST",
     body: unknown,
-    dataSchema: z.ZodType<T>
+    dataSchema: z.ZodType<T>,
+    signal?: AbortSignal
   ): Promise<T> {
-    const requestInit: RequestInit = { method, credentials: "include" };
+    const requestInit: RequestInit = {
+      method,
+      credentials: "include",
+      ...(signal ? { signal } : {})
+    };
     if (body !== undefined) {
       requestInit.headers = { "content-type": "application/json" };
       requestInit.body = JSON.stringify(body);

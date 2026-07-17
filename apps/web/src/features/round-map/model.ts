@@ -33,7 +33,8 @@ export const RoundMapSelectionStateSchema = z.discriminatedUnion("status", [
   z
     .object({
       status: z.literal("settled"),
-      outcome: AdaptiveSelectionOutcomeSchema
+      outcome: AdaptiveSelectionOutcomeSchema,
+      committed: z.literal(true).optional()
     })
     .strict()
 ]);
@@ -187,10 +188,11 @@ function deterministicRationale(experience: RoundMapExperience): string {
 
 function acceptedPresentation(
   experience: RoundMapExperience,
-  outcome: Extract<AdaptiveSelectionOutcome, { status: "accepted" }>
+  outcome: Extract<AdaptiveSelectionOutcome, { status: "accepted" }>,
+  committed: boolean
 ): RoundMapSelectionPresentation {
   const { decision } = outcome.envelope;
-  if (outcome.envelope.stateVersion !== experience.currentRoundVersion) {
+  if (!committed && outcome.envelope.stateVersion !== experience.currentRoundVersion) {
     return {
       kind: "stale",
       title: "The selection result is out of date",
@@ -335,7 +337,11 @@ export function roundMapSelectionPresentation(
       };
     case "settled":
       return experience.selection.outcome.status === "accepted"
-        ? acceptedPresentation(experience, experience.selection.outcome)
+        ? acceptedPresentation(
+            experience,
+            experience.selection.outcome,
+            experience.selection.committed === true
+          )
         : fallbackPresentation(experience, experience.selection.outcome);
   }
 }

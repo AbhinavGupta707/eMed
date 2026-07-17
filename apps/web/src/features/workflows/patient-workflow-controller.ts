@@ -1,10 +1,12 @@
 import type { HomeRoundsApiClient } from "@homerounds/api-client";
 import {
+  ConfirmedMedicationObservationFactSchema,
   MeasurementFactSchema,
   PatientReportSchema,
   RedFlagAnswerSchema,
   type CaptureQuality,
   type ClinicalTask,
+  type ConfirmedMedicationObservationFact,
   type MeasurementFact,
   type OpticalAssessmentProvider,
   type OpticalProviderKind,
@@ -32,6 +34,8 @@ export type PatientRoundApi = Pick<
   | "getRound"
   | "transitionRound"
   | "submitReport"
+  | "submitMedicationLabelImage"
+  | "confirmMedicationObservation"
   | "startAssessment"
   | "submitAssessment"
   | "submitCaptureQuality"
@@ -43,11 +47,13 @@ type AssessmentSession = Awaited<ReturnType<PatientRoundApi["startAssessment"]>>
 type ProtocolDecision = Awaited<ReturnType<PatientRoundApi["submitAssessment"]>>["decision"];
 type ActionResult = Awaited<ReturnType<PatientRoundApi["executeAction"]>>;
 type ProviderAvailability = Awaited<ReturnType<OpticalAssessmentProvider["checkAvailability"]>>;
+type EvidenceRoute = NonNullable<Awaited<ReturnType<PatientRoundApi["getRound"]>>["evidenceRoute"]>;
 
 export type PatientWorkflowPending =
   | "loading"
   | "transition"
   | "submitting_report"
+  | "submitting_medication"
   | "preparing_camera"
   | "capturing"
   | "submitting_measurement"
@@ -76,12 +82,15 @@ export type PatientWorkflowState = Readonly<{
   recordedReplayAvailable: boolean;
   recordedReplayLabel: string | null;
   interrupted: boolean;
+  evidenceRoute: EvidenceRoute;
+  medicationFact: ConfirmedMedicationObservationFact | null;
 }>;
 
 export type PatientWorkflowView =
   | "loading"
   | "invitation"
   | "report"
+  | "medication_review"
   | "measurement_prepare"
   | "measurement_ready"
   | "measurement_unavailable"
@@ -132,6 +141,16 @@ function defaultId(): string {
   return globalThis.crypto.randomUUID();
 }
 
+function emptyEvidenceRoute(): EvidenceRoute {
+  return {
+    selection: null,
+    candidates: [],
+    selectedModuleId: null,
+    medicationConfirmed: false,
+    medicationSkipped: false
+  };
+}
+
 function unavailableError(reason: OpticalUnavailableReason): PatientUiError {
   switch (reason) {
     case "permission_denied":
@@ -162,7 +181,11 @@ export function patientWorkflowView(state: PatientWorkflowState): PatientWorkflo
     case "collecting_report":
       return "report";
     case "assessment_selected":
-      return "measurement_prepare";
+      return state.evidenceRoute.selectedModuleId === "medication.label.review" &&
+        !state.evidenceRoute.medicationConfirmed &&
+        !state.evidenceRoute.medicationSkipped
+        ? "medication_review"
+        : "measurement_prepare";
     case "capturing":
       if (
         state.pending === "capturing" ||
@@ -244,7 +267,9 @@ export class PatientWorkflowController {
       selectedProvider: null,
       recordedReplayAvailable: this.#loadRecordedCaptureReplay !== null,
       recordedReplayLabel: null,
-      interrupted: false
+      interrupted: false,
+      evidenceRoute: emptyEvidenceRoute(),
+      medicationFact: null
     };
   }
 
@@ -277,12 +302,18 @@ export class PatientWorkflowController {
       const result =
         !created.created && created.round.state !== "invited"
           ? await this.#api.getRound(created.round.id)
-          : { round: created.round, protocolResult: null, task: null };
+          : {
+              round: created.round,
+              protocolResult: null,
+              task: null,
+              evidenceRoute: emptyEvidenceRoute()
+            };
       if (this.#disposed) return;
       this.#update({
         round: result.round,
         protocolResult: result.protocolResult ?? null,
         task: result.task ?? null,
+        evidenceRoute: result.evidenceRoute ?? emptyEvidenceRoute(),
         pending: null,
         interrupted: false
       });
@@ -320,7 +351,9 @@ export class PatientWorkflowController {
         pending: null,
         protocolResult: result.protocolResult,
         decision: null,
-        optimisticRoundState: null
+        optimisticRoundState: null,
+        evidenceRoute: result.evidenceRoute,
+        medicationFact: null
       });
     } catch (error: unknown) {
       await this.#failOperation(error, rollbackRound);
@@ -333,11 +366,59 @@ export class PatientWorkflowController {
     await this.#prepareMeasurementFrom(round);
   }
 
-  async #prepareMeasurementFrom(round: Round): Promise<boolean> {
+  async confirmMedicationFact(factInput: ConfirmedMedicationObservationFact): Promise<void> {
+    const fact = ConfirmedMedicationObservationFactSchema.parse(factInput);
+    const round = this.#state.round;
+    if (
+      !round ||
+      round.state !== "assessment_selected" ||
+      fact.roundId !== round.id ||
+      this.#state.evidenceRoute.selectedModuleId !== "medication.label.review" ||
+      !this.#requireOnline()
+    ) {
+      throw new Error("Medication confirmation is no longer available for this round.");
+    }
+    this.#update({ pending: "submitting_medication", error: null });
+    try {
+      const result = await this.#api.confirmMedicationObservation(round.id, {
+        expectedStateVersion: round.stateVersion,
+        fact
+      });
+      if (this.#disposed) return;
+      this.#update({
+        round: result.round,
+        medicationFact: result.fact,
+        evidenceRoute: { ...this.#state.evidenceRoute, medicationConfirmed: true },
+        pending: null,
+        error: null
+      });
+    } catch (error: unknown) {
+      await this.#failOperation(error, round);
+      throw error;
+    }
+  }
+
+  async skipMedicationReview(): Promise<void> {
+    const round = this.#state.round;
+    if (
+      !round ||
+      round.state !== "assessment_selected" ||
+      this.#state.evidenceRoute.selectedModuleId !== "medication.label.review" ||
+      this.#state.evidenceRoute.medicationConfirmed ||
+      this.#state.evidenceRoute.medicationSkipped ||
+      !this.#requireOnline()
+    ) {
+      throw new Error("Medication review is no longer available to skip.");
+    }
+    await this.#prepareMeasurementFrom(round, true);
+  }
+
+  async #prepareMeasurementFrom(round: Round, skipMedicationReview = false): Promise<boolean> {
     this.#update({ pending: "preparing_camera", error: null, availability: null });
     try {
       const session = await this.#api.startAssessment(round.id, {
-        expectedStateVersion: round.stateVersion
+        expectedStateVersion: round.stateVersion,
+        ...(skipMedicationReview ? { skipMedicationReview: true as const } : {})
       });
       if (this.#disposed) return false;
       await this.#disposeProvider();
@@ -346,7 +427,15 @@ export class PatientWorkflowController {
       this.#update({
         round: session.round,
         assessmentSession: session,
-        selectedProvider: session.provider
+        selectedProvider: session.provider,
+        ...(skipMedicationReview
+          ? {
+              evidenceRoute: {
+                ...this.#state.evidenceRoute,
+                medicationSkipped: true
+              }
+            }
+          : {})
       });
       const availability = await provider.checkAvailability();
       if (this.#disposed || provider !== this.#provider) return false;
@@ -565,6 +654,8 @@ export class PatientWorkflowController {
         task: refreshed.task ?? null,
         followUpAnswer: null,
         selectedProvider: null,
+        evidenceRoute: refreshed.evidenceRoute ?? emptyEvidenceRoute(),
+        medicationFact: null,
         recordedReplayLabel: null,
         interrupted: false
       });
@@ -585,7 +676,14 @@ export class PatientWorkflowController {
     const round = this.#state.round;
     if (!round) return;
     this.#abortCapture();
-    if (["assessment_selected", "capturing", "capture_retry"].includes(round.state)) {
+    if (
+      round.state === "assessment_selected" &&
+      this.#state.evidenceRoute.selectedModuleId === "medication.label.review" &&
+      !this.#state.evidenceRoute.medicationConfirmed &&
+      !this.#state.evidenceRoute.medicationSkipped
+    ) {
+      await this.cancelRound();
+    } else if (["assessment_selected", "capturing", "capture_retry"].includes(round.state)) {
       await this.continueWithoutMeasurement();
     } else {
       await this.cancelRound();
@@ -764,6 +862,8 @@ export class PatientWorkflowController {
           action: null,
           task: latest.task ?? null,
           selectedProvider: null,
+          evidenceRoute: latest.evidenceRoute ?? emptyEvidenceRoute(),
+          medicationFact: null,
           recordedReplayLabel: null,
           error: mapped
         });

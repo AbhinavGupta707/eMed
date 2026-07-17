@@ -24,7 +24,7 @@ import {
   type MedicationLabelProvider,
   type PreparedMedicationLabelImage,
   type PrepareMedicationLabelImageInput
-} from "../../../../../packages/assessments/providers/medication-label";
+} from "@homerounds/assessments";
 
 import styles from "./medication-label.module.css";
 
@@ -60,6 +60,7 @@ export type MedicationLabelPanelProps = Readonly<{
   consentVersion: string;
   provider: MedicationLabelProvider;
   onConfirmed: (fact: ConfirmedMedicationObservationFact) => Promise<void>;
+  onSkipped?: () => Promise<void>;
   camera?: MedicationCameraGateway;
   prepareImage?: (input: PrepareMedicationLabelImageInput) => Promise<PreparedMedicationLabelImage>;
   createId?: () => string;
@@ -114,7 +115,7 @@ function imageErrorMessage(error: MedicationImageError): string {
     case "unsupported_type":
       return "Choose a JPEG, PNG, or WebP image.";
     case "file_too_large":
-      return "Choose an image no larger than 5 MB.";
+      return "Choose an image no larger than 3 MB.";
     case "dimensions_out_of_bounds":
       return "Choose an image between 320 and 8,192 pixels in both dimensions.";
     case "malformed_image":
@@ -147,6 +148,7 @@ function MedicationLabelPanelSession({
   consentVersion,
   provider,
   onConfirmed,
+  onSkipped,
   camera = defaultCamera,
   prepareImage = prepareMedicationLabelImage,
   createId = defaultId,
@@ -500,6 +502,31 @@ function MedicationLabelPanelSession({
     }
   }
 
+  async function skipReview(): Promise<void> {
+    if (!onSkipped || busy || confirmed || confirmationPendingRef.current) return;
+    abortActive();
+    confirmationPendingRef.current = true;
+    setConfirmationPending(true);
+    announce("Recording your choice to skip this optional review…", "information");
+    try {
+      await onSkipped();
+      announce(
+        "Medication label review skipped. No image or label observation was retained.",
+        "success",
+        true
+      );
+    } catch {
+      announce(
+        "The skip choice was not accepted. Your entries are unchanged; please try again.",
+        "error",
+        true
+      );
+    } finally {
+      confirmationPendingRef.current = false;
+      setConfirmationPending(false);
+    }
+  }
+
   const imageControlsDisabled =
     busy || confirmed || confirmationPending || !imageConsent || imageAvailable !== true;
 
@@ -534,7 +561,7 @@ function MedicationLabelPanelSession({
       <fieldset className={styles.section} disabled={confirmed || confirmationPending}>
         <legend>Option 1: temporary image</legend>
         <p id={imageHelpId} className={styles.help}>
-          JPEG, PNG, or WebP only; maximum 5 MB; 320–8,192 pixels per side. The preview and byte
+          JPEG, PNG, or WebP only; maximum 3 MB; 320–8,192 pixels per side. The preview and byte
           buffer are cleared after extraction, cancellation, or failure. Nothing is confirmed
           automatically.
         </p>
@@ -799,6 +826,23 @@ function MedicationLabelPanelSession({
           {confirmationPending ? "Confirming observations…" : "Confirm text-entered observations"}
         </button>
       </fieldset>
+
+      {onSkipped ? (
+        <div className={styles.safetyBoundary}>
+          <p className={styles.help}>
+            This optional evidence step does not control safety or urgency. You can skip it and
+            continue to the deterministic, quality-gated pulse check.
+          </p>
+          <button
+            className={styles.secondaryButton}
+            type="button"
+            disabled={busy || confirmed || confirmationPending}
+            onClick={() => void skipReview()}
+          >
+            Skip label review and continue
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

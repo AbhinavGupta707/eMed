@@ -39,6 +39,7 @@ const NOW = "2026-07-17T10:00:00.000Z";
 type AssessmentSessionResult = Awaited<ReturnType<PatientRoundApi["startAssessment"]>>;
 type AssessmentSubmissionResult = Awaited<ReturnType<PatientRoundApi["submitAssessment"]>>;
 type ActionResult = Awaited<ReturnType<PatientRoundApi["executeAction"]>>;
+type EvidenceRoute = NonNullable<Awaited<ReturnType<PatientRoundApi["getRound"]>>["evidenceRoute"]>;
 
 function makeRound(state: RoundState = "invited", stateVersion = 0): Round {
   return RoundSchema.parse({
@@ -130,8 +131,60 @@ function nextRound(current: Round, state: RoundState): Round {
   return makeRound(state, current.stateVersion + 1);
 }
 
+const emptyEvidenceRoute = {
+  selection: null,
+  candidates: [],
+  selectedModuleId: null,
+  medicationConfirmed: false,
+  medicationSkipped: false
+} satisfies EvidenceRoute;
+
+const medicationEvidenceRoute = {
+  selection: {
+    status: "accepted" as const,
+    envelope: {
+      roundId: ROUND_ID,
+      stateVersion: 2,
+      decision: {
+        decision: "select" as const,
+        candidateModuleId: "medication.label.review",
+        evidenceReferenceIds: ["patient.report"],
+        rationale: "Review a synthetic label before continuing.",
+        uncertainty: "medium" as const,
+        missingInformation: []
+      },
+      provenance: {
+        attemptId: "4d3f935c-4570-451e-a00f-65254e215949",
+        provider: "fake" as const,
+        task: "adaptive_module_selection" as const,
+        modelAlias: "fake-adaptive-v1",
+        contractVersion: "adaptive-selection.v1",
+        attemptedAt: NOW,
+        durationMs: 1,
+        tokenUsage: null
+      }
+    }
+  },
+  candidates: [
+    {
+      id: "medication.label.review",
+      kind: "medication_label" as const,
+      label: "Medication label review",
+      description: "Review visible synthetic label fields.",
+      producesFactKeys: ["medication_label_observation" as const],
+      availability: { status: "available" as const },
+      estimatedBurdenSeconds: 60,
+      deterministicRank: 1
+    }
+  ],
+  selectedModuleId: "medication.label.review",
+  medicationConfirmed: false,
+  medicationSkipped: false
+} satisfies EvidenceRoute;
+
 class FakeApi implements PatientRoundApi {
   round: Round;
+  evidenceRoute: EvidenceRoute = emptyEvidenceRoute;
   protocolProjection: typeof programmeResult | typeof abstainResult | null = null;
   transitionOverride:
     ((roundId: string, input: TransitionRoundRequest) => Promise<{ round: Round }>) | null = null;
@@ -144,6 +197,7 @@ class FakeApi implements PatientRoundApi {
     getRound: vi.fn(),
     transitionRound: vi.fn(),
     submitReport: vi.fn(),
+    confirmMedicationObservation: vi.fn(),
     startAssessment: vi.fn(),
     submitAssessment: vi.fn(),
     submitCaptureQuality: vi.fn(),
@@ -165,7 +219,11 @@ class FakeApi implements PatientRoundApi {
     protocolResult?: typeof programmeResult | typeof abstainResult | null;
   }> {
     this.calls.getRound(roundId);
-    return Promise.resolve({ round: this.round, protocolResult: this.protocolProjection });
+    return Promise.resolve({
+      round: this.round,
+      protocolResult: this.protocolProjection,
+      evidenceRoute: this.evidenceRoute
+    });
   }
 
   transitionRound(roundId: string, input: TransitionRoundRequest): Promise<{ round: Round }> {
@@ -178,20 +236,7 @@ class FakeApi implements PatientRoundApi {
   submitReport(
     roundId: string,
     input: SubmitReportRequest
-  ): Promise<
-    | {
-        round: Round;
-        next: "emergency_closed";
-        selectedModuleId: null;
-        protocolResult: typeof emergencyResult;
-      }
-    | {
-        round: Round;
-        next: "assessment_selected";
-        selectedModuleId: string;
-        protocolResult: null;
-      }
-  > {
+  ): ReturnType<PatientRoundApi["submitReport"]> {
     this.calls.submitReport(roundId, input);
     if (input.report.redFlags.chestPain === "yes") {
       this.round = nextRound(this.round, "emergency_closed");
@@ -199,7 +244,8 @@ class FakeApi implements PatientRoundApi {
         round: this.round,
         next: "emergency_closed",
         selectedModuleId: null,
-        protocolResult: emergencyResult
+        protocolResult: emergencyResult,
+        evidenceRoute: emptyEvidenceRoute
       });
     }
     this.round = nextRound(this.round, "assessment_selected");
@@ -207,7 +253,31 @@ class FakeApi implements PatientRoundApi {
       round: this.round,
       next: "assessment_selected",
       selectedModuleId: "capture.finger_ppg.pulse",
-      protocolResult: null
+      protocolResult: null,
+      evidenceRoute: this.evidenceRoute
+    });
+  }
+
+  submitMedicationLabelImage(): ReturnType<PatientRoundApi["submitMedicationLabelImage"]> {
+    return Promise.resolve({
+      outcome: {
+        status: "failed",
+        failure: { code: "missing_configuration", retryable: false, retryAfterMs: null }
+      }
+    });
+  }
+
+  confirmMedicationObservation(
+    roundId: string,
+    input: Parameters<PatientRoundApi["confirmMedicationObservation"]>[1]
+  ): ReturnType<PatientRoundApi["confirmMedicationObservation"]> {
+    this.calls.confirmMedicationObservation(roundId, input);
+    this.evidenceRoute = { ...this.evidenceRoute, medicationConfirmed: true };
+    return Promise.resolve({
+      round: this.round,
+      fact: input.fact,
+      persisted: true,
+      duplicateSuppressed: false
     });
   }
 
@@ -216,6 +286,9 @@ class FakeApi implements PatientRoundApi {
     input: StartAssessmentRequest
   ): Promise<AssessmentSessionResult> {
     this.calls.startAssessment(roundId, input);
+    if (input.skipMedicationReview) {
+      this.evidenceRoute = { ...this.evidenceRoute, medicationSkipped: true };
+    }
     this.round = nextRound(this.round, "capturing");
     return Promise.resolve({
       round: this.round,
@@ -433,6 +506,28 @@ describe("patient workflow controller", () => {
       created: true
     });
     expect(api.calls.executeAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("audits an explicit optional label-review skip before preparing the pulse provider", async () => {
+    const api = new FakeApi();
+    api.evidenceRoute = medicationEvidenceRoute;
+    const { controller } = controllerFor(api);
+
+    await advanceToAssessment(controller);
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("medication_review");
+
+    await controller.skipMedicationReview();
+
+    expect(api.calls.startAssessment).toHaveBeenCalledWith(ROUND_ID, {
+      expectedStateVersion: 3,
+      skipMedicationReview: true
+    });
+    expect(controller.getSnapshot().evidenceRoute).toMatchObject({
+      medicationConfirmed: false,
+      medicationSkipped: true
+    });
+    expect(controller.getSnapshot().round?.state).toBe("capturing");
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("measurement_ready");
   });
 
   it("hard-stops on a structured red flag before provider selection", async () => {

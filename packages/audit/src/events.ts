@@ -1,7 +1,12 @@
 import {
+  AdaptiveSelectionOutcomeSchema,
   CaptureQualitySchema,
+  ConfirmedMedicationObservationFactSchema,
   DomainEventSchema,
+  EvidenceModuleCandidateSchema,
+  MedicationLabelProposalSchema,
   ProtocolResultSchema,
+  SafeInferenceIdentifierSchema,
   RoundStateSchema,
   type DomainEvent,
   type ProtocolResult,
@@ -121,6 +126,73 @@ export const FollowUpAnsweredPayloadSchema = z
     questionId: z.string().min(1).max(80),
     answer: z.enum(["yes", "no", "unsure"]),
     answeredAt: z.iso.datetime()
+  })
+  .strict();
+
+export const AdaptiveEvidenceRouteSelectedPayloadSchema = z
+  .object({
+    selection: AdaptiveSelectionOutcomeSchema,
+    candidates: z.array(EvidenceModuleCandidateSchema).min(1).max(8),
+    selectedModuleId: SafeInferenceIdentifierSchema,
+    deterministicAuthorityRetained: z.literal(true),
+    promptStored: z.literal(false),
+    providerPayloadStored: z.literal(false)
+  })
+  .strict()
+  .superRefine((payload, context) => {
+    const selected = payload.candidates.find(({ id }) => id === payload.selectedModuleId);
+    if (!selected || selected.availability.status !== "available") {
+      context.addIssue({
+        code: "custom",
+        path: ["selectedModuleId"],
+        message: "selected evidence module must be an available server candidate"
+      });
+    }
+    if (
+      payload.selection.status === "fallback" &&
+      payload.selection.selectedModuleId !== payload.selectedModuleId
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["selectedModuleId"],
+        message: "fallback route must use the validated deterministic selection"
+      });
+    }
+    if (
+      payload.selection.status === "accepted" &&
+      payload.selection.envelope.decision.decision === "select" &&
+      payload.selection.envelope.decision.candidateModuleId !== payload.selectedModuleId
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["selectedModuleId"],
+        message: "accepted route must match the validated model proposal"
+      });
+    }
+  });
+
+export const MedicationLabelProposedPayloadSchema = z
+  .object({
+    proposal: MedicationLabelProposalSchema,
+    explicitlyConfirmed: z.literal(false),
+    rawMediaStored: z.literal(false),
+    providerPayloadStored: z.literal(false)
+  })
+  .strict();
+
+export const MedicationObservationConfirmedPayloadSchema = z
+  .object({
+    fact: ConfirmedMedicationObservationFactSchema,
+    proposalVerified: z.boolean(),
+    rawMediaStored: z.literal(false)
+  })
+  .strict();
+
+export const MedicationReviewSkippedPayloadSchema = z
+  .object({
+    reason: z.enum(["patient_declined", "session_timeout"]),
+    deterministicAuthorityRetained: z.literal(true),
+    rawMediaStored: z.literal(false)
   })
   .strict();
 
@@ -326,6 +398,66 @@ export function createFollowUpAnsweredEvent(
       questionId: input.questionId,
       answer: input.answer,
       answeredAt: input.answeredAt
+    })
+  );
+}
+
+export function createAdaptiveEvidenceRouteSelectedEvent(
+  input: EventBaseInput & z.infer<typeof AdaptiveEvidenceRouteSelectedPayloadSchema>
+): DomainEvent {
+  return event(
+    input,
+    "adaptive_evidence_route_selected",
+    AdaptiveEvidenceRouteSelectedPayloadSchema.parse({
+      selection: input.selection,
+      candidates: input.candidates,
+      selectedModuleId: input.selectedModuleId,
+      deterministicAuthorityRetained: input.deterministicAuthorityRetained,
+      promptStored: input.promptStored,
+      providerPayloadStored: input.providerPayloadStored
+    })
+  );
+}
+
+export function createMedicationLabelProposedEvent(
+  input: EventBaseInput & z.infer<typeof MedicationLabelProposedPayloadSchema>
+): DomainEvent {
+  return event(
+    input,
+    "medication_label_proposed",
+    MedicationLabelProposedPayloadSchema.parse({
+      proposal: input.proposal,
+      explicitlyConfirmed: input.explicitlyConfirmed,
+      rawMediaStored: input.rawMediaStored,
+      providerPayloadStored: input.providerPayloadStored
+    })
+  );
+}
+
+export function createMedicationObservationConfirmedEvent(
+  input: EventBaseInput & z.infer<typeof MedicationObservationConfirmedPayloadSchema>
+): DomainEvent {
+  return event(
+    input,
+    "medication_observation_confirmed",
+    MedicationObservationConfirmedPayloadSchema.parse({
+      fact: input.fact,
+      proposalVerified: input.proposalVerified,
+      rawMediaStored: input.rawMediaStored
+    })
+  );
+}
+
+export function createMedicationReviewSkippedEvent(
+  input: EventBaseInput & z.infer<typeof MedicationReviewSkippedPayloadSchema>
+): DomainEvent {
+  return event(
+    input,
+    "medication_review_skipped",
+    MedicationReviewSkippedPayloadSchema.parse({
+      reason: input.reason,
+      deterministicAuthorityRetained: input.deterministicAuthorityRetained,
+      rawMediaStored: input.rawMediaStored
     })
   );
 }

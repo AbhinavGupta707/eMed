@@ -1,5 +1,7 @@
 import {
   AssessmentSessionDataSchema,
+  ConfirmMedicationObservationDataSchema,
+  ConfirmMedicationObservationRequestSchema,
   ClinicianMutationReceiptSchema,
   ClinicianMutationRequestSchema,
   ClinicianTaskDetailDataSchema,
@@ -17,6 +19,8 @@ import {
   SubmitCaptureQualityRequestSchema,
   SubmitFollowUpDataSchema,
   SubmitFollowUpRequestSchema,
+  SubmitMedicationLabelImageDataSchema,
+  SubmitMedicationLabelImageRequestSchema,
   SubmitReportDataSchema,
   SubmitReportRequestSchema,
   TransitionRoundRequestSchema
@@ -62,6 +66,9 @@ async function serviceCall<T>(operation: () => Promise<T>): Promise<T> {
         case "invalid_state":
         case "invalid_transition":
         case "report_missing":
+        case "medication_confirmation_required":
+        case "medication_proposal_missing":
+        case "medication_fact_conflict":
           throw new ApiFault(409, "conflict", `api.error.${error.code}`);
       }
     }
@@ -146,16 +153,17 @@ export function handleGetRound(
       if (context.session.role === "patient") {
         assertPatientScope(context.session.patientId, round.patientId);
       }
-      const [protocolResult, tasks] = await Promise.all([
+      const [protocolResult, tasks, evidenceRoute] = await Promise.all([
         serviceCall(() => runtime.orchestration.getProtocolResult(round.id)),
-        serviceCall(() => runtime.repository.listTasksForRound(round.id))
+        serviceCall(() => runtime.repository.listTasksForRound(round.id)),
+        serviceCall(() => runtime.orchestration.getEvidenceRoute(round.id))
       ]);
       const task =
         tasks.toSorted(
           (left, right) =>
             right.updatedAt.localeCompare(left.updatedAt) || right.id.localeCompare(left.id)
         )[0] ?? null;
-      return { round, protocolResult, task };
+      return { round, protocolResult, task, evidenceRoute };
     }
   });
 }
@@ -229,6 +237,94 @@ export function handleSubmitReport(
           report: input.report,
           expectedStateVersion: input.expectedStateVersion,
           actorId: context.session.sessionId,
+          correlationId: context.correlationId,
+          signal: request.signal
+        })
+      );
+    }
+  });
+}
+
+function decodeCanonicalBase64(value: string): Uint8Array {
+  if (value.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(value)) {
+    throw new ApiFault(400, "invalid_request", "api.error.invalid_medication_image");
+  }
+  const buffer = Buffer.from(value, "base64");
+  if (buffer.toString("base64") !== value) {
+    buffer.fill(0);
+    throw new ApiFault(400, "invalid_request", "api.error.invalid_medication_image");
+  }
+  return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+}
+
+export function handleSubmitMedicationLabelImage(
+  request: Request,
+  runtime: ServerRuntime,
+  roundIdInput: string
+): Promise<Response> {
+  return serveApiRoute<
+    z.infer<typeof SubmitMedicationLabelImageRequestSchema>,
+    z.infer<typeof SubmitMedicationLabelImageDataSchema>
+  >(request, runtime.hooks, {
+    method: "POST",
+    roles: ["patient"],
+    mutation: true,
+    rateLimit: { bucket: "medication-label-extract", limit: 8, windowMs: 60_000 },
+    readInput: jsonBodyReader(SubmitMedicationLabelImageRequestSchema, 4_100_000),
+    outputSchema: SubmitMedicationLabelImageDataSchema,
+    async handle(context, input) {
+      const roundId = roundIdSchema.parse(roundIdInput);
+      const patientId = patientIdSchema.parse(context.session.patientId);
+      const bytes = decodeCanonicalBase64(input.bytesBase64);
+      try {
+        const outcome = await runtime.medicationLabel.extract({
+          roundId,
+          stateVersion: input.expectedStateVersion,
+          metadata: input.metadata,
+          bytes,
+          signal: request.signal
+        });
+        return {
+          outcome: await serviceCall(() =>
+            runtime.orchestration.recordMedicationLabelProposal({
+              roundId,
+              patientId,
+              expectedStateVersion: input.expectedStateVersion,
+              outcome,
+              correlationId: context.correlationId
+            })
+          )
+        };
+      } finally {
+        bytes.fill(0);
+      }
+    }
+  });
+}
+
+export function handleConfirmMedicationObservation(
+  request: Request,
+  runtime: ServerRuntime,
+  roundIdInput: string
+): Promise<Response> {
+  return serveApiRoute<
+    z.infer<typeof ConfirmMedicationObservationRequestSchema>,
+    z.infer<typeof ConfirmMedicationObservationDataSchema>
+  >(request, runtime.hooks, {
+    method: "POST",
+    roles: ["patient"],
+    mutation: true,
+    rateLimit: { bucket: "medication-confirm", limit: 12, windowMs: 60_000 },
+    readInput: jsonBodyReader(ConfirmMedicationObservationRequestSchema, 32_000),
+    outputSchema: ConfirmMedicationObservationDataSchema,
+    async handle(context, input) {
+      return serviceCall(() =>
+        runtime.orchestration.confirmMedicationObservation({
+          roundId: roundIdSchema.parse(roundIdInput),
+          patientId: patientIdSchema.parse(context.session.patientId),
+          expectedStateVersion: input.expectedStateVersion,
+          fact: input.fact,
+          actorId: context.session.sessionId,
           correlationId: context.correlationId
         })
       );
@@ -257,6 +353,7 @@ export function handleStartAssessment(
           roundId: roundIdSchema.parse(roundIdInput),
           patientId: patientIdSchema.parse(context.session.patientId),
           expectedStateVersion: input.expectedStateVersion,
+          skipMedicationReview: input.skipMedicationReview === true,
           actorId: context.session.sessionId,
           correlationId: context.correlationId
         })

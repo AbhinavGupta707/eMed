@@ -1,0 +1,280 @@
+.page {
+  min-height: 100dvh;
+  padding: clamp(var(--space-2), 2vw, var(--space-6));
+}
+
+.shell {
+  width: min(100%, 78rem);
+  min-height: calc(100dvh - clamp(var(--space-4), 4vw, var(--space-12)));
+  margin-inline: auto;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.header {
+  display: flex;
+  min-height: var(--touch-target);
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3) var(--space-6);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--primary);
+  font-size: var(--text-lg);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.brandMark {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: 0.65rem 0.65rem 0.65rem 0.2rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: var(--text-sm);
+}
+
+.headerActions,
+.primaryActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.content {
+  display: flex;
+  width: min(100%, 58rem);
+  margin-inline: auto;
+  flex-direction: column;
+  gap: clamp(var(--space-5), 4vw, var(--space-8));
+}
+
+.primaryPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.introCopy {
+  max-width: 48rem;
+}
+
+.introCopy h1,
+.introCopy p,
+.privacyNote,
+.footerCopy,
+.measurementValue {
+  margin: 0;
+}
+
+.introCopy h1 {
+  max-width: 22ch;
+  font-size: clamp(2rem, 7vw, 3.75rem);
+  font-weight: 760;
+  line-height: 1.04;
+  letter-spacing: -0.05em;
+}
+
+.introCopy p {
+  max-width: 45rem;
+  margin-top: var(--space-4);
+  color: var(--muted-foreground);
+  font-size: clamp(var(--text-base), 2vw, var(--text-lg));
+  line-height: 1.6;
+}
+
+.plainList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-left: 1.25rem;
+  margin: 0;
+}
+
+.checkboxChoice,
+.choice {
+  display: flex;
+  min-height: var(--touch-target);
+  align-items: flex-start;
+  gap: var(--space-3);
+  cursor: pointer;
+}
+
+.checkboxChoice {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.checkboxChoice input,
+.choice input {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+  margin: 0.18rem 0 0;
+  accent-color: var(--primary);
+}
+
+.checkboxChoice span,
+.choice span {
+  min-width: 0;
+  line-height: 1.5;
+}
+
+.choiceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-3);
+}
+
+.choice {
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+}
+
+.choice:has(input:checked) {
+  border-color: var(--primary);
+  background: var(--secondary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.choice:hover {
+  border-color: var(--primary);
+}
+
+.choice small {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--muted-foreground);
+}
+
+.checkboxChoice:focus-within,
+.choice:focus-within {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.checkboxChoice input:focus-visible,
+.choice input:focus-visible {
+  outline: 0;
+}
+
+.privacyNote {
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+.primaryActions {
+  justify-content: flex-end;
+}
+
+.definitionList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.definitionList > div {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.4fr) minmax(0, 1fr);
+  gap: var(--space-4);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.definitionList > div:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.definitionList dt {
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.definitionList dd {
+  margin: 0;
+  color: var(--foreground);
+  font-weight: 650;
+}
+
+.measurementValue {
+  color: var(--surface-foreground);
+}
+
+.footerCopy {
+  text-align: center;
+}
+
+@media (max-width: 44rem) {
+  .page {
+    padding: 0;
+  }
+
+  .shell {
+    min-height: 100dvh;
+    border-inline: 0;
+    border-radius: 0;
+  }
+
+  .header,
+  .headerActions {
+    align-items: stretch;
+  }
+
+  .headerActions {
+    width: 100%;
+  }
+
+  .headerActions > button {
+    flex: 1 1 9rem;
+  }
+
+  .choiceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .primaryActions {
+    flex-direction: column;
+  }
+
+  .primaryActions > button {
+    width: 100%;
+  }
+
+  .definitionList > div {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+  }
+}
+
+@media (max-width: 22rem) {
+  .brand {
+    font-size: var(--text-base);
+  }
+
+  .headerActions > span {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .choice,
+  .checkboxChoice {
+    transition: none;
+  }
+}

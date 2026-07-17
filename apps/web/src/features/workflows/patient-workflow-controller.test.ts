@@ -1,0 +1,552 @@
+import {
+  HomeRoundsApiError,
+  type CreateRoundRequest,
+  type ExecuteActionRequest,
+  type StartAssessmentRequest,
+  type SubmitAssessmentRequest,
+  type SubmitReportRequest,
+  type TransitionRoundRequest
+} from "@homerounds/api-client";
+import {
+  MeasurementFactSchema,
+  PatientReportSchema,
+  ProtocolResultSchema,
+  RoundSchema,
+  type CaptureQuality,
+  type OpticalAssessmentProvider,
+  type OpticalAssessmentResult,
+  type PatientReport,
+  type Round,
+  type RoundState
+} from "@homerounds/contracts";
+import { describe, expect, it, vi } from "vitest";
+
+import { SYNTHETIC_MAYA_ROUND } from "../shared-round/patient-round-config";
+import {
+  PatientWorkflowController,
+  patientWorkflowView,
+  type PatientRoundApi
+} from "./patient-workflow-controller";
+
+const ROUND_ID = "72621407-a788-4f4f-98c2-8991b1dc6f23";
+const REPORT_ID = "f98766f5-c958-4595-9693-7e45ce858a83";
+const SESSION_ID = "6c25c86f-e00a-451d-b9db-b69418742f9b";
+const FACT_ID = "94976b68-3e69-4669-b490-21b9bd9379a4";
+const TASK_ID = "91b412ba-37f0-4973-a9b2-21bc6c3413c8";
+const NOW = "2026-07-17T10:00:00.000Z";
+
+type AssessmentSessionResult = Awaited<ReturnType<PatientRoundApi["startAssessment"]>>;
+type AssessmentSubmissionResult = Awaited<ReturnType<PatientRoundApi["submitAssessment"]>>;
+type ActionResult = Awaited<ReturnType<PatientRoundApi["executeAction"]>>;
+
+function makeRound(state: RoundState = "invited", stateVersion = 0): Round {
+  return RoundSchema.parse({
+    id: ROUND_ID,
+    patientId: "synthetic-maya",
+    state,
+    stateVersion,
+    purpose: SYNTHETIC_MAYA_ROUND.purpose,
+    triggerId: SYNTHETIC_MAYA_ROUND.triggerId,
+    burdenSecondsRemaining: 120,
+    protocolId: "cardiometabolic_demo",
+    createdAt: NOW,
+    updatedAt: new Date(Date.parse(NOW) + stateVersion * 1_000).toISOString(),
+    closedAt: ["closed", "emergency_closed", "abstained_for_review", "patient_declined"].includes(
+      state
+    )
+      ? new Date(Date.parse(NOW) + stateVersion * 1_000).toISOString()
+      : null
+  });
+}
+
+const programmeResult = ProtocolResultSchema.parse({
+  protocolId: "cardiometabolic_demo",
+  protocolVersion: "1.0.0",
+  matchedRuleIds: ["illustrative_high_pulse"],
+  factIds: [REPORT_ID, FACT_ID],
+  outcome: "programme_review_requested",
+  allowedActions: ["create_programme_task"],
+  missingFactKeys: [],
+  explanationKey: "protocol.pulse.illustrative_high"
+});
+
+const emergencyResult = ProtocolResultSchema.parse({
+  protocolId: "cardiometabolic_demo",
+  protocolVersion: "1.0.0",
+  matchedRuleIds: ["red_flag_chest_pain_yes"],
+  factIds: [REPORT_ID],
+  outcome: "emergency_guidance",
+  allowedActions: ["show_emergency_guidance"],
+  missingFactKeys: [],
+  explanationKey: "protocol.red_flag.chest_pain"
+});
+
+const measurement = MeasurementFactSchema.parse({
+  factId: FACT_ID,
+  assessmentSessionId: SESSION_ID,
+  provider: "finger_ppg",
+  value: 104,
+  unit: "bpm",
+  observedAt: NOW,
+  durationMs: 20_000,
+  algorithmVersion: "finger_ppg_hr_v1",
+  providerModelVersion: null,
+  quality: { status: "pass", score: 0.92, reasons: [], metrics: { durationMs: 20_000 } },
+  rawMediaRef: null
+});
+
+function makeReport(
+  roundId: string,
+  redFlags: PatientReport["redFlags"] = {
+    chestPain: "no",
+    severeBreathlessness: "no",
+    fainted: "no"
+  }
+): PatientReport {
+  return PatientReportSchema.parse({
+    reportId: REPORT_ID,
+    roundId,
+    weakness: "mild",
+    palpitations: "intermittent",
+    redFlags,
+    inputMode: "text",
+    confirmedAt: NOW
+  });
+}
+
+function nextRound(current: Round, state: RoundState): Round {
+  return makeRound(state, current.stateVersion + 1);
+}
+
+class FakeApi implements PatientRoundApi {
+  round: Round;
+  transitionOverride:
+    ((roundId: string, input: TransitionRoundRequest) => Promise<{ round: Round }>) | null = null;
+  assessmentDecision: AssessmentSubmissionResult["decision"] = {
+    kind: "result",
+    result: programmeResult
+  };
+  readonly calls = {
+    createRound: vi.fn(),
+    getRound: vi.fn(),
+    transitionRound: vi.fn(),
+    submitReport: vi.fn(),
+    startAssessment: vi.fn(),
+    submitAssessment: vi.fn(),
+    executeAction: vi.fn()
+  };
+
+  constructor(round: Round = makeRound()) {
+    this.round = round;
+  }
+
+  createRound(input: CreateRoundRequest): Promise<{ round: Round; created: boolean }> {
+    this.calls.createRound(input);
+    return Promise.resolve({ round: this.round, created: false });
+  }
+
+  getRound(roundId: string): Promise<{ round: Round }> {
+    this.calls.getRound(roundId);
+    return Promise.resolve({ round: this.round });
+  }
+
+  transitionRound(roundId: string, input: TransitionRoundRequest): Promise<{ round: Round }> {
+    this.calls.transitionRound(roundId, input);
+    if (this.transitionOverride) return this.transitionOverride(roundId, input);
+    this.round = nextRound(this.round, input.to);
+    return Promise.resolve({ round: this.round });
+  }
+
+  submitReport(
+    roundId: string,
+    input: SubmitReportRequest
+  ): Promise<
+    | {
+        round: Round;
+        next: "emergency_closed";
+        selectedModuleId: null;
+        protocolResult: typeof emergencyResult;
+      }
+    | {
+        round: Round;
+        next: "assessment_selected";
+        selectedModuleId: string;
+        protocolResult: null;
+      }
+  > {
+    this.calls.submitReport(roundId, input);
+    if (input.report.redFlags.chestPain === "yes") {
+      this.round = nextRound(this.round, "emergency_closed");
+      return Promise.resolve({
+        round: this.round,
+        next: "emergency_closed",
+        selectedModuleId: null,
+        protocolResult: emergencyResult
+      });
+    }
+    this.round = nextRound(this.round, "assessment_selected");
+    return Promise.resolve({
+      round: this.round,
+      next: "assessment_selected",
+      selectedModuleId: "capture.finger_ppg.pulse",
+      protocolResult: null
+    });
+  }
+
+  startAssessment(
+    roundId: string,
+    input: StartAssessmentRequest
+  ): Promise<AssessmentSessionResult> {
+    this.calls.startAssessment(roundId, input);
+    this.round = nextRound(this.round, "capturing");
+    return Promise.resolve({
+      round: this.round,
+      assessmentSessionId: SESSION_ID,
+      provider: "finger_ppg",
+      attestation: "synthetic-assessment-attestation-value-0001",
+      expiresAt: "2026-07-17T10:05:00.000Z"
+    });
+  }
+
+  submitAssessment(
+    roundId: string,
+    input: SubmitAssessmentRequest
+  ): Promise<AssessmentSubmissionResult> {
+    this.calls.submitAssessment(roundId, input);
+    this.round = nextRound(
+      this.round,
+      this.assessmentDecision.kind === "result" ? "action_pending" : "follow_up_selected"
+    );
+    return Promise.resolve({
+      round: this.round,
+      measurement: input.measurement,
+      decision: this.assessmentDecision
+    });
+  }
+
+  executeAction(roundId: string, input: ExecuteActionRequest): Promise<ActionResult> {
+    this.calls.executeAction(roundId, input);
+    if (input.protocolResult.outcome === "emergency_guidance") {
+      return Promise.resolve({
+        kind: "emergency_guidance",
+        message: {
+          templateId: "emergency_guidance_demo_v1",
+          heading: "Stop this demo round",
+          body: "This prototype cannot assess an emergency. In a real situation, use the emergency help available where you are.",
+          serviceWindowLabel: null,
+          demoOnly: true,
+          diagnosticClaim: false
+        }
+      });
+    }
+    this.round = nextRound(this.round, "awaiting_clinician");
+    return Promise.resolve({
+      kind: "programme_task",
+      created: true,
+      task: {
+        id: TASK_ID,
+        roundId: ROUND_ID,
+        patientId: "synthetic-maya",
+        idempotencyKey: "synthetic-idempotency-key-0001",
+        type: "programme_review",
+        ownerRole: "programme_clinician",
+        priority: "priority",
+        reasonKey: input.protocolResult.explanationKey,
+        status: "open",
+        serviceWindowLabel: "Demo-only review; no response promised.",
+        protocolId: "cardiometabolic_demo",
+        createdAt: NOW,
+        updatedAt: NOW
+      },
+      message: {
+        templateId: "programme_review_requested_v1",
+        heading: "Programme review requested",
+        body: "Your programme team can review the confirmed information from this synthetic demo round.",
+        serviceWindowLabel: "Demo-only review; no response promised.",
+        demoOnly: true,
+        diagnosticClaim: false
+      }
+    });
+  }
+}
+
+class FakeProvider implements OpticalAssessmentProvider {
+  readonly kind = "finger_ppg" as const;
+  availability: Awaited<ReturnType<OpticalAssessmentProvider["checkAvailability"]>> = {
+    available: true,
+    capabilities: { camera: true }
+  };
+  readonly results: OpticalAssessmentResult[] = [];
+  captureOverride: (() => Promise<OpticalAssessmentResult>) | null = null;
+  disposeCount = 0;
+
+  checkAvailability(): Promise<
+    Awaited<ReturnType<OpticalAssessmentProvider["checkAvailability"]>>
+  > {
+    return Promise.resolve(this.availability);
+  }
+
+  capture(): Promise<OpticalAssessmentResult> {
+    if (this.captureOverride) return this.captureOverride();
+    const result = this.results.shift();
+    if (!result) throw new Error("No fake capture result queued");
+    return Promise.resolve(result);
+  }
+
+  dispose(): Promise<void> {
+    this.disposeCount += 1;
+    return Promise.resolve();
+  }
+}
+
+function controllerFor(api: FakeApi, provider = new FakeProvider(), online = true) {
+  const controller = new PatientWorkflowController({
+    api,
+    config: SYNTHETIC_MAYA_ROUND,
+    createOpticalProvider: () => provider,
+    now: () => NOW,
+    isOnline: () => online
+  });
+  return { controller, provider };
+}
+
+async function advanceToAssessment(controller: PatientWorkflowController): Promise<void> {
+  await controller.initialise();
+  await controller.startRound();
+  await controller.submitConfirmedReport(makeReport(ROUND_ID));
+}
+
+function retryQuality(status: "retry" | "fail" = "retry"): CaptureQuality {
+  return {
+    status,
+    score: 0.2,
+    reasons: ["motion"],
+    metrics: { motion: 0.9 }
+  };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
+describe("patient workflow controller", () => {
+  it("completes the quality-passing text path and creates one confirmed synthetic task", async () => {
+    const api = new FakeApi();
+    const { controller, provider } = controllerFor(api);
+    provider.results.push({ status: "completed", measurement });
+
+    await advanceToAssessment(controller);
+    await controller.prepareMeasurement();
+    await controller.captureMeasurement();
+
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("action_confirmation");
+    expect(controller.getSnapshot().measurement?.value).toBe(104);
+    expect(api.calls.submitAssessment).toHaveBeenCalledTimes(1);
+
+    await controller.confirmAction();
+
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("outcome");
+    expect(controller.getSnapshot().action).toMatchObject({
+      kind: "programme_task",
+      created: true
+    });
+    expect(api.calls.executeAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("hard-stops on a structured red flag before provider selection", async () => {
+    const api = new FakeApi();
+    const providerFactory = vi.fn(() => new FakeProvider());
+    const controller = new PatientWorkflowController({
+      api,
+      config: SYNTHETIC_MAYA_ROUND,
+      createOpticalProvider: providerFactory,
+      now: () => NOW
+    });
+    await controller.initialise();
+    await controller.startRound();
+    await controller.submitConfirmedReport(
+      makeReport(ROUND_ID, {
+        chestPain: "yes",
+        severeBreathlessness: "no",
+        fainted: "no"
+      })
+    );
+
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("emergency");
+    expect(controller.getSnapshot().protocolResult?.outcome).toBe("emergency_guidance");
+    expect(providerFactory).not.toHaveBeenCalled();
+    expect(api.calls.startAssessment).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["permission_denied", "permission_denied"],
+    ["unsupported_device", "unsupported_device"],
+    ["network_unavailable", "network"]
+  ] as const)("maps %s camera availability without capture or fallback", async (reason, code) => {
+    const api = new FakeApi();
+    const { controller, provider } = controllerFor(api);
+    provider.availability = { available: false, reason };
+    await advanceToAssessment(controller);
+    await controller.prepareMeasurement();
+
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("measurement_unavailable");
+    expect(controller.getSnapshot().error?.code).toBe(code);
+    expect(api.calls.submitAssessment).not.toHaveBeenCalled();
+  });
+
+  it("offers one poor-quality retry, then abstains without a numeric fact", async () => {
+    const api = new FakeApi();
+    const { controller, provider } = controllerFor(api);
+    provider.results.push(
+      { status: "retry", quality: { ...retryQuality(), status: "retry" } },
+      { status: "failed", quality: { ...retryQuality("fail"), status: "fail" } }
+    );
+    await advanceToAssessment(controller);
+    await controller.prepareMeasurement();
+    await controller.captureMeasurement();
+
+    expect(controller.getSnapshot().round?.state).toBe("capture_retry");
+    expect(controller.getSnapshot().measurement).toBeNull();
+
+    await controller.retryMeasurement();
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("capture_retry");
+    expect(controller.getSnapshot().quality?.status).toBe("fail");
+    expect(api.calls.submitAssessment).not.toHaveBeenCalled();
+
+    await controller.continueWithoutMeasurement();
+    expect(controller.getSnapshot().round?.state).toBe("abstained_for_review");
+    expect(controller.getSnapshot().measurement).toBeNull();
+  });
+
+  it("pauses safely when the protocol returns its one structured follow-up", async () => {
+    const api = new FakeApi();
+    api.assessmentDecision = {
+      kind: "follow_up_required",
+      protocolId: "cardiometabolic_demo",
+      protocolVersion: "1.0.0",
+      matchedRuleIds: ["normal_pulse_moderate_weakness_follow_up"],
+      factIds: [REPORT_ID, FACT_ID],
+      question: {
+        id: "symptoms_worse_today",
+        promptKey: "protocol.question.symptoms_worse_today",
+        answerType: "yes_no_unsure"
+      },
+      explanationKey: "protocol.follow_up.required"
+    };
+    const { controller, provider } = controllerFor(api);
+    provider.results.push({ status: "completed", measurement });
+    await advanceToAssessment(controller);
+    await controller.prepareMeasurement();
+    await controller.captureMeasurement();
+
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("follow_up");
+    controller.answerFollowUp("yes");
+
+    expect(controller.getSnapshot().followUpAnswer).toBe("yes");
+    expect(controller.getSnapshot().error?.code).toBe("follow_up_submission_unavailable");
+    expect(api.calls.executeAction).not.toHaveBeenCalled();
+  });
+
+  it("rolls an optimistic transition back on a network failure", async () => {
+    const api = new FakeApi();
+    const pending = deferred<{ round: Round }>();
+    api.transitionOverride = () => pending.promise;
+    const { controller } = controllerFor(api);
+    await controller.initialise();
+
+    const transition = controller.startRound();
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("report");
+    pending.reject(new TypeError("synthetic network failure"));
+    await transition;
+
+    expect(controller.getSnapshot().round?.state).toBe("invited");
+    expect(controller.getSnapshot().optimisticRoundState).toBeNull();
+    expect(controller.getSnapshot().error?.code).toBe("network");
+  });
+
+  it("reloads the latest round after a stale-state response", async () => {
+    const api = new FakeApi();
+    api.transitionOverride = () => {
+      api.round = makeRound("red_flag_screen", 1);
+      return Promise.reject(
+        new HomeRoundsApiError({
+          error: {
+            code: "stale_state",
+            userMessageKey: "api.error.stale_state",
+            correlationId: "synthetic-correlation",
+            issues: [],
+            retryAfterSeconds: null
+          }
+        })
+      );
+    };
+    const { controller } = controllerFor(api);
+    await controller.initialise();
+    await controller.startRound();
+
+    expect(controller.getSnapshot().round?.state).toBe("red_flag_screen");
+    expect(controller.getSnapshot().error?.code).toBe("stale_state");
+    expect(api.calls.getRound).toHaveBeenCalledTimes(1);
+  });
+
+  it("restores persisted state without reusing ephemeral capture or protocol data", async () => {
+    const api = new FakeApi(makeRound("capturing", 4));
+    const { controller } = controllerFor(api);
+    await controller.initialise();
+
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("resume_recovery");
+    expect(controller.getSnapshot().assessmentSession).toBeNull();
+    expect(controller.getSnapshot().protocolResult).toBeNull();
+  });
+
+  it("does not issue network calls while offline", async () => {
+    const api = new FakeApi();
+    const { controller } = controllerFor(api, new FakeProvider(), false);
+    await controller.initialise();
+
+    expect(controller.getSnapshot().error?.code).toBe("offline");
+    expect(api.calls.createRound).not.toHaveBeenCalled();
+  });
+
+  it("ignores a late passing capture after page-hide cleanup", async () => {
+    const api = new FakeApi();
+    const { controller, provider } = controllerFor(api);
+    const capture = deferred<OpticalAssessmentResult>();
+    provider.captureOverride = () => capture.promise;
+    await advanceToAssessment(controller);
+    await controller.prepareMeasurement();
+
+    const pendingCapture = controller.captureMeasurement();
+    await controller.interrupt();
+    capture.resolve({ status: "completed", measurement });
+    await pendingCapture;
+
+    expect(provider.disposeCount).toBe(1);
+    expect(controller.getSnapshot().measurement).toBeNull();
+    expect(api.calls.submitAssessment).not.toHaveBeenCalled();
+  });
+
+  it("times out an active capture into abstention with no measurement", async () => {
+    const api = new FakeApi();
+    const { controller, provider } = controllerFor(api);
+    const capture = deferred<OpticalAssessmentResult>();
+    provider.captureOverride = () => capture.promise;
+    await advanceToAssessment(controller);
+    await controller.prepareMeasurement();
+    const pendingCapture = controller.captureMeasurement();
+
+    await controller.timeout();
+    capture.resolve({ status: "failed", quality: { ...retryQuality("fail"), status: "fail" } });
+    await pendingCapture;
+
+    expect(controller.getSnapshot().round?.state).toBe("abstained_for_review");
+    expect(controller.getSnapshot().measurement).toBeNull();
+    expect(controller.getSnapshot().error?.code).toBe("timeout");
+  });
+});

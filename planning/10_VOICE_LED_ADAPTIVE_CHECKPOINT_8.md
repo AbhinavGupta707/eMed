@@ -1,6 +1,6 @@
 # Checkpoint 8 — voice-led adaptive home round and local voice signal
 
-**Status:** Wave A integrated and fully keyless-gated; Wave B pending launch  
+**Status:** Complete for the implemented synthetic release candidate; physical iPhone and live VitalLens remain external gates  
 **Updated:** 17 July 2026  
 **Scope:** synthetic hackathon prototype only; not clinically validated and not for diagnosis
 
@@ -301,3 +301,19 @@ Additional Checkpoint 8 gates:
 - Physical iPhone microphone/camera behavior, backgrounding, interruption, Bluetooth routing, thermal behavior, and permission re-grant remain human/device gates.
 - A clinician note is a draft compiled from confirmed facts and provenance. It must not include a diagnosis, raw transcript, or hidden reasoning, and remains editable before clinical use.
 - No reaction-time/keyboard test enters this checkpoint. Adding one later requires a condition-specific protocol, quality model, accessibility review, and an evidence-backed decision it can change.
+
+## 12. Final implementation and evidence record
+
+Checkpoint 8 completed its declared `3 + 2` worktree sequence and final release pass:
+
+- Wave A integrated 8A (`d4f6d24`), 8B (`bd2b1d0`), and 8C (`645115c`) in order, followed by the central persistence/API seam (`c05a406`) and patient adaptive integration (`9eea693`).
+- Wave B integrated 8D (`9574936`), the original browser fixture lane (`cf04170`), and the replacement active-profile browser gate (`169e55d`). The replacement was necessary because the original lane proved fixture behavior but did not activate every release profile.
+- Central release fixes aligned the live agent configuration, kept the voice station active under React Strict Mode, added explicit browser microphone preflight, and preserved the no-key/provider-failure fallback before asking for microphone access. The exact deployed application candidate is `1e7a0ba`.
+- The complete keyless code gate passes all 14 package lint, typecheck, test, and build tasks; 174 web tests with one visible live-provider skip; 13 unit, 56 contract, 26 integration, and five demo-tooling tests; root, patient, clinician, adaptive-AI, and voice-agent browser suites; their accessibility and performance suites; and `git diff --check`.
+- The versioned private ElevenLabs agent passed three consecutive drift checks with its exact two client tools. Installed Chrome then completed a real microphone/WebRTC conversation, rendered a typed structured proposal, required explicit review of all six fields, and submitted only after final patient confirmation.
+- Live Fireworks passed three exact DeepSeek adaptive-selection runs and three exact Kimi medication-label extraction runs. Fireworks ranks only server-created eligible modules; it cannot create a module, set urgency, or execute an action.
+- Vercel deployment `dpl_DqM7HrV6UvmuX2oe6BgcvT937H5f` is available through `https://homerounds-checkpoint-8.vercel.app` with Neon PostgreSQL 17.10. A hosted installed-Chrome run completed the live ElevenLabs proposal and live Fireworks route, and a cold navigation preserved the selected route.
+- In a second hosted case, Fireworks selected the optional local voice-signal module from a confirmed rough-voice report. Two real microphone captures failed the deterministic quality gate, so no feature fact or measurement was created. Neon aggregate verification found zero voice facts, zero raw-media references, zero transcript/audio/frame/key-like payload fields, and two adaptive-route audit events.
+- Exact-value scans found no current provider key, database URL, or demo secret in tracked files, Git patch history, or the browser bundle.
+
+The release evidence does **not** claim clinical validity, diagnosis, physical iPhone/Safari behavior, a live VitalLens capture, a passing hosted sustained-vowel feature result, real identity/tenancy, EHR integration, or regulated deployment. The local voice feature algorithms and passing fixtures are implemented and tested; the observed hosted microphone evidence for this candidate is the honest quality-rejection path.

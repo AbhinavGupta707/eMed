@@ -2,9 +2,9 @@
 
 ## Claim mode
 
-The approved primary script demonstrates the strongest evidence currently available: a no-key text check-in, an honest no-measurement outcome, a persisted synthetic clinician task, audited clinician mutations, and patient completion. It does **not** claim a hosted deployment, physical iPhone behavior, a passing live optical measurement, live ElevenLabs, live VitalLens, clinical accuracy, or a real clinical service.
+The approved script may now demonstrate the protected Vercel/Neon Preview, a live ElevenLabs conversation through explicit structured-proposal confirmation, Fireworks selecting one eligible evidence module, an honest no-measurement quality outcome, and the persisted clinician handoff. It does **not** claim physical iPhone behavior, a passing live optical or hosted voice-feature measurement, live VitalLens, clinical accuracy, or a real clinical service.
 
-Only use the optional live voice or passing-optical inserts after the exact candidate receives the corresponding observed evidence and [CLAIM_AUDIT.md](./CLAIM_AUDIT.md) is updated.
+The live voice insert is approved only for the exact Checkpoint 8 candidate and stable Preview recorded in `docs/orchestration/STATE.md`. Keep the passing-optical insert conditional on a fresh observed device capture.
 
 ## Operator setup
 
@@ -19,7 +19,7 @@ Before the audience arrives:
 
 - Confirm the exact candidate SHA and runtime profile.
 - Require `demo:check` to report the three scenarios ready and `postgres` for a PostgreSQL claim.
-- Keep voice disabled unless the live ElevenLabs gate has passed.
+- Confirm the live ElevenLabs drift check and microphone permission before using voice; keep the complete text path ready as a no-key fallback.
 - Keep the selected optical provider fixed for the round; never switch providers mid-round.
 - Set browser zoom to 100%, close developer tooling, and verify the clinician tab has a valid separate role session where protected access is enabled.
 - Rehearse at the actual viewport. The main script targets about 2:30–2:45 at a natural pace.
@@ -105,11 +105,11 @@ Before the audience arrives:
 
 > The patient now sees completion from persisted task state. AI can help the conversation. Quality decides whether evidence exists. Deterministic rules decide what is permitted. The audit trail carries the handoff. That is HomeRounds: one short check-in, one evidence chain, and one clear next owner.
 
-## Optional inserts after gates pass
+## Evidence-class inserts
 
 ### Live ElevenLabs insert — replace 8–12 seconds in the patient section
 
-Use only after live provider, account, privacy, permission, and candidate checks pass.
+Approved for the exact Checkpoint 8 candidate after the recorded live provider, account, permission, and candidate checks. If the session fails during the presentation, switch visibly to text parity; do not simulate the provider.
 
 **Action:** Start voice, speak one short sentence, show the tentative/final text, edit a word, and confirm.
 
@@ -208,9 +208,9 @@ Never say:
 
 - “medical-grade,” “accurate,” “clinically validated,” “diagnostic,” or “safe for patients”;
 - “real-time clinician response,” “same-day care,” or “eMed receives the task”;
-- “deployed on Vercel/Neon” until observed;
+- “deployed on Vercel/Neon” for any URL or commit other than the exact stable Preview recorded in the orchestration state;
 - “tested on iPhone/Safari” when the evidence is Playwright layout/WebKit only;
-- “live ElevenLabs” or “live VitalLens” until the exact live gate passes;
+- “live VitalLens”; for ElevenLabs, claim only the exact observed conversation/proposal path and never clinical suitability or retention guarantees;
 - “no vulnerabilities” when the current external dependency-advisory gate is pending;
 - “no accessibility issues”; the allowed statement is zero serious/critical axe findings in the specified automated runs;
 - “both optical methods agree” or any comparative physical/accuracy claim.

@@ -25,16 +25,17 @@ HomeRounds closes that loop:
 
 The key idea is **unequal authority**:
 
-- Optional ElevenLabs voice can help a patient express context, but the transcript remains editable and cannot answer required safety questions or choose an action.
+- Live ElevenLabs voice asks bounded questions and proposes typed fields, but nothing becomes a fact until the patient explicitly reviews and confirms it.
 - Text completes the entire flow with no voice-provider key.
-- Local finger PPG and optional VitalLens share one optical contract, but a value exists only after quality passes.
+- Fireworks ranks only a server-created eligible evidence set and falls back deterministically on abstention or failure.
+- Local finger PPG, medication-label review, and a separate optional local voice signal create evidence only after their quality/review gates. VitalLens remains an implemented but disabled alternative.
 - The state machine, red-flag gate, planner, protocol, and action allowlist—not a model—own the workflow.
 - PostgreSQL idempotency, optimistic concurrency, and audit receipts carry the clinician closed loop.
 
 ## Three synthetic stories
 
-1. **Calm text-first round** — complete a patient report with no external voice key.
-2. **Poor signal, honest recovery** — see one coached retry, no invented number, and a human-review path.
+1. **Live AI home round** — explain a concern, review the ElevenLabs proposal, and let Fireworks open one eligible evidence module.
+2. **Multimodal, honest recovery** — review medication, finger pulse, or the optional local voice signal; see no invented fact when quality fails.
 3. **Structured red-flag hard stop** — a confirmed answer ends ordinary capture before a model can reinterpret it.
 
 ## Architecture
@@ -42,21 +43,22 @@ The key idea is **unequal authority**:
 | Layer                    | What it does                                                           | Repository evidence                                                             |
 | ------------------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Patient and clinician UX | Confirmed check-in, quality recovery, evidence review, task completion | `apps/web/src/features/patient`, `apps/web/src/features/clinician`              |
-| Voice/text               | No-key text provider plus optional ElevenLabs WebRTC adapter           | `packages/voice`, `apps/web/src/features/voice`                                 |
-| Optical assessment       | Local finger PPG and optional consented VitalLens adapter              | `packages/assessments/providers`                                                |
+| Voice/text               | Live ElevenLabs WebRTC, typed proposal review, and no-key text parity  | `packages/voice`, `apps/web/src/features/voice`                                 |
+| Adaptive AI              | Fireworks allowlist ranking, fallback, and label extraction            | `packages/inference`, medication and round-map features                         |
+| Multimodal assessment    | Finger PPG, local voice features, medication, optional VitalLens       | `packages/assessments/providers`                                                |
 | Deterministic authority  | Round reducer, planner, fictional protocol, action allowlist           | `packages/domain`, `packages/planner`, `packages/protocols`, `packages/actions` |
 | Evidence and persistence | Synthetic FHIR-shaped context, PostgreSQL, audit, idempotency          | `packages/clinical-records`, `packages/persistence`, `packages/audit`           |
 
 ## What is proved
 
-At the submission base, the repository records:
+At the Checkpoint 8 candidate, the repository records:
 
-- repository Prettier and 13/13 package lint, typecheck, test, and build gates;
-- 100 web tests, 13 unit, 7 contract, 7 integration, and 5 demo-tooling tests;
-- 6 root smoke cases, 3 patient journeys, and 3 clinician journeys;
-- both accessibility and warmed performance suites;
-- 14/14 persistence tests on a fresh PostgreSQL cluster;
-- a protected local production-build check proving PostgreSQL readiness, all-three-scenario seed/check, patient/clinician access, wrong-code denial, secure-cookie attributes, 390 px layout, zero serious/critical axe findings, and zero console/page errors.
+- repository Prettier and 14/14 package lint, typecheck, test, and build gates;
+- 174 web tests plus one visible live skip, 13 unit, 56 contract, 26 integration, and 5 demo-tooling tests;
+- root, patient, clinician, adaptive-AI, and voice-agent browser matrices;
+- their accessibility and warmed performance suites;
+- live ElevenLabs conversation/proposal and Fireworks selection/extraction checks;
+- a protected Vercel/Neon Preview with cold persistence and privacy-safe quality rejection.
 
 These are separate evidence sets. The complete patient-to-clinician mutation loop is covered by Playwright/integration suites; it was not part of the final protected production-build access run. Suite counts overlap and are not a unique summed total.
 
@@ -91,7 +93,7 @@ pnpm test:a11y
 pnpm test:performance
 ```
 
-These checks use fixtures and browser automation. They do not prove a hosted deployment, live ElevenLabs/VitalLens, physical iPhone/Safari behavior, optical accuracy, clinical validity, or a real care workflow.
+These checks combine fixtures, browser automation, and separately recorded live-provider/hosted evidence. They do not prove live VitalLens, physical iPhone/Safari behavior, optical accuracy, clinical validity, or a real care workflow.
 
 ## Privacy and failure behavior
 
@@ -105,7 +107,7 @@ These checks use fixtures and browser automation. They do not prove a hosted dep
 
 ## Current limitations
 
-Hosted Vercel/Neon, live ElevenLabs/VitalLens, physical iPhone/Safari, and current external dependency-advisory evidence remain pending owner/account/privacy gates. There is no real eMed/EHR integration, real identity/tenancy, clinical review or validation, real operational owner/SLA, regulated deployment, or real-patient use.
+Live VitalLens, physical iPhone/Safari, a passing hosted sustained-vowel feature result, and the current external dependency-advisory refresh remain pending. There is no real eMed/EHR integration, real identity/tenancy, clinical review or validation, real operational owner/SLA, regulated deployment, or real-patient use.
 
 See `docs/submission/CLAIM_AUDIT.md` for exact allowed wording and `docs/submission/DEMO_SCRIPT.md` for the judge path.
 ````
@@ -123,11 +125,11 @@ HomeRounds turns a short, patient-confirmed at-home check-in into the smallest r
 ```markdown
 HomeRounds reframes AI-powered chronic-care support around a simple question: **what is the smallest reliable assessment needed to complete the next safe care action?**
 
-A fictional patient completes a short structured check-in by text or optional editable voice. The app selects one optical provider, accepts a derived estimate only after quality passes, and preserves failure or uncertainty without inventing a measurement. Deterministic code owns red flags, protocol evaluation, and the action allowlist. PostgreSQL then carries one idempotent synthetic clinician task, source-labelled evidence, audited mutations, and patient-visible completion.
+A fictional patient completes a live or text check-in, explicitly confirms an ElevenLabs proposal, and lets Fireworks rank one eligible medication, finger-pulse, or optional voice-signal module. Quality gates preserve failure or uncertainty without inventing a measurement. Deterministic code owns red flags, protocol evaluation, and the action allowlist. PostgreSQL then carries one idempotent synthetic clinician task, source-labelled evidence, audited mutations, and patient-visible completion.
 
 The result is not another chatbot answer or passive dashboard. It is a bounded patient-to-clinician workflow that remains complete with no provider key and makes abstention useful.
 
-Synthetic-only, fictional protocol, not clinically validated, not diagnostic, not a medical device, and not a real care service. Hosted/provider/physical evidence remains pending.
+Synthetic-only, fictional protocol, not clinically validated, not diagnostic, not a medical device, and not a real care service. Physical iPhone, live VitalLens, and clinical evidence remain pending.
 ```
 
 ## Social/share copy

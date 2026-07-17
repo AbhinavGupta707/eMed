@@ -23,7 +23,7 @@ HomeRounds turns a short, patient-confirmed check-in into the smallest reliable 
 ## One-paragraph overview
 
 ```text
-HomeRounds is an adaptive asynchronous round for people in chronic-care programmes. It starts with a short patient-confirmed check-in, asks only for evidence that can change the next permitted action, and refuses to turn failed or uncertain optical capture into a number. Optional AI voice helps the patient express and edit context, while deterministic code owns red flags, capture quality, protocol evaluation, and the action allowlist. The result is one clear synthetic patient next step and a persisted clinician task with evidence, uncertainty, rule version, provenance, and an audit trail.
+HomeRounds is an AI-guided asynchronous round for people in chronic-care programmes. A live ElevenLabs conversation proposes patient-reviewable structured facts, Fireworks ranks only the next eligible evidence module, and quality-gated medication, finger-camera pulse, and optional local voice signals add evidence. Deterministic code still owns red flags, quality, protocol evaluation, and the action allowlist. The result is one clear synthetic patient next step and a persisted clinician task with evidence, uncertainty, rule version, provenance, and an audit trail.
 ```
 
 ## Project story
@@ -45,17 +45,17 @@ That directly matches the event challenge: new at-home chronic-condition support
 
 A user can open one of three visibly synthetic scenarios:
 
-1. **Calm text-first round:** complete the entire report without an external voice key.
-2. **Poor signal, honest recovery:** see one coached retry, no invented measurement, and a review path that preserves uncertainty.
+1. **Live AI home round:** explain a concern to ElevenLabs, review its typed proposal, and let Fireworks open one eligible evidence module.
+2. **Multimodal evidence with honest recovery:** review a medication label, run finger-camera pulse, or try the optional local voice signal; failed quality creates no measurement.
 3. **Structured red-flag hard stop:** show that a patient-confirmed answer ends ordinary capture before voice or a model can reinterpret it.
 
 The core workflow is:
 
 1. The patient explicitly accepts a synthetic two-minute round.
 2. Required red-flag and symptom answers use structured controls.
-3. Typed text—or optional ElevenLabs voice—remains an editable draft until the patient confirms it.
-4. The server selects exactly one registered optical provider for the round: local finger PPG by default, or an optional consent-gated VitalLens adapter.
-5. Passing quality may create a derived measurement. Failed, uncertain, unavailable, or cancelled capture creates no measurement.
+3. Typed text—or live ElevenLabs voice—produces a visible typed proposal that remains inert until the patient reviews and confirms it.
+4. The server constructs the eligible medication, local finger-PPG, and optional local voice-signal set; Fireworks may rank one candidate or abstain.
+5. Passing quality may create a derived observation. Failed, uncertain, unavailable, or cancelled capture creates no measurement. VitalLens is an implemented but disabled alternative optical adapter.
 6. A deterministic protocol returns a bounded result and an allowlisted action.
 7. The patient explicitly confirms creation of one synthetic programme-review task.
 8. The clinician cockpit shows trigger provenance, confirmed report, measurement or quality failure, protocol/rule version, task/idempotency state, and audit events.
@@ -67,9 +67,10 @@ The output is not a chatbot answer or a risk score. It is a closed evidence-to-a
 
 The important design choice is unequal authority.
 
-- **Optional AI voice** makes the interaction more natural, handles presentation events, and proposes text that the patient can edit and confirm.
+- **Live AI voice** makes the interaction natural, asks bounded questions, and invokes typed proposal tools whose fields the patient must edit/review and confirm.
 - **Text always completes the round** with no provider key, so accessibility and workflow integrity do not depend on a hosted model.
-- **Optical input is evidence, not authority.** Local finger PPG processes in the browser and sends no frames; optional VitalLens uses a separate consented proxy boundary. Both normalize to the same contract and abstain on insufficient quality.
+- **Fireworks adapts the route without becoming the authority.** It ranks only server-created eligible modules and has deterministic abstention/failure fallback.
+- **Multimodal input is evidence, not authority.** Local finger PPG sends no frames; medication-label vision is reviewable; the optional seven-second voice signal is derived locally and research-only; VitalLens has a separate consented proxy boundary.
 - **Deterministic code decides.** The state machine, red-flag gate, planner, versioned protocol, quality gate, and action allowlist own workflow transitions and next actions.
 - **PostgreSQL carries the evidence.** Idempotency, optimistic concurrency, audit events, and task receipts preserve the clinician closed loop.
 
@@ -77,14 +78,15 @@ This is more than an AI wrapper because generative output cannot diagnose, set u
 
 ## Product architecture
 
-| Layer                            | Implementation                                                                                     | Why it matters                                                                |
-| -------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Patient and clinician experience | Next.js, React, TypeScript, shared accessible UI                                                   | One coherent mobile round and desktop review workflow                         |
-| Voice and text                   | Provider-neutral state machine, optional ElevenLabs WebRTC adapter, editable confirmation          | Natural input without surrendering authority or no-key completion             |
-| Optical assessment               | Local finger PPG and optional VitalLens behind one Zod-validated contract                          | One interface for passing evidence, explicit failure, or typed unavailability |
-| Deterministic core               | Round reducer, planner, red-flag gate, versioned JSON protocol, action allowlist                   | Testable safety and workflow decisions                                        |
-| Clinical context                 | Curated synthetic FHIR-shaped bundle and provenance adapter                                        | Reviewable context without real patient data or a live EHR claim              |
-| Persistence and audit            | PostgreSQL, Drizzle, transactions, idempotency, optimistic concurrency, append-only audit controls | A clinician action is saved and traceable, not merely displayed               |
+| Layer                            | Implementation                                                                                     | Why it matters                                                    |
+| -------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Patient and clinician experience | Next.js, React, TypeScript, shared accessible UI                                                   | One coherent mobile round and desktop review workflow             |
+| Voice and text                   | Live ElevenLabs WebRTC, typed proposal review, and no-key text parity                              | Natural input without surrendering authority or no-key completion |
+| Adaptive AI                      | Fireworks allowlist ranking, abstention/fallback, medication-label extraction                      | Novel-scenario choice within a deterministic safety envelope      |
+| Multimodal assessment            | Local finger PPG, local voice features, medication review, and optional VitalLens                  | Passing evidence, explicit failure, or typed unavailability       |
+| Deterministic core               | Round reducer, planner, red-flag gate, versioned JSON protocol, action allowlist                   | Testable safety and workflow decisions                            |
+| Clinical context                 | Curated synthetic FHIR-shaped bundle and provenance adapter                                        | Reviewable context without real patient data or a live EHR claim  |
+| Persistence and audit            | PostgreSQL, Drizzle, transactions, idempotency, optimistic concurrency, append-only audit controls | A clinician action is saved and traceable, not merely displayed   |
 
 ## How I built it
 
@@ -92,7 +94,9 @@ This is more than an AI wrapper because generative output cannot diagnose, set u
 
 **Contracts and validation:** Zod at file, provider, API, protocol, event, and persistence boundaries.
 
-**Voice:** a complete disabled/text provider and an optional ElevenLabs React/WebRTC adapter with short-lived server-issued credentials, lifecycle recovery, and editable transcript confirmation.
+**Voice:** a live ElevenLabs React/WebRTC agent with short-lived server-issued credentials, bounded synthetic history, exact typed client tools, explicit structured proposal review, lifecycle recovery, and complete no-key text parity.
+
+**Adaptive AI:** Fireworks DeepSeek ranks a server-created evidence allowlist and Kimi extracts fixed medication-label fields for patient review. Neither model owns urgency, protocol, or actions.
 
 **Optical assessment:** a browser-local rear-camera finger-PPG provider plus a server-proxied VitalLens adapter. The release config selects exactly one; the server never silently swaps providers during a round.
 
@@ -100,7 +104,7 @@ This is more than an AI wrapper because generative output cannot diagnose, set u
 
 **Data and operations:** synthetic FHIR-shaped fixtures; PostgreSQL repositories; a forward-only migration; exact-scope seed/reset tooling; readiness, protected-demo, deployment, rollback, incident, and privacy runbooks.
 
-**Testing:** the submission base records green 13-package gates, 100 web tests, 13 unit, 7 contract, 7 integration, 5 demo-tooling tests, 6 root smoke cases, 3 patient journeys, 3 clinician journeys, accessibility suites, performance suites, and 14 fresh-PostgreSQL persistence tests. These are separate suite counts, not a summed total.
+**Testing:** the Checkpoint 8 candidate records green 14-package lint/type/test/build gates, 174 web tests plus one visible live skip, 13 unit, 56 contract, 26 integration, 5 demo-tooling tests, the root/patient/clinician/adaptive/voice browser matrix, accessibility and performance suites, live ElevenLabs and Fireworks checks, and hosted Neon persistence evidence. These are separate suite counts, not a summed total.
 
 ## Challenges
 
@@ -110,7 +114,7 @@ This is more than an AI wrapper because generative output cannot diagnose, set u
 
 **Closing the loop instead of drawing a dashboard.** The difficult part was not another card. It was making patient state, action idempotency, clinician mutations, audit provenance, and patient completion agree under retries and stale writes.
 
-**Keeping the prototype honest.** The repository separates implemented, tested, locally observed, externally pending, and future evidence. Hosted deployment, physical iPhone/Safari, live ElevenLabs, live VitalLens, and current external dependency-advisory evidence are not claimed as complete.
+**Keeping the prototype honest.** The repository separates implemented, tested, locally observed, hosted, externally pending, and future evidence. Live ElevenLabs, Fireworks, and Vercel/Neon are observed; physical iPhone/Safari, live VitalLens, clinical validation, and the current external dependency-advisory refresh are not claimed as complete.
 
 ## Accomplishments
 
@@ -130,7 +134,7 @@ I also learned that abstention can be a compelling product moment. “No reliabl
 
 ## What is next
 
-The next step is evidence, not feature breadth: verify one hosted Vercel/Neon environment, run the physical iPhone/Safari matrix, review optional provider privacy/account settings, compare the two optical implementations without making a clinical-accuracy claim, and have a qualified reviewer approve all fictional protocol wording.
+The next step is external validation, not feature breadth: run the physical iPhone/Safari matrix, review optional VitalLens privacy/account settings, compare the two optical implementations without making a clinical-accuracy claim, establish repeated personal voice baselines, and have a qualified reviewer approve all fictional protocol wording.
 
 Any real pilot would additionally require real identity and tenancy, an explicit intended purpose and population, clinical governance, device/population validation, security and privacy review, a named operational owner/SLA, and a shadow evaluation against current workflow. Real eMed/EHR integration, multiple condition packs, and regulated deployment are future work.
 
@@ -138,7 +142,7 @@ Any real pilot would additionally require real identity and tenancy, an explicit
 
 HomeRounds is synthetic-only and uses a fictional protocol. It is not clinically validated, not diagnostic, not a medical device, not emergency monitoring, and not a real care service. It does not change medication. It stores no raw camera frames or raw voice audio; confirmed narrative is not persisted in this slice. Local finger PPG sends no frames. Optional VitalLens changes the data boundary and remains disabled without explicit configuration and consent.
 
-The repository implements deployment and operations procedures, but hosted Vercel/Neon evidence, physical iPhone/Safari evidence, live ElevenLabs/VitalLens evidence, and a current external dependency advisory remain pending owner/account/privacy gates.
+The protected synthetic Vercel/Neon Preview and live ElevenLabs/Fireworks paths have observed evidence. Physical iPhone/Safari, live VitalLens, a passing hosted voice-feature capture, and a current external dependency advisory remain pending owner/account/privacy gates.
 ```
 
 ## Built with
@@ -146,10 +150,10 @@ The repository implements deployment and operations procedures, but hosted Verce
 Use this list only if the form asks for technologies. It reflects repository dependencies and implemented adapters, not externally verified live services.
 
 ```text
-Next.js, React, TypeScript, Zod, PostgreSQL, Drizzle ORM, ElevenLabs React SDK, WebRTC, Playwright, Vitest, axe-core, pnpm, Turborepo, Vercel configuration, Neon deployment runbook
+Next.js, React, TypeScript, Zod, PostgreSQL, Drizzle ORM, ElevenLabs Conversational AI, WebRTC, Fireworks AI, Playwright, Vitest, axe-core, pnpm, Turborepo, Vercel, Neon
 ```
 
-Do not add OpenAI API, a live eMed API, FHIR server, VitalLens live service, Vercel deployment, Neon deployment, iPhone, or Safari as a “built with/live” tag unless new evidence establishes actual use. The event is supported by OpenAI, but this repository does not implement an OpenAI API dependency.
+Do not add OpenAI API, a live eMed API, FHIR server, VitalLens live service, iPhone, or Safari as a “built with/live” tag unless new evidence establishes actual use. The event is supported by OpenAI, but this repository does not implement an OpenAI API dependency.
 
 ## Challenge alignment answer
 

@@ -2,7 +2,7 @@
 
 HomeRounds is a synthetic-data hackathon PWA. These instructions make the implemented demo repeatable; they do not make it a medical device, a production clinical service, or suitable for real patient data.
 
-No hosted deployment, live provider call, or physical iPhone test was performed by Checkpoint 4D. The hosted profile remains a human/account gate.
+Checkpoint 8 has a protected synthetic Vercel/Neon Preview with observed live ElevenLabs and Fireworks paths. It remains a hackathon demo, not a production clinical environment. Physical iPhone/Safari and live VitalLens remain separate owner/device/provider gates.
 
 ## Implemented runtime profiles
 
@@ -31,6 +31,7 @@ The Vercel platform may call a deployment “Production”; the application must
 | `ELEVENLABS_AGENT_ID`            | Provider configuration identifier; keep server-side with the key.                                                                                                  | Server-only configuration |
 | `ELEVENLABS_SERVER_LOCATION`     | `us`, `global`, `eu-residency`, or `in-residency`. A string alone does not grant residency; the account, key, processing, retention, and agent must be verified.   | Server-only configuration |
 | `VOICE_SESSION_MAX_SECONDS`      | Integer 15–300; demo default 120.                                                                                                                                  | Non-secret                |
+| `VOICE_BIOMARKER_ENABLED`        | Enables the optional separate local sustained-vowel station. The station is research-only, consented, quality-gated, and stores only a passing derived fact.       | Non-secret                |
 | `NARRATIVE_MODEL_PROVIDER`       | Only `disabled` exists.                                                                                                                                            | Non-secret                |
 | `INFERENCE_PROVIDER`             | `disabled`, keyless `fake`, or server-only `fireworks`. Required checks use disabled/fake modes and never require a live key.                                      | Non-secret selection      |
 | `FAKE_INFERENCE_PROFILE`         | `deterministic` by default; medication, abstain, failure, and slow profiles are rejected unless `APP_ENV=development` and `INFERENCE_PROVIDER=fake`.               | Non-secret test control   |

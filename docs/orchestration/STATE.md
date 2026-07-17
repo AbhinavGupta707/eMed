@@ -1,6 +1,6 @@
 # HomeRounds orchestration state
 
-Updated: 17 July 2026 03:36 BST  
+Updated: 17 July 2026 03:51 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
 Goal: active  
 Integration branch: `main`
@@ -10,10 +10,10 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 ## Current checkpoint
 
 - Checkpoint: 3 — end-to-end patient and clinician experiences
-- Status: active; two exclusive `gpt-5.6-sol`/`xhigh` worktrees are implementing from the exact tested Checkpoint 2 commit while integration owns demo tooling
+- Status: active; two exclusive `gpt-5.6-sol`/`xhigh` worktrees are implementing from the exact tested Checkpoint 2 commit while integration owns demo tooling and shared workflow seams
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
-- Current integration head: `d033b82`
+- Current integration head: `b3a1fd3`
 - Checkpoint 2 worker launch base: `aae76d3a6fce26ee7ef8b8024839556f3c5570ad`
 - Tested Checkpoint 2 integration commit: `48ab92e` on `main`
 - Checkpoint 3 worker launch base: `48ab92ebad2137390f01ef9976ef8a7d1b248da5`
@@ -102,3 +102,5 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 - A retry creates a new assessment session from `capture_retry`; the server never substitutes another provider. Protocol-result revalidation reconstructs the latest persisted quality failure so the abstention task remains executable and idempotent.
 - The one returned structured follow-up now has a strict patient-only endpoint. Its answer is atomically audited with the first transition, re-evaluated by the versioned protocol, and moves only to `action_pending` or `abstained_for_review`; a model cannot supply or execute it.
 - Affected audit, persistence, API-client, and web suites pass; the web suite now has 46 tests, including full poor-quality retry/fail/task and one-follow-up paths. Affected lint and repository-wide strict typecheck pass.
+- A clinician-only task-detail and mutation boundary now exposes the persisted evidence chain and supports note, acknowledgement, contact-attempt, and completion operations with strict role checks, optimistic concurrency, deterministic idempotency keys, immutable audit events, and atomic round completion. The in-memory and live PostgreSQL repositories verify duplicate suppression, stale-write refusal, append-only audit behavior, and `awaiting_clinician` to `outcome_ready` completion in one transaction.
+- The shared-base repository remains green at 13 package suites after these seams: 46 web tests, 57 assessment tests, 20 voice tests, and all domain, protocol, persistence, audit, action, UI, and API-client tests pass. The live/provider/physical gates remain pending rather than simulated.

@@ -4,6 +4,7 @@ import {
   ClinicianMutationReceiptSchema,
   ClinicianTaskDetailSchema,
   availableResource,
+  unavailableResource,
   type ClinicianMutationKind,
   type ClinicianMutationReceipt,
   type ClinicianTaskDetail
@@ -141,24 +142,44 @@ export function syntheticDetail(
       inputMode: "voice_confirmed",
       confirmedAt: "2026-07-17T09:05:00.000Z"
     }),
-    measurement: availableResource({
-      factId: FACT_ID,
-      assessmentSessionId: SESSION_ID,
-      provider: "finger_ppg",
-      value: 84,
-      unit: "bpm",
-      observedAt: "2026-07-17T09:10:00.000Z",
-      durationMs: 25_000,
-      algorithmVersion: "finger-ppg-demo-v1",
-      providerModelVersion: null,
-      quality: {
-        status: "pass",
-        score: 0.91,
-        reasons: [],
-        metrics: { usableDurationMs: 25_000 }
-      },
-      rawMediaRef: null
-    }),
+    measurement:
+      input.outcome === "abstain_for_review"
+        ? unavailableResource(
+            "missing",
+            "not_recorded",
+            "No quality-passing numeric measurement was accepted."
+          )
+        : availableResource({
+            factId: FACT_ID,
+            assessmentSessionId: SESSION_ID,
+            provider: "finger_ppg",
+            value: 84,
+            unit: "bpm",
+            observedAt: "2026-07-17T09:10:00.000Z",
+            durationMs: 25_000,
+            algorithmVersion: "finger-ppg-demo-v1",
+            providerModelVersion: null,
+            quality: {
+              status: "pass",
+              score: 0.91,
+              reasons: [],
+              metrics: { usableDurationMs: 25_000 }
+            },
+            rawMediaRef: null
+          }),
+    captureQuality:
+      input.outcome === "abstain_for_review"
+        ? availableResource({
+            status: "fail",
+            score: 0.18,
+            reasons: ["weak_signal", "motion"],
+            metrics: { signalCoverage: 0.2 }
+          })
+        : unavailableResource(
+            "missing",
+            "not_recorded",
+            "No non-passing capture-quality outcome was recorded."
+          ),
     protocolResult: availableResource({
       protocolId: task.protocolId,
       protocolVersion: "1.0.0-demo",
@@ -190,7 +211,7 @@ export function syntheticDetail(
       version: 1,
       updatedAt: "2026-07-17T09:20:00.000Z",
       actorId: "synthetic-clinician",
-      auditReference: "audit-note-001"
+      auditReference: "99999999-9999-4999-8999-999999999999"
     }),
     capabilities: {
       note: capabilities,

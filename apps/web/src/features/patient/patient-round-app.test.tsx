@@ -173,6 +173,30 @@ class UiApi implements PatientRoundApi {
     });
   }
 
+  submitCaptureQuality(
+    _roundId: string,
+    input: Parameters<PatientRoundApi["submitCaptureQuality"]>[1]
+  ): ReturnType<PatientRoundApi["submitCaptureQuality"]> {
+    this.round = nextRound(
+      this.round,
+      input.quality.status === "retry" ? "capture_retry" : "abstained_for_review"
+    );
+    return Promise.resolve(
+      input.quality.status === "retry"
+        ? { next: "retry", round: this.round, protocolResult: null }
+        : {
+            next: "abstained_for_review",
+            round: this.round,
+            protocolResult: programmeResult
+          }
+    );
+  }
+
+  submitFollowUp(): ReturnType<PatientRoundApi["submitFollowUp"]> {
+    this.round = nextRound(this.round, "action_pending");
+    return Promise.resolve({ round: this.round, protocolResult: programmeResult });
+  }
+
   executeAction(_roundId: string, input: ExecuteActionRequest): Promise<ActionResult> {
     if (input.protocolResult.outcome === "emergency_guidance") {
       return Promise.resolve({

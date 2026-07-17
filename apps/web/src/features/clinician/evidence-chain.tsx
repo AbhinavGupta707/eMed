@@ -127,6 +127,7 @@ function ReportStep({ detail }: { detail: ClinicianTaskDetail }) {
 
 function MeasurementStep({ detail }: { detail: ClinicianTaskDetail }) {
   const measurement = detail.measurement;
+  const captureQuality = detail.captureQuality;
   return (
     <ChainStep
       number="3"
@@ -153,6 +154,19 @@ function MeasurementStep({ detail }: { detail: ClinicianTaskDetail }) {
             }
           />
           <EvidenceValue label="Raw media" value="Absent (rawMediaRef is null)" />
+        </EvidenceValues>
+      ) : captureQuality.status === "available" ? (
+        <EvidenceValues>
+          <EvidenceValue label="Accepted value" value="No numeric measurement accepted" />
+          <EvidenceValue label="Quality" value={readableToken(captureQuality.value.status)} />
+          <EvidenceValue label="Quality score" value={captureQuality.value.score.toFixed(2)} />
+          <EvidenceValue
+            label="Quality reasons"
+            value={
+              captureQuality.value.reasons.map(readableToken).join(", ") || "No reasons returned"
+            }
+          />
+          <EvidenceValue label="Raw media" value="Absent by contract" />
         </EvidenceValues>
       ) : (
         <ResourceNotice state={measurement} />
@@ -245,7 +259,7 @@ export function EvidenceChain({ detail }: { detail: ClinicianTaskDetail }) {
 function missingEvidence(detail: ClinicianTaskDetail): string[] {
   const gaps: string[] = [];
   if (detail.report.status !== "available") gaps.push("Confirmed structured report not returned");
-  if (detail.measurement.status !== "available")
+  if (detail.measurement.status !== "available" && detail.captureQuality.status !== "available")
     gaps.push("Measurement and quality detail not returned");
   if (detail.protocolResult.status !== "available")
     gaps.push("Protocol decision detail not returned");

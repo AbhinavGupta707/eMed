@@ -81,6 +81,17 @@ const emergencyResult = ProtocolResultSchema.parse({
   explanationKey: "protocol.red_flag.chest_pain"
 });
 
+const abstainResult = ProtocolResultSchema.parse({
+  protocolId: "cardiometabolic_demo",
+  protocolVersion: "1.0.0",
+  matchedRuleIds: ["measurement_quality_failed"],
+  factIds: [REPORT_ID],
+  outcome: "abstain_for_review",
+  allowedActions: ["create_programme_task"],
+  missingFactKeys: ["pulse_bpm"],
+  explanationKey: "protocol.measurement.quality_failed"
+});
+
 const measurement = MeasurementFactSchema.parse({
   factId: FACT_ID,
   assessmentSessionId: SESSION_ID,
@@ -120,6 +131,7 @@ function nextRound(current: Round, state: RoundState): Round {
 
 class FakeApi implements PatientRoundApi {
   round: Round;
+  protocolProjection: typeof programmeResult | typeof abstainResult | null = null;
   transitionOverride:
     ((roundId: string, input: TransitionRoundRequest) => Promise<{ round: Round }>) | null = null;
   assessmentDecision: AssessmentSubmissionResult["decision"] = {
@@ -133,6 +145,8 @@ class FakeApi implements PatientRoundApi {
     submitReport: vi.fn(),
     startAssessment: vi.fn(),
     submitAssessment: vi.fn(),
+    submitCaptureQuality: vi.fn(),
+    submitFollowUp: vi.fn(),
     executeAction: vi.fn()
   };
 
@@ -145,9 +159,14 @@ class FakeApi implements PatientRoundApi {
     return Promise.resolve({ round: this.round, created: false });
   }
 
-  getRound(roundId: string): Promise<{ round: Round }> {
+  getRound(
+    roundId: string
+  ): Promise<{
+    round: Round;
+    protocolResult?: typeof programmeResult | typeof abstainResult | null;
+  }> {
     this.calls.getRound(roundId);
-    return Promise.resolve({ round: this.round });
+    return Promise.resolve({ round: this.round, protocolResult: this.protocolProjection });
   }
 
   transitionRound(roundId: string, input: TransitionRoundRequest): Promise<{ round: Round }> {
@@ -222,6 +241,30 @@ class FakeApi implements PatientRoundApi {
       measurement: input.measurement,
       decision: this.assessmentDecision
     });
+  }
+
+  submitCaptureQuality(
+    roundId: string,
+    input: Parameters<PatientRoundApi["submitCaptureQuality"]>[1]
+  ): ReturnType<PatientRoundApi["submitCaptureQuality"]> {
+    this.calls.submitCaptureQuality(roundId, input);
+    const firstRetry =
+      input.quality.status === "retry" && this.calls.submitCaptureQuality.mock.calls.length === 1;
+    this.round = nextRound(this.round, firstRetry ? "capture_retry" : "abstained_for_review");
+    return Promise.resolve(
+      firstRetry
+        ? { next: "retry", round: this.round, protocolResult: null }
+        : { next: "abstained_for_review", round: this.round, protocolResult: abstainResult }
+    );
+  }
+
+  submitFollowUp(
+    roundId: string,
+    input: Parameters<PatientRoundApi["submitFollowUp"]>[1]
+  ): ReturnType<PatientRoundApi["submitFollowUp"]> {
+    this.calls.submitFollowUp(roundId, input);
+    this.round = nextRound(this.round, "action_pending");
+    return Promise.resolve({ round: this.round, protocolResult: programmeResult });
   }
 
   executeAction(roundId: string, input: ExecuteActionRequest): Promise<ActionResult> {
@@ -415,12 +458,15 @@ describe("patient workflow controller", () => {
     expect(controller.getSnapshot().measurement).toBeNull();
 
     await controller.retryMeasurement();
-    expect(patientWorkflowView(controller.getSnapshot())).toBe("capture_retry");
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("action_confirmation");
     expect(controller.getSnapshot().quality?.status).toBe("fail");
+    expect(controller.getSnapshot().round?.state).toBe("abstained_for_review");
+    expect(controller.getSnapshot().protocolResult?.outcome).toBe("abstain_for_review");
+    expect(api.calls.submitCaptureQuality).toHaveBeenCalledTimes(2);
     expect(api.calls.submitAssessment).not.toHaveBeenCalled();
 
-    await controller.continueWithoutMeasurement();
-    expect(controller.getSnapshot().round?.state).toBe("abstained_for_review");
+    await controller.confirmAction();
+    expect(controller.getSnapshot().action).toMatchObject({ kind: "programme_task" });
     expect(controller.getSnapshot().measurement).toBeNull();
   });
 
@@ -446,10 +492,14 @@ describe("patient workflow controller", () => {
     await controller.captureMeasurement();
 
     expect(patientWorkflowView(controller.getSnapshot())).toBe("follow_up");
-    controller.answerFollowUp("yes");
+    await controller.answerFollowUp("yes");
 
     expect(controller.getSnapshot().followUpAnswer).toBe("yes");
-    expect(controller.getSnapshot().error?.code).toBe("follow_up_submission_unavailable");
+    expect(controller.getSnapshot().error).toBeNull();
+    expect(controller.getSnapshot().round?.state).toBe("action_pending");
+    expect(controller.getSnapshot().protocolResult).toEqual(programmeResult);
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("action_confirmation");
+    expect(api.calls.submitFollowUp).toHaveBeenCalledTimes(1);
     expect(api.calls.executeAction).not.toHaveBeenCalled();
   });
 
@@ -503,6 +553,18 @@ describe("patient workflow controller", () => {
     expect(patientWorkflowView(controller.getSnapshot())).toBe("resume_recovery");
     expect(controller.getSnapshot().assessmentSession).toBeNull();
     expect(controller.getSnapshot().protocolResult).toBeNull();
+  });
+
+  it("restores the server-projected deterministic result for an action-ready round", async () => {
+    const api = new FakeApi(makeRound("action_pending", 5));
+    api.protocolProjection = programmeResult;
+    const { controller } = controllerFor(api);
+
+    await controller.initialise();
+
+    expect(api.calls.getRound).toHaveBeenCalledWith(ROUND_ID);
+    expect(controller.getSnapshot().protocolResult).toEqual(programmeResult);
+    expect(patientWorkflowView(controller.getSnapshot())).toBe("action_confirmation");
   });
 
   it("does not issue network calls while offline", async () => {

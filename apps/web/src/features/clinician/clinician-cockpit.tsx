@@ -342,9 +342,9 @@ export function ClinicianCockpit({
 }: ClinicianCockpitProps) {
   const roundIdsKey = roundIds.join(",");
   const resolvedTransport = useMemo(
-    () => transport ?? createBrowserClinicianTransport(roundIds),
-    // The serialized key prevents a new transport when a server render recreates an equal array.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    () =>
+      transport ??
+      createBrowserClinicianTransport(roundIdsKey === "" ? [] : roundIdsKey.split(",")),
     [roundIdsKey, transport]
   );
   const controller = useClinicianCockpit(resolvedTransport);

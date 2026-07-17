@@ -164,6 +164,8 @@ describe("clinician cockpit", () => {
     expect(screen.getAllByText(/hydration_status/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Stale: activity_observation_stale/i)).toBeVisible();
     expect(screen.getByText(/deterministic workflow abstained/i)).toBeVisible();
+    expect(screen.getByText("No numeric measurement accepted")).toBeVisible();
+    expect(screen.getByText(/weak signal, motion/i)).toBeVisible();
   });
 
   it("keeps a note local until persistence and then shows the returned audit reference", async () => {
@@ -239,7 +241,9 @@ describe("clinician cockpit", () => {
     fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
 
     expect(await screen.findByText(/no duplicate work was created/i)).toBeVisible();
-    expect(mutationInput?.operationKey).toBe(clinicianOperationKey(TASK_ID, "complete"));
+    expect(mutationInput?.operationKey).toBe(
+      clinicianOperationKey(TASK_ID, "complete", syntheticTask().updatedAt)
+    );
     expect(screen.getByRole("button", { name: "Complete task" })).toBeDisabled();
   });
 

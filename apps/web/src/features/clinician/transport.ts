@@ -64,6 +64,12 @@ function failedRead(explanation: string) {
   return unavailableResource("unavailable", "read_failed", explanation);
 }
 
+function optionalResource<T>(value: T | null, explanation: string) {
+  return value === null
+    ? unavailableResource("missing", "not_recorded", explanation)
+    : availableResource(value);
+}
+
 export function createDevelopmentClinicianFetcher(fetcher: typeof fetch = fetch): typeof fetch {
   return async (input, init) => {
     const headers = new Headers(init?.headers);
@@ -122,64 +128,70 @@ export function createApiClinicianTransport(options: {
 
     async loadTaskDetail(taskInput) {
       const task = ClinicianQueueSchema.element.parse(taskInput);
-      const [roundResult, snapshotResult] = await Promise.allSettled([
-        client.getRound(task.roundId),
+      const [detailResult, snapshotResult] = await Promise.allSettled([
+        client.getClinicianTask(task.id),
         client.getSnapshot(task.patientId, ClinicalSnapshotSchema)
       ]);
-
-      const round =
-        roundResult.status === "fulfilled"
-          ? availableResource(roundResult.value.round)
-          : failedRead("Round context could not be read. Reload before relying on its state.");
+      if (detailResult.status === "rejected") {
+        throw transportError(detailResult.reason, isOnline);
+      }
+      const detail = detailResult.value;
+      if (detail.task.id !== task.id || detail.task.roundId !== task.roundId) {
+        throw new ClinicianTransportError(
+          "invalid_response",
+          "The returned task detail did not match the selected queue task."
+        );
+      }
       const snapshot =
         snapshotResult.status === "fulfilled"
           ? availableResource(snapshotResult.value.snapshot)
           : failedRead("Synthetic FHIR context could not be read from the current service.");
 
       return ClinicianTaskDetailSchema.parse({
-        task,
-        round,
+        task: detail.task,
+        round: availableResource(detail.round),
         snapshot,
-        report: unavailableResource(
-          "unsupported",
-          "current_api_unsupported",
-          "The current API does not expose the patient-confirmed structured report to this route."
+        report: optionalResource(
+          detail.report,
+          "No patient-confirmed structured report was recorded for this round."
         ),
-        measurement: unavailableResource(
-          "unsupported",
-          "current_api_unsupported",
-          "The current API does not expose accepted measurement and quality detail to this route."
+        measurement: optionalResource(
+          detail.measurement,
+          "No quality-passing numeric measurement was accepted for this round."
         ),
-        protocolResult: unavailableResource(
-          "unsupported",
-          "current_api_unsupported",
-          "The current API does not expose the deterministic decision result to this route."
+        captureQuality: optionalResource(
+          detail.captureQuality,
+          "No non-passing capture-quality outcome was recorded for this round."
         ),
-        timeline: unavailableResource(
-          "unsupported",
-          "current_api_unsupported",
-          "The current API does not expose the append-only event history to this route."
+        protocolResult: optionalResource(
+          detail.protocolResult,
+          "No deterministic protocol result was recorded for this round."
         ),
-        note: unavailableResource(
-          "unsupported",
-          "current_api_unsupported",
-          "Clinician notes are not exposed by the current API. Draft text remains local and unsaved."
-        ),
+        timeline: availableResource(detail.timeline),
+        note: optionalResource(detail.note, "No clinician note has been recorded for this task."),
         capabilities: {
-          note: "unsupported",
-          acknowledge: "unsupported",
-          contact: "unsupported",
-          complete: "unsupported"
+          note: detail.capabilities.note ? "supported" : "unsupported",
+          acknowledge: detail.capabilities.acknowledge ? "supported" : "unsupported",
+          contact: detail.capabilities.contact ? "supported" : "unsupported",
+          complete: detail.capabilities.complete ? "supported" : "unsupported"
         }
       });
     },
 
     async mutate(input) {
       const parsedInput = ClinicianMutationInputSchema.parse(input);
-      throw new ClinicianTransportError(
-        "unsupported",
-        `The current API does not expose clinician mutation ${parsedInput.kind}.`
-      );
+      try {
+        return ClinicianMutationReceiptSchema.parse(
+          await client.mutateClinicianTask(parsedInput.taskId, {
+            kind: parsedInput.kind,
+            expectedTaskUpdatedAt: parsedInput.expectedTaskUpdatedAt,
+            operationKey: parsedInput.operationKey,
+            note: parsedInput.note
+          })
+        );
+      } catch (error: unknown) {
+        throw transportError(error, isOnline);
+      }
     }
   };
 }

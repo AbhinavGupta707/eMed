@@ -31,6 +31,8 @@ export type PatientRoundApi = Pick<
   | "submitReport"
   | "startAssessment"
   | "submitAssessment"
+  | "submitCaptureQuality"
+  | "submitFollowUp"
   | "executeAction"
 >;
 
@@ -46,6 +48,8 @@ export type PatientWorkflowPending =
   | "preparing_camera"
   | "capturing"
   | "submitting_measurement"
+  | "submitting_quality"
+  | "submitting_follow_up"
   | "confirming_action"
   | "refreshing"
   | null;
@@ -147,7 +151,11 @@ export function patientWorkflowView(state: PatientWorkflowState): PatientWorkflo
     case "assessment_selected":
       return "measurement_prepare";
     case "capturing":
-      if (state.pending === "capturing" || state.pending === "submitting_measurement") {
+      if (
+        state.pending === "capturing" ||
+        state.pending === "submitting_measurement" ||
+        state.pending === "submitting_quality"
+      ) {
         return "capturing";
       }
       if (state.quality?.status === "fail") return "capture_retry";
@@ -239,9 +247,19 @@ export class PatientWorkflowController {
     if (!this.#requireOnline()) return;
     this.#update({ pending: "loading", error: null });
     try {
-      const result = await this.#api.createRound(this.#config);
+      const created = await this.#api.createRound(this.#config);
       if (this.#disposed) return;
-      this.#update({ round: result.round, pending: null, interrupted: false });
+      const result =
+        !created.created && created.round.state !== "invited"
+          ? await this.#api.getRound(created.round.id)
+          : { round: created.round, protocolResult: null };
+      if (this.#disposed) return;
+      this.#update({
+        round: result.round,
+        protocolResult: result.protocolResult ?? null,
+        pending: null,
+        interrupted: false
+      });
     } catch (error: unknown) {
       if (this.#disposed) return;
       this.#update({ pending: null, error: mapPatientError(error, this.#state.online) });
@@ -286,25 +304,31 @@ export class PatientWorkflowController {
   async prepareMeasurement(): Promise<void> {
     const round = this.#state.round;
     if (!round || round.state !== "assessment_selected" || !this.#requireOnline()) return;
+    await this.#prepareMeasurementFrom(round);
+  }
+
+  async #prepareMeasurementFrom(round: Round): Promise<boolean> {
     this.#update({ pending: "preparing_camera", error: null, availability: null });
     try {
       const session = await this.#api.startAssessment(round.id, {
         expectedStateVersion: round.stateVersion
       });
-      if (this.#disposed) return;
+      if (this.#disposed) return false;
       await this.#disposeProvider();
       const provider = this.#createOpticalProvider(session.provider);
       this.#provider = provider;
       this.#update({ round: session.round, assessmentSession: session });
       const availability = await provider.checkAvailability();
-      if (this.#disposed || provider !== this.#provider) return;
+      if (this.#disposed || provider !== this.#provider) return false;
       this.#update({
         availability,
         pending: null,
         error: availability.available ? null : unavailableError(availability.reason)
       });
+      return availability.available;
     } catch (error: unknown) {
       await this.#failOperation(error, round);
+      return false;
     }
   }
 
@@ -315,36 +339,72 @@ export class PatientWorkflowController {
   async retryMeasurement(): Promise<void> {
     const round = this.#state.round;
     if (!round || round.state !== "capture_retry") return;
-    const capturing = await this.#transitionTo("capturing");
-    if (!capturing) return;
-    await this.#captureCurrentSession();
+    this.#update({ quality: null });
+    if (await this.#prepareMeasurementFrom(round)) await this.#captureCurrentSession();
   }
 
   async continueWithoutMeasurement(): Promise<void> {
     const round = this.#state.round;
-    if (
-      !round ||
-      ![
-        "assessment_selected",
-        "capturing",
-        "capture_retry",
-        "assessment_complete",
-        "follow_up_selected"
-      ].includes(round.state)
-    ) {
+    if (!round || !["assessment_selected", "capturing", "capture_retry"].includes(round.state))
       return;
-    }
+    if (!this.#requireOnline()) return;
     this.#abortCapture();
-    await this.#transitionTo("abstained_for_review");
+    let session = this.#state.assessmentSession;
+    let capturingRound = round;
+    if (capturingRound.state !== "capturing" || session === null) {
+      this.#update({ pending: "submitting_quality", error: null });
+      try {
+        session = await this.#api.startAssessment(capturingRound.id, {
+          expectedStateVersion: capturingRound.stateVersion
+        });
+        capturingRound = session.round;
+        this.#update({ round: capturingRound, assessmentSession: session });
+      } catch (error: unknown) {
+        await this.#failOperation(error, round);
+        return;
+      }
+    }
+    const reason =
+      this.#state.availability?.available === false
+        ? this.#qualityReasonForUnavailable(this.#state.availability.reason)
+        : "cancelled";
+    await this.#submitCaptureQuality(capturingRound, session, {
+      status: "fail",
+      score: 0,
+      reasons: [reason],
+      metrics: {}
+    });
   }
 
-  answerFollowUp(answerInput: "yes" | "no" | "unsure"): void {
+  async answerFollowUp(answerInput: "yes" | "no" | "unsure"): Promise<void> {
     const answer = RedFlagAnswerSchema.parse(answerInput);
-    if (this.#state.decision?.kind !== "follow_up_required") return;
-    this.#update({
-      followUpAnswer: answer,
-      error: patientUiError("follow_up_submission_unavailable")
-    });
+    const decision = this.#state.decision;
+    const round = this.#state.round;
+    if (decision?.kind !== "follow_up_required" || !round || !this.#requireOnline()) return;
+    this.#update({ followUpAnswer: answer, pending: "submitting_follow_up", error: null });
+    try {
+      const result = await this.#api.submitFollowUp(round.id, {
+        expectedStateVersion: round.stateVersion,
+        questionId: decision.question.id,
+        answer,
+        answeredAt: this.#now()
+      });
+      if (this.#disposed) return;
+      this.#update({
+        round: result.round,
+        protocolResult: result.protocolResult,
+        decision: null,
+        pending: null,
+        optimisticRoundState: null
+      });
+    } catch (error: unknown) {
+      if (this.#disposed) return;
+      this.#update({
+        followUpAnswer: null,
+        pending: null,
+        error: mapPatientError(error, this.#state.online)
+      });
+    }
   }
 
   async confirmAction(): Promise<void> {
@@ -394,7 +454,7 @@ export class PatientWorkflowController {
         quality: null,
         measurement: null,
         decision: null,
-        protocolResult: null,
+        protocolResult: refreshed.protocolResult ?? null,
         action: null,
         followUpAnswer: null,
         interrupted: false
@@ -478,12 +538,11 @@ export class PatientWorkflowController {
           });
           return;
         case "retry": {
-          const retryRound = await this.#transitionTo("capture_retry");
-          if (retryRound) this.#update({ quality: result.quality, pending: null });
+          await this.#submitCaptureQuality(round, session, result.quality);
           return;
         }
         case "failed":
-          this.#update({ quality: result.quality, pending: null });
+          await this.#submitCaptureQuality(round, session, result.quality);
           return;
         case "completed": {
           this.#update({ pending: "submitting_measurement" });
@@ -508,6 +567,53 @@ export class PatientWorkflowController {
       if (!this.#captureIsCurrent(generation, provider)) return;
       this.#captureAbort = null;
       await this.#failOperation(error, round);
+    }
+  }
+
+  async #submitCaptureQuality(
+    round: Round,
+    session: AssessmentSession,
+    quality: CaptureQuality
+  ): Promise<void> {
+    this.#update({ pending: "submitting_quality", error: null, quality });
+    try {
+      const result = await this.#api.submitCaptureQuality(round.id, {
+        expectedStateVersion: round.stateVersion,
+        assessmentSessionId: session.assessmentSessionId,
+        provider: session.provider,
+        attestation: session.attestation,
+        quality
+      });
+      if (this.#disposed) return;
+      await this.#disposeProvider();
+      if (this.#disposed) return;
+      this.#update({
+        round: result.round,
+        pending: null,
+        assessmentSession: null,
+        availability: null,
+        measurement: null,
+        decision: null,
+        protocolResult: result.protocolResult,
+        optimisticRoundState: null
+      });
+    } catch (error: unknown) {
+      await this.#failOperation(error, round);
+    }
+  }
+
+  #qualityReasonForUnavailable(
+    reason: OpticalUnavailableReason
+  ): CaptureQuality["reasons"][number] {
+    switch (reason) {
+      case "permission_denied":
+        return "permission_denied";
+      case "unsupported_device":
+        return "unsupported_device";
+      case "network_unavailable":
+      case "missing_configuration":
+      case "provider_unavailable":
+        return "provider_unavailable";
     }
   }
 
@@ -545,7 +651,7 @@ export class PatientWorkflowController {
           quality: null,
           measurement: null,
           decision: null,
-          protocolResult: null,
+          protocolResult: latest.protocolResult ?? null,
           action: null,
           error: mapped
         });

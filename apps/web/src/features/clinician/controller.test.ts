@@ -49,9 +49,20 @@ describe("clinician cockpit controller", () => {
     const first = createMutationInput({ task, kind: "complete" });
     const retry = createMutationInput({ task, kind: "complete" });
 
-    expect(first.operationKey).toBe(clinicianOperationKey(task.id, "complete"));
+    expect(first.operationKey).toBe(clinicianOperationKey(task.id, "complete", task.updatedAt));
     expect(retry.operationKey).toBe(first.operationKey);
     expect(first.note).toBeNull();
+  });
+
+  it("changes the operation key after a persisted task version advances", () => {
+    const firstTask = syntheticTask();
+    const nextTask = syntheticTask({ updatedAt: "2026-07-17T09:01:00.000Z" });
+
+    expect(
+      createMutationInput({ task: nextTask, kind: "save_note", note: "Second note" }).operationKey
+    ).not.toBe(
+      createMutationInput({ task: firstTask, kind: "save_note", note: "First note" }).operationKey
+    );
   });
 
   it("keeps optimistic task state explicit and reversible", () => {

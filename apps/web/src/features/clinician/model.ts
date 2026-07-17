@@ -1,5 +1,6 @@
 import { ClinicalSnapshotSchema } from "@homerounds/clinical-records";
 import {
+  CaptureQualitySchema,
   ClinicalTaskSchema,
   DomainEventSchema,
   MeasurementFactSchema,
@@ -84,6 +85,7 @@ export const ClinicianTaskDetailSchema = z
     snapshot: resourceStateSchema(ClinicalSnapshotSchema.strict()),
     report: resourceStateSchema(PatientReportSchema.strict()),
     measurement: resourceStateSchema(MeasurementFactSchema.strict()),
+    captureQuality: resourceStateSchema(CaptureQualitySchema.strict()),
     protocolResult: resourceStateSchema(ProtocolResultSchema.strict()),
     timeline: resourceStateSchema(z.array(DomainEventSchema.strict()).max(500)),
     note: resourceStateSchema(ClinicianNoteSchema),

@@ -30,8 +30,12 @@ export function orderClinicianQueue(tasksInput: readonly ClinicalTask[]): Clinic
   );
 }
 
-export function clinicianOperationKey(taskId: string, kind: ClinicianMutationKind): string {
-  return `clinician:${taskId}:${kind}:v1`;
+export function clinicianOperationKey(
+  taskId: string,
+  kind: ClinicianMutationKind,
+  expectedTaskUpdatedAt: string
+): string {
+  return `clinician:${taskId}:${kind}:${expectedTaskUpdatedAt}`;
 }
 
 export function createMutationInput(input: {
@@ -43,7 +47,7 @@ export function createMutationInput(input: {
     kind: input.kind,
     taskId: input.task.id,
     expectedTaskUpdatedAt: input.task.updatedAt,
-    operationKey: clinicianOperationKey(input.task.id, input.kind),
+    operationKey: clinicianOperationKey(input.task.id, input.kind, input.task.updatedAt),
     note: input.kind === "save_note" ? (input.note ?? "") : null
   });
 }

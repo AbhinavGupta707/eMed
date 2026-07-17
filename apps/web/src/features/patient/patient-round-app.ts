@@ -978,7 +978,7 @@ function FollowUpPanel({ state, controller }: PatientShellProps) {
           {
             disabled: answer === null || state.followUpAnswer !== null,
             onClick: () => {
-              if (answer) controller.answerFollowUp(RedFlagAnswerSchema.parse(answer));
+              if (answer) void controller.answerFollowUp(RedFlagAnswerSchema.parse(answer));
             }
           },
           "Confirm this answer"

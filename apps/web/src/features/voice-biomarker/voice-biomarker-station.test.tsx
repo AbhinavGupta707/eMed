@@ -11,7 +11,7 @@ import {
   type VoiceBiomarkerProvider
 } from "@homerounds/contracts";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { createElement } from "react";
+import { createElement, StrictMode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { VoiceBiomarkerStation } from "./voice-biomarker-station";
@@ -78,6 +78,26 @@ afterEach(() => {
 });
 
 describe("voice biomarker station", () => {
+  it("remains available through the React Strict Mode effect rehearsal", async () => {
+    const subject = provider();
+
+    render(
+      createElement(
+        StrictMode,
+        null,
+        createElement(VoiceBiomarkerStation, {
+          assessmentSessionId: SESSION_ID,
+          onCompleted: vi.fn(async () => undefined),
+          provider: subject,
+          roundId: ROUND_ID
+        })
+      )
+    );
+
+    expect(await screen.findByRole("button", { name: "Start 7-second capture" })).toBeDisabled();
+    expect(subject.dispose).not.toHaveBeenCalled();
+  });
+
   it("exposes consent, research boundary, touch-sized controls, and a text-labelled passing result", async () => {
     const onCompleted = vi.fn(async () => undefined);
     render(

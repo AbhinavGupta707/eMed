@@ -30,6 +30,19 @@ function formatFeature(value: number | null, unit: string): string {
   return value === null ? "Not available from this capture" : `${value.toFixed(2)} ${unit}`;
 }
 
+class DeferredDisposeLifecycle {
+  #generation = 0;
+
+  begin(): number {
+    this.#generation += 1;
+    return this.#generation;
+  }
+
+  isCurrent(generation: number): boolean {
+    return this.#generation === generation;
+  }
+}
+
 export function VoiceBiomarkerStation(props: VoiceBiomarkerStationProps) {
   return (
     <VoiceBiomarkerStationSession
@@ -42,6 +55,7 @@ export function VoiceBiomarkerStation(props: VoiceBiomarkerStationProps) {
 function VoiceBiomarkerStationSession(props: VoiceBiomarkerStationProps) {
   const baseId = useId();
   const statusRef = useRef<HTMLParagraphElement>(null);
+  const [lifecycle] = useState(() => new DeferredDisposeLifecycle());
   const [controller] = useState(() => new VoiceBiomarkerStationController(props));
   const snapshot = useSyncExternalStore(
     controller.subscribe,
@@ -59,9 +73,14 @@ function VoiceBiomarkerStationSession(props: VoiceBiomarkerStationProps) {
   }, [controller, props.onCompleted, props.onDeclined]);
 
   useEffect(() => {
+    const lifecycleGeneration = lifecycle.begin();
     void controller.initialize();
-    return () => controller.dispose();
-  }, [controller]);
+    return () => {
+      queueMicrotask(() => {
+        if (lifecycle.isCurrent(lifecycleGeneration)) controller.dispose();
+      });
+    };
+  }, [controller, lifecycle]);
 
   useEffect(() => {
     if (snapshot.focusToken > 0) statusRef.current?.focus();

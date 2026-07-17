@@ -4,7 +4,11 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   calmAnswers,
   expectNoBrowserFailures,
+  installSyntheticMicrophone,
+  installVoiceStationRouteFixture,
   monitorBrowserFailures,
+  startRound,
+  submitTypedReport,
   type StructuredAnswers,
   type SyntheticScenario
 } from "../../e2e/voice-agent/support";
@@ -48,7 +52,7 @@ test("voice/text parity is keyboard operable, reduced-motion safe, responsive, a
 }, testInfo) => {
   const failures = monitorBrowserFailures(page);
   const iphoneWebKit = testInfo.project.name.includes("webkit");
-  const scenario: SyntheticScenario = iphoneWebKit ? "maya-poor-quality" : "maya-happy-text";
+  const scenario: SyntheticScenario = iphoneWebKit ? "maya-red-flag" : "maya-happy-text";
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto(`/round?scenario=${scenario}`);
   await expect(
@@ -128,9 +132,49 @@ test("voice/text parity is keyboard operable, reduced-motion safe, responsive, a
   expectNoBrowserFailures(failures);
 });
 
-test("voice station keyboard, denial, and axe gate", async () => {
+test("voice station denial and decline are keyboard operable and axe clean", async ({
+  page
+}, testInfo) => {
   test.skip(
-    true,
-    "Product defect: React Strict Mode cleanup disposes the station controller before its second initialize pass, leaving consent permanently disabled."
+    testInfo.project.name.includes("webkit"),
+    "synthetic microphone-denial fixture is Chromium-only; iPhone WebKit remains layout evidence"
   );
+  const failures = monitorBrowserFailures(page);
+  const submittedVoiceResults: string[] = [];
+  page.on("request", (request) => {
+    if (
+      request.method() === "POST" &&
+      /\/api\/rounds\/[^/]+\/voice-biomarker$/.test(new URL(request.url()).pathname)
+    ) {
+      submittedVoiceResults.push(request.url());
+    }
+  });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await installSyntheticMicrophone(page, "denied");
+  await installVoiceStationRouteFixture(page);
+  await startRound(page, "/round?scenario=maya-poor-quality");
+  await submitTypedReport(
+    page,
+    { ...calmAnswers, palpitations: "Comes and goes" },
+    "Synthetic accessibility fixture for local microphone denial."
+  );
+
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Sustained-vowel research signal" })
+  ).toBeVisible();
+  await expectAxeSeriousAndCriticalClean(page);
+  const consent = page.getByLabel(/I consent to one separate local sustained-vowel capture/i);
+  await activate(consent, "Space");
+  await expect(consent).toBeChecked();
+  await activate(page.getByRole("button", { name: "Start 7-second capture" }), "Enter");
+  await expect(
+    page.getByText(/Microphone permission was denied\. Change the browser permission/i)
+  ).toBeVisible();
+  expect(submittedVoiceResults).toEqual([]);
+  await expectAxeSeriousAndCriticalClean(page);
+  await activate(page.getByRole("button", { name: "Decline optional station" }), "Enter");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Next, prepare a short camera pulse check" })
+  ).toBeVisible();
+  expectNoBrowserFailures(failures);
 });

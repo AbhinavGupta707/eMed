@@ -1,10 +1,10 @@
+import { SubmitReportRequestSchema } from "@homerounds/api-client";
 import { expect, test } from "@playwright/test";
 
 import {
   VOICE_FALLBACK_ORIGIN,
   VOICE_FIXTURE_ORIGIN,
   calmAnswers,
-  completeStructuredAnswers,
   confirmSyntheticVoiceNarrative,
   expectNoBrowserFailures,
   expectNoPersistedDraft,
@@ -13,7 +13,6 @@ import {
   monitorBrowserFailures,
   scenarioUrl,
   startRound,
-  submitConfirmedReport,
   submitTypedReport
 } from "./support";
 
@@ -23,22 +22,70 @@ function isProfile(projectName: string, profile: "fallback" | "fixture"): boolea
   return projectName.includes(profile);
 }
 
-test("keyless voice fixture stays editable and reaches the same deterministic route as text", async ({
+test("keyless typed proposal stays editable and requires explicit review before routing", async ({
   page
 }, testInfo) => {
   test.skip(!isProfile(testInfo.project.name, "fixture"), "synthetic voice fixture profile only");
   const failures = monitorBrowserFailures(page);
+  const reportRequests: string[] = [];
+  page.on("request", (request) => {
+    if (
+      request.method() === "POST" &&
+      /\/api\/rounds\/[^/]+\/report$/.test(new URL(request.url()).pathname)
+    ) {
+      reportRequests.push(request.url());
+    }
+  });
   const start = await startRound(page, scenarioUrl(VOICE_FIXTURE_ORIGIN, "maya-happy-text"));
   await expect(page.getByRole("heading", { level: 2, name: "History and purpose" })).toBeVisible();
   await expect(page.getByText("Synthetic data only", { exact: true })).toBeVisible();
   await expect(
     page.getByText("Source: bounded synthetic history summary", { exact: true })
   ).toBeVisible();
-  await completeStructuredAnswers(page, calmAnswers);
   const edited = "Edited identifier-free synthetic voice fixture for explicit confirmation.";
   await confirmSyntheticVoiceNarrative(page, edited);
-  const report = await submitConfirmedReport(page);
-  expect(report.selectedModuleId).toBe("capture.finger_ppg.pulse");
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Review every proposed field" })
+  ).toBeVisible();
+  await expect(page.getByText("Draft — not submitted", { exact: true })).toBeVisible();
+  await expect(page.getByText("Review progress: 0 of 6 fields.", { exact: false })).toBeVisible();
+  expect(reportRequests).toEqual([]);
+
+  await page.getByLabel("Weakness", { exact: true }).selectOption("moderate");
+  await page.getByLabel("Palpitations", { exact: true }).selectOption("intermittent");
+  await page.getByLabel("Chest pain now", { exact: true }).selectOption("no");
+  await page.getByLabel("Severe breathlessness now", { exact: true }).selectOption("no");
+  await page.getByLabel("Fainted", { exact: true }).selectOption("no");
+  await page.getByLabel("Patient note", { exact: true }).selectOption("remove");
+  await expect(page.getByText("Review progress: 6 of 6 fields.", { exact: false })).toBeVisible();
+  expect(reportRequests).toEqual([]);
+
+  await page.getByLabel(/I reviewed every field and confirm these are my answers/i).check();
+  const reportRequest = page.waitForRequest(
+    (request) =>
+      request.method() === "POST" &&
+      /\/api\/rounds\/[^/]+\/report$/.test(new URL(request.url()).pathname)
+  );
+  const reportResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      /\/api\/rounds\/[^/]+\/report$/.test(new URL(response.url()).pathname)
+  );
+  await page.getByRole("button", { name: "Confirm reviewed report" }).click();
+  const submitted = SubmitReportRequestSchema.parse((await reportRequest).postDataJSON());
+  expect(submitted.report).toMatchObject({
+    inputMode: "voice_confirmed",
+    weakness: "moderate",
+    palpitations: "intermittent",
+    redFlags: {
+      chestPain: "no",
+      severeBreathlessness: "no",
+      fainted: "no"
+    }
+  });
+  expect(submitted.report).not.toHaveProperty("note");
+  expect((await reportResponse).status()).toBe(200);
+  expect(reportRequests).toHaveLength(1);
   await expect(
     page.getByRole("heading", { level: 3, name: "Quality-gated finger pulse check was selected" })
   ).toBeVisible();
@@ -56,11 +103,16 @@ test("optional local station reports microphone denial honestly and persists an 
   page
 }, testInfo) => {
   test.skip(!isProfile(testInfo.project.name, "fixture"), "synthetic voice fixture profile only");
-  test.skip(
-    true,
-    "Product defect: React Strict Mode cleanup disposes the station controller before its second initialize pass, leaving consent permanently disabled."
-  );
   const failures = monitorBrowserFailures(page);
+  const submittedVoiceResults: string[] = [];
+  page.on("request", (request) => {
+    if (
+      request.method() === "POST" &&
+      /\/api\/rounds\/[^/]+\/voice-biomarker$/.test(new URL(request.url()).pathname)
+    ) {
+      submittedVoiceResults.push(request.url());
+    }
+  });
   await installSyntheticMicrophone(page, "denied");
   await installVoiceStationRouteFixture(page);
   await startRound(page, scenarioUrl(VOICE_FIXTURE_ORIGIN, "maya-poor-quality"));
@@ -79,7 +131,7 @@ test("optional local station reports microphone denial honestly and persists an 
   await expect(
     page.getByText(/Microphone permission was denied\. Change the browser permission/i)
   ).toBeVisible();
-  await expect(page.getByText(/No capture result exists/i)).toBeVisible();
+  expect(submittedVoiceResults).toEqual([]);
   await page.getByRole("button", { name: "Decline optional station" }).click();
   await expect(
     page.getByRole("heading", { level: 1, name: "Next, prepare a short camera pulse check" })
@@ -96,12 +148,17 @@ test("deterministic silent audio offers one retry, then fails without a fact and
   page
 }, testInfo) => {
   test.skip(!isProfile(testInfo.project.name, "fixture"), "synthetic voice fixture profile only");
-  test.skip(
-    true,
-    "Product defect: React Strict Mode cleanup disposes the station controller before its second initialize pass, leaving consent permanently disabled."
-  );
   test.slow();
   const failures = monitorBrowserFailures(page);
+  const submittedVoiceResults: string[] = [];
+  page.on("request", (request) => {
+    if (
+      request.method() === "POST" &&
+      /\/api\/rounds\/[^/]+\/voice-biomarker$/.test(new URL(request.url()).pathname)
+    ) {
+      submittedVoiceResults.push(request.url());
+    }
+  });
   await installSyntheticMicrophone(page, "silence");
   await installVoiceStationRouteFixture(page);
   await startRound(page, scenarioUrl(VOICE_FIXTURE_ORIGIN, "maya-red-flag"));
@@ -123,6 +180,7 @@ test("deterministic silent audio offers one retry, then fails without a fact and
     timeout: 12_000
   });
   await expect(page.getByText("No feature fact or measurement was created.")).toBeVisible();
+  expect(submittedVoiceResults).toEqual([]);
   await page.getByRole("button", { name: "Decline optional station" }).click();
   await expect(
     page.getByRole("heading", { level: 1, name: "Next, prepare a short camera pulse check" })
@@ -150,11 +208,4 @@ test("disabled live provider keeps complete text parity without a key", async ({
   expect(report.selectedModuleId).toBe("capture.finger_ppg.pulse");
   await expectNoPersistedDraft(page, VOICE_FALLBACK_ORIGIN, start.round.id, narrative);
   expectNoBrowserFailures(failures);
-});
-
-test("typed agent proposal is visibly reviewed before report submission", async () => {
-  test.skip(
-    true,
-    "Blocked by the frozen browser fixture: SyntheticVoiceSessionProvider emits transcript events but never calls propose_patient_report."
-  );
 });

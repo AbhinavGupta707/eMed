@@ -20,6 +20,15 @@ const followUpCandidate = {
   scoring: { informationGain: 80, reliability: 100, burdenCost: 20 }
 } as const;
 
+const voiceCandidate = {
+  id: "voice_signal_primary",
+  kind: "voice_biomarker",
+  producesFactKey: "voice_biomarker_observation",
+  available: true,
+  estimatedBurdenSeconds: 20,
+  scoring: { informationGain: 60, reliability: 60, burdenCost: 20 }
+} as const;
+
 function input(overrides: Record<string, unknown> = {}) {
   return {
     neededFactKeys: ["pulse_bpm", "follow_up_answer"],
@@ -104,6 +113,25 @@ describe("deterministic module planner", () => {
     const reverse = planNextModule(input({ candidates: [followUpCandidate, pulseCandidate] }));
 
     expect(reverse.selected).toEqual(forward.selected);
+  });
+
+  it("keeps the research-only voice signal inside normal fact, burden, and availability gates", () => {
+    const eligible = planNextModule(
+      input({
+        neededFactKeys: ["voice_biomarker_observation"],
+        candidates: [voiceCandidate]
+      })
+    );
+    expect(eligible.selected?.id).toBe("voice_signal_primary");
+
+    const unavailable = planNextModule(
+      input({
+        neededFactKeys: ["voice_biomarker_observation"],
+        candidates: [{ ...voiceCandidate, available: false }]
+      })
+    );
+    expect(unavailable.selected).toBeNull();
+    expect(unavailable.evaluations[0]?.reasons).toEqual(["unavailable"]);
   });
 
   it("rejects unknown fields, invalid module outputs, duplicate IDs, and impossible budgets", () => {

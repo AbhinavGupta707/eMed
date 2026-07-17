@@ -8,6 +8,8 @@ import {
   MedicationLabelImageMetadataSchema,
   MedicationLabelObservationSchema,
   PatientReportSchema,
+  VoiceAgentReportProposalSchema,
+  VoiceBiomarkerFactSchema,
   VoicePresentationEventSchema
 } from ".";
 
@@ -47,6 +49,67 @@ describe("frozen cross-lane contracts", () => {
   it("does not define workflow-authority voice events", () => {
     expect(
       VoicePresentationEventSchema.safeParse({ type: "set_urgency", urgency: "emergency" }).success
+    ).toBe(false);
+  });
+
+  it("keeps a voice-agent report proposal unconfirmed and preserves unresolved fields", () => {
+    expect(
+      VoiceAgentReportProposalSchema.safeParse({
+        contractVersion: "voice-report-proposal.v1",
+        weakness: "unknown",
+        palpitations: "intermittent",
+        redFlags: { chestPain: "no", severeBreathlessness: "unsure", fainted: "no" },
+        note: "I have felt weak since this morning.",
+        unresolvedFields: ["weakness", "severe_breathlessness"]
+      }).success
+    ).toBe(true);
+    expect(
+      VoiceAgentReportProposalSchema.safeParse({
+        contractVersion: "voice-report-proposal.v1",
+        weakness: "unknown",
+        palpitations: "intermittent",
+        redFlags: { chestPain: "no", severeBreathlessness: "no", fainted: "no" },
+        note: null,
+        unresolvedFields: []
+      }).success
+    ).toBe(false);
+  });
+
+  it("makes raw voice media unrepresentable in a research-only derived fact", () => {
+    const base = {
+      factId: "fb99983d-cc81-454e-9c92-f8e99e0891de",
+      roundId: "cc80d269-2f79-4328-a129-98cac85219e4",
+      assessmentSessionId: "45906cff-34ea-4a86-a0c0-05967adb20c4",
+      provider: "local_voice_features",
+      observedAt: "2026-07-17T09:00:00.000Z",
+      durationMs: 8_000,
+      algorithmVersion: "local-voice-features.v1",
+      features: {
+        medianFundamentalFrequencyHz: 182,
+        pitchVariabilitySemitones: 1.4,
+        jitterPercent: 1.1,
+        shimmerPercent: 3.2,
+        harmonicToNoiseRatioDb: 18.5,
+        phonationDurationMs: 8_000
+      },
+      quality: {
+        status: "pass",
+        score: 0.91,
+        reasons: [],
+        metrics: {
+          sampleRateHz: 48_000,
+          durationMs: 8_000,
+          clippingFraction: 0.002,
+          voicedFraction: 0.88,
+          estimatedSnrDb: 24
+        }
+      },
+      researchOnly: true,
+      rawMediaRef: null
+    } as const;
+    expect(VoiceBiomarkerFactSchema.safeParse(base).success).toBe(true);
+    expect(
+      VoiceBiomarkerFactSchema.safeParse({ ...base, rawMediaRef: "recording.wav" }).success
     ).toBe(false);
   });
 

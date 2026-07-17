@@ -9,14 +9,16 @@ export const SafeInferenceIdentifierSchema = z
 export const EvidenceModuleKindSchema = z.enum([
   "pulse_capture",
   "structured_follow_up",
-  "medication_label"
+  "medication_label",
+  "voice_biomarker"
 ]);
 export type EvidenceModuleKind = z.infer<typeof EvidenceModuleKindSchema>;
 
 export const EvidenceFactKeySchema = z.enum([
   "pulse_bpm",
   "follow_up_answer",
-  "medication_label_observation"
+  "medication_label_observation",
+  "voice_biomarker_observation"
 ]);
 export type EvidenceFactKey = z.infer<typeof EvidenceFactKeySchema>;
 

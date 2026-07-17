@@ -3,3 +3,4 @@ export * from "./inference";
 export * from "./medication";
 export * from "./round";
 export * from "./voice";
+export * from "./voice-biomarker";

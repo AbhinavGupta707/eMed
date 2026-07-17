@@ -21,7 +21,8 @@ export type NeededFactKey = EvidenceFactKey;
 const PRODUCED_FACT_KEY_BY_KIND: Readonly<Record<ModuleKind, NeededFactKey>> = {
   pulse_capture: "pulse_bpm",
   structured_follow_up: "follow_up_answer",
-  medication_label: "medication_label_observation"
+  medication_label: "medication_label_observation",
+  voice_biomarker: "voice_biomarker_observation"
 };
 
 export const PlannerCandidateSchema = z
@@ -90,7 +91,8 @@ export type PlannerResult = {
 const KIND_TIE_BREAK: Readonly<Record<ModuleKind, number>> = {
   pulse_capture: 0,
   structured_follow_up: 1,
-  medication_label: 2
+  voice_biomarker: 2,
+  medication_label: 3
 };
 
 function score(candidate: PlannerCandidate): number {

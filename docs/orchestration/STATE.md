@@ -1,16 +1,16 @@
 # HomeRounds orchestration state
 
-Updated: 17 July 2026 20:50 BST  
+Updated: 17 July 2026 21:50 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
-Goal: Checkpoint 7 AI-native integration, adversarial validation, and hosted release evidence  
+Goal: Checkpoint 8 voice-led adaptive home round and local voice-signal implementation  
 Integration branch: `main`
 Release-candidate tag: `homerounds-v0.1.0-demo-rc2` on the final Checkpoint 7 ledger commit
-Heartbeat: `homerounds-checkpoint-7-orchestration-heartbeat`, pending deletion after final push/goal closure
+Heartbeat: none; Checkpoint 7 heartbeat was deleted after release closure
 
 ## Current checkpoint
 
-- Checkpoint: 7 — AI-native live inference and external validation, software-complete
-- Status: Checkpoints 0–6 remain integrated; Checkpoint 7 Waves A/B are reviewed, integrated, fully gated, rehearsed, and deployed to Preview. Real ElevenLabs microphone-to-transcript and physical iPhone 12 Safari remain honest owner/device evidence gates; neither blocks the completed software implementation.
+- Checkpoint: 8 — voice-led adaptive home round and local voice signal, shared-contract pre-freeze
+- Status: Checkpoints 0–7 remain integrated. Checkpoint 8 architecture and cross-lane contracts are being frozen before three visible project-scoped Wave A worktrees launch. The existing ElevenLabs session reached token/session controls but not real transcript; the verified global-token versus SDK-default-US mismatch is the first transport correction. No Checkpoint 8 implementation or external live claim is complete yet.
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
 - Rehearsed application/package candidate: `99acb5b` before Checkpoint 6 evidence-led documentation updates
@@ -32,7 +32,7 @@ Heartbeat: `homerounds-checkpoint-7-orchestration-heartbeat`, pending deletion a
 - Checkpoint 7 7E-R worker commit: `d7a2f9f2757dc39229ce3b9915bf3e743c220223`
 - Checkpoint 7 tested 7E-R integration commit: `e9bb391`
 - Final tested/deployed application commit: `ea545b5ae5bd9f59e097bd330b746e36547a81c6`
-- Next gate: owner-only physical iPhone 12 Safari and real microphone speech evidence; optional VitalLens opt-in/credential evaluation
+- Next gate: green Checkpoint 8 shared-base commit, then visible 8A/8B/8C worktree launch from that exact commit
 - Physical iPhone gate: `pending-physical` (Xcode lists the Mac and simulators only; no physical iPhone was connected)
 - Live ElevenLabs gate: `token-session-controls-pass-audio-pending` (private/authenticated zero-retention agent, signed WebRTC token, live browser session start, mute/end/cancel controls, bounded termination, and text fallback pass; two real browser attempts remained “Connecting…” with no transcript, so microphone → editable transcript → confirmation is not claimed)
 - Live VitalLens gate: `pending-explicit-opt-in-and-credentials` (fixture adapter required)
@@ -90,6 +90,15 @@ Heartbeat: `homerounds-checkpoint-7-orchestration-heartbeat`, pending deletion a
 - ElevenLabs is the hosted voice primary. OpenAI Realtime, LiveKit, browser Web Speech, voice biomarkers, respiratory rate, HRV, OCR, wearables, and live EHR integrations remain out of the hackathon path.
 - Neutral action wording: `programme review requested`; any same-day window is visibly `demo-only` until clinical review.
 - A live `pnpm audit` rerun was denied by the runtime because it would send this private repository's dependency graph and private workspace package names to npm. No workaround was attempted. The previously successful Checkpoint 2 audit remains the latest external advisory result; Checkpoint 4 must add a privacy-approved CI/Dependabot or explicitly user-approved audit route before release evidence is claimed current.
+
+## Checkpoint 8 shared-contract pre-freeze evidence
+
+- `planning/10_VOICE_LED_ADAPTIVE_CHECKPOINT_8.md` freezes the ElevenLabs/Fireworks responsibility split, RunwayOps reuse boundary, report-proposal confirmation rule, local voice-signal privacy/quality contract, adaptive `3 + 2` lane plan, external agent configuration, and exact release gates.
+- The shared contract adds a bounded `voice-report-proposal.v1` proposal, explicit unresolved-field invariants, typed client-tool outcomes, bounded synthetic session context, a consistent ElevenLabs server-location enum, and a local derived voice-feature fact that is research-only with `rawMediaRef: null`.
+- The planner now treats `voice_biomarker_observation` as a normal allowlisted evidence gap subject to availability and burden. The Round Map has exhaustive non-diagnostic text for that fact. No production route or provider is enabled by this pre-freeze alone.
+- Repository lint passed all 14 packages. Strict TypeScript passed all 14 packages after the exhaustive planner and Round Map maps were extended. The full package test gate passed all 14 packages: 141 web tests plus one visible live skip, 87 assessment tests, 36 inference tests plus one visible live skip, and all existing package suites. The production build passed all 14 packages and `git diff --check` passed.
+- The first full package test attempt had one unrelated asynchronous clinician-cockpit detail timeout while the DOM still showed its loading state. The exact eight-test file then passed, and the complete 14-package test gate passed immediately afterward. No clinician code or assertion was changed; the failed run remains recorded as a timing-flake signal rather than silently relabelled.
+- No dependency, lockfile, database migration, provider setting, agent configuration, hosted deployment, or live evidence claim changed in the shared pre-freeze.
 
 ## Checkpoint 0 evidence
 

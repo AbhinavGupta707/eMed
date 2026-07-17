@@ -119,7 +119,8 @@ export type RoundMapSelectionPresentation = Readonly<{
 const factLabels: Readonly<Record<EvidenceFactKey, string>> = {
   follow_up_answer: "a confirmed answer",
   medication_label_observation: "a reviewed label observation",
-  pulse_bpm: "a quality-gated pulse estimate"
+  pulse_bpm: "a quality-gated pulse estimate",
+  voice_biomarker_observation: "a quality-gated research voice signal"
 };
 
 export function roundMapStatusLabel(status: RoundMapModuleStatus): string {

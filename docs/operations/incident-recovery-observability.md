@@ -34,7 +34,7 @@
 
 ### PostgreSQL unavailable or wrong runtime profile
 
-- If startup omitted `DATABASE_URL`, the app uses `in_memory_demo_fallback`. Stop the hosted release rather than presenting it as persisted.
+- In `APP_ENV=demo`, omitted `DATABASE_URL` fails startup. In development it selects `in_memory_demo_fallback`; never relabel that recovery/test profile as hosted persistence.
 - If PostgreSQL fails after connection, do not switch silently. Check Neon status/branch/connection limits and the redacted application error rate.
 - Restore a verified PostgreSQL branch or local database, redeploy/restart, then run seed/check and a cross-browser patient-to-clinician state check.
 
@@ -64,7 +64,7 @@ Until a reviewed sink exists, operators should monitor:
 
 - Vercel deployment/build/function error summaries, without enabling request-body capture;
 - Neon availability, connection/pool saturation, storage, and restore-window settings;
-- authenticated `demo:check` output and the `x-homerounds-runtime-profile` response header;
+- `/api/readiness`, authenticated `demo:check` output, and the `x-homerounds-runtime-profile` response header;
 - counts of rejected requests by safe error code/correlation ID where platform logs expose them;
 - provider status/quota dashboards only when those providers are enabled.
 

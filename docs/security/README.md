@@ -21,8 +21,8 @@ HomeRounds is a fictional, synthetic-data hackathon prototype. “Production-gra
 ## Release-blocking limitations
 
 - No OIDC/OAuth, MFA, real RBAC/ABAC, tenancy, purpose-of-use, break-glass, or clinical identity exists.
-- Signed demo-cookie verification exists, but browser login/session issuance does not.
-- Hosted demo mode does not fail startup when `DATABASE_URL` is absent; it can select in-memory state.
+- `/access` is a shared-code synthetic session issuer, not individual identity; it has no MFA, account lifecycle, per-session revocation, or distributed abuse control.
+- Hosted demo mode fails startup without PostgreSQL and its secret, and readiness probes the repository; database availability and restore still require observed platform evidence.
 - Rate limiting is process-local and is not a distributed Vercel/serverless control.
 - No complete CSP, WAF policy, centralized safe logger, metrics/alerting, SIEM, SBOM, artifact signing, penetration test, DPIA, clinical safety case, or validated device/population evidence exists.
 - `APP_ENV=production` correctly rejects the synthetic fixture provider and is not currently deployable.

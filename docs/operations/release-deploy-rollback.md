@@ -53,7 +53,7 @@ For Git import, set:
 - Function region: London (`lhr1`) unless the reviewed database placement requires another checked-in change.
 - Deployment protection: enabled for the public synthetic demo.
 
-`infra/deploy/vercel.json` is an actual Vercel configuration file but is outside the application root because Checkpoint 4D does not own `apps/web`. A CLI operator can pass it with Vercel's `--local-config` option. Automatic Git deployments will not discover it at this location; the integration owner must either reproduce the reviewed settings in the dashboard or place an approved copy at `apps/web/vercel.json`.
+`apps/web/vercel.json` is the Git-discovered application configuration. `infra/deploy/vercel.json` is the reviewed deployment-source copy used by operators and configuration checks. Keep them byte-for-byte equivalent when changing headers, region, install, or build behavior.
 
 Set the variables from `infra/deploy/hosted-demo.env.example` in the Vercel environment store. In particular:
 
@@ -65,12 +65,11 @@ Set the variables from `infra/deploy/hosted-demo.env.example` in the Vercel envi
 
 Vercel environment changes apply only to new deployments. Preview URLs vary, while the application uses one exact `APP_BASE_URL` for mutation-origin checks. A preview needs its own matching branch-specific value and redeploy; do not test mutations on a preview configured with the production origin.
 
-## Current central-only promotion blockers
+## Remaining promotion gates
 
-1. **Browser demo session issuance:** the server validates signed cookies, but no login/session-issuance route or operator utility installs the browser cookie. `APP_ENV=demo` therefore returns `401` to an ordinary browser. Do not deploy as `APP_ENV=development` to bypass this boundary.
-2. **Database fail-closed:** absent `DATABASE_URL` selects in-memory state instead of failing startup. Promotion must block unless `demo:check` and API metadata show `postgres`; a central environment rule should eventually require PostgreSQL for hosted demo mode.
-3. **Git-discovered Vercel config:** the checked-in configuration is not at the Vercel application root. Dashboard replication or an integration-owned `apps/web/vercel.json` is required.
-4. **No health/readiness endpoint:** use the root page plus authenticated `demo:check`; a dedicated readiness endpoint is a central application change.
+The application-owned blockers identified during Checkpoint 4D are resolved: `/access` issues bounded signed demo sessions, hosted `demo` startup requires PostgreSQL and its access secret, `apps/web/vercel.json` is discoverable from the configured application root, and `/api/readiness` performs a real repository probe without exposing error details.
+
+Promotion still requires observed external evidence: owner-authorized Vercel and Neon accounts, populated environment secrets, an applied migration, platform deployment protection, a passing HTTPS readiness response, `demo:check` reporting `postgres`, cross-session patient/clinician persistence, and a recorded dependency-advisory approval or waiver. Live ElevenLabs/VitalLens and physical iPhone evidence remain separate optional/human gates; their absence must not be relabelled as passing evidence.
 
 ## Deploy and verify
 
@@ -78,9 +77,9 @@ After the blockers are resolved and account access is approved:
 
 1. Deploy a preview of the exact candidate using the linked Git project or Vercel CLI with the reviewed local config.
 2. Inspect build logs for the frozen install, Node/pnpm versions, and absence of environment values.
-3. Verify HTTPS and the security headers from `infra/deploy/vercel.json`.
+3. Verify HTTPS, `/api/readiness` returns `200` with `ready` and `postgres`, and the security headers from `apps/web/vercel.json`.
 4. Apply/confirm migrations, then run `demo:seed` and `demo:check` against the exact HTTPS origin using the server-side demo secret. Require `(postgres)`.
-5. Open new patient and clinician sessions, complete the no-key text/poor-quality path, cold-start another instance, and verify shared persisted state.
+5. Open `/access`; verify wrong-code denial, then create separate patient and clinician sessions, complete the no-key text/poor-quality path, cold-start another instance, and verify shared persisted state.
 6. Inspect browser bundles for server-only configuration markers and network/storage for raw media.
 7. Keep providers disabled until their separate opt-in checks pass.
 8. Promote/alias only the verified deployment; record URL, Vercel deployment ID, Git SHA, environment revision, database branch, migration hashes, and operator.

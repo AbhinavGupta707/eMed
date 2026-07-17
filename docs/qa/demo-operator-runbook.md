@@ -129,7 +129,7 @@ Symptoms: readiness is non-200/not `ready`, runtime is not `postgres`, seed/chec
 2. Confirm the intended synthetic database and migration state without printing the URL.
 3. Restart/reconnect PostgreSQL; rerun readiness, `demo:seed`, and `demo:check`.
 4. If hosted, follow [release/rollback](../operations/release-deploy-rollback.md); do not silently use in-memory state.
-5. If recovery cannot return `postgres` inside 60 seconds, use the static [recorded recovery storyboard](../../public/demo-backup/recovery-storyboard.html). Announce it before showing it.
+5. If recovery cannot return `postgres` inside 60 seconds, open `/demo-backup/recovery-storyboard.html` from the running app or use the canonical static [recorded recovery storyboard](../../public/demo-backup/recovery-storyboard.html). Announce it before showing it.
 
 ## No-key provider fallback
 

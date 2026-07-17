@@ -10,18 +10,22 @@
 | [Environment matrix](./environment-matrix.md)                                               | Matrix                        | Chromium/WebKit-layout/local/physical/hosted/provider distinctions        | Pending physical/hosted/live gates                      |
 | [Release checklist and waivers](./release-checklist-and-waivers.md)                         | Decision control              | Owners, closure actions, bounded no-key position                          | Closure of unchecked gates                              |
 | [Operator runbook](./demo-operator-runbook.md)                                              | Procedure                     | Reproducible reset/check/story/recovery/rollback cues                     | A completed rehearsal                                   |
-| [Three-run sheet](./three-run-rehearsal.md)                                                 | Blank evidence form           | Exact time boxes and pass criteria                                        | Three-run success until completed                       |
+| [Three-run sheet](./three-run-rehearsal.md)                                                 | Completed local evidence      | Exact candidate, environment, time boxes, three passes, and limitations   | Hosted, physical-device, live-provider, or clinical use |
 | [Recorded-valid capture fixture](../../apps/web/public/demo/recorded-valid-capture.v1.json) | Synthetic engineering fixture | Explicit recovery-only, raw-media-free policy and deterministic prototype | Live sensor, physical device, or clinical validation    |
 | [Scenario bundle](../../data/demo/scenarios.v1.json)                                        | Synthetic fixture contract    | Three exact seeded Maya scenarios and expected baseline                   | Aisha scenario or a completed run                       |
 | [Recovery storyboard](../../public/demo-backup/recovery-storyboard.html)                    | Static recorded recovery      | Honest environment-failure backup narrative                               | Live app, sensor, provider, hosting, or physical iPhone |
 | [Operator cue card](../../public/demo-backup/operator-cue-card.txt)                         | Static recorded recovery      | Short safe recovery order and prohibited claims                           | Live execution evidence                                 |
+| [Served recovery storyboard](../../apps/web/public/demo-backup/recovery-storyboard.html)    | Byte-identical served mirror  | `/demo-backup/recovery-storyboard.html` is available from the Next.js app | A live-app or external evidence claim                   |
+| [Served operator cue card](../../apps/web/public/demo-backup/operator-cue-card.txt)         | Byte-identical served mirror  | `/demo-backup/operator-cue-card.txt` is available from the Next.js app    | A completed rehearsal or external evidence              |
 
 Recovery asset SHA-256 values were calculated after scoped Prettier formatting in this lane.
 
-| Recovery asset                                | SHA-256                                                            |
-| --------------------------------------------- | ------------------------------------------------------------------ |
-| `public/demo-backup/recovery-storyboard.html` | `9dba968996475e6f6ed79fd3fdb2cd7648194eeb25c9025c1c13610c2a7a120c` |
-| `public/demo-backup/operator-cue-card.txt`    | `df23f436bdc744b8a3257f0b5fdf96324f71f85fc0ed68d5583f3c67ffeec093` |
+| Recovery asset                                         | SHA-256                                                            |
+| ------------------------------------------------------ | ------------------------------------------------------------------ |
+| `public/demo-backup/recovery-storyboard.html`          | `9dba968996475e6f6ed79fd3fdb2cd7648194eeb25c9025c1c13610c2a7a120c` |
+| `public/demo-backup/operator-cue-card.txt`             | `df23f436bdc744b8a3257f0b5fdf96324f71f85fc0ed68d5583f3c67ffeec093` |
+| `apps/web/public/demo-backup/recovery-storyboard.html` | `9dba968996475e6f6ed79fd3fdb2cd7648194eeb25c9025c1c13610c2a7a120c` |
+| `apps/web/public/demo-backup/operator-cue-card.txt`    | `df23f436bdc744b8a3257f0b5fdf96324f71f85fc0ed68d5583f3c67ffeec093` |
 
 ## Screenshot and capture checklist
 

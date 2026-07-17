@@ -1,19 +1,20 @@
 # HomeRounds orchestration state
 
-Updated: 17 July 2026 05:59 BST  
+Updated: 17 July 2026 06:40 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
-Goal: active  
+Goal: complete for the bounded local/no-key synthetic-demo release candidate  
 Integration branch: `main`
-Heartbeat: `homerounds-orchestration-heartbeat`, active every 20 minutes
-Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximately 13:19 BST on 17 July 2026; Codex must remain open
+Release-candidate tag: `homerounds-v0.1.0-demo-rc1` on this final ledger commit
+Heartbeat: `homerounds-orchestration-heartbeat`, deactivated after final push
+Sleep guard: macOS `caffeinate -dimsu` protected the autonomous run and was stopped after final push
 
 ## Current checkpoint
 
-- Checkpoint: 5 — submission, demo evidence and release packaging
-- Status: Checkpoint 4 is integrated and conclusively tested; two exclusive bounded Checkpoint 5 documentation/evidence lanes are active from the frozen Checkpoint 4 evidence commit
+- Checkpoint: 6 — release freeze, rehearsal and handoff
+- Status: Checkpoints 0–6 are integrated and verified for the bounded local/no-key synthetic-demo release candidate; named external and human evidence classes remain open
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
-- Current integration head: `8589723`
+- Rehearsed application/package candidate: `99acb5b` before Checkpoint 6 evidence-led documentation updates
 - Checkpoint 2 worker launch base: `aae76d3a6fce26ee7ef8b8024839556f3c5570ad`
 - Tested Checkpoint 2 integration commit: `48ab92e` on `main`
 - Checkpoint 3 worker launch base: `48ab92ebad2137390f01ef9976ef8a7d1b248da5`
@@ -23,7 +24,7 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 - Checkpoint 4 Wave B launch base: `a2f548250c2f179f1f799c8b23ae3bf2be9550cf`
 - Tested Checkpoint 4 integration commit: `c46f3f1` on `main`
 - Checkpoint 5 launch base: `8589723e511b65dc849ef36234e7f462966e14a5`
-- Next gate: review and integrate active Checkpoint 5 lanes 5A and 5B, audit every submission claim against implemented/tested evidence, then run the complete Checkpoint 5 exit gate
+- Next gate: no autonomous implementation checkpoint remains; the next promotion decision depends on the named hosted, physical-device, live-provider, advisory, clinical-review, assistive-technology, Aisha and soak gates below
 - Physical iPhone gate: `pending-physical` (does not block automated implementation)
 - Live ElevenLabs gate: `pending-credentials` (text/disabled provider required)
 - Live VitalLens gate: `pending-explicit-opt-in-and-credentials` (fixture adapter required)
@@ -32,23 +33,23 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 
 ## Checkpoint lane ledger
 
-| Checkpoint | Lane                       | Ownership                                                                                                                                          | Task/thread                            | Base      | Model/reasoning       | Status                                                         | Integrated commit |
-| ---------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | --------- | --------------------- | -------------------------------------------------------------- | ----------------- |
-| 1          | 1A data/domain/persistence | `packages/domain/**`, `packages/persistence/**`, `packages/clinical-records/**`, `data/fhir/**`, `infra/db/**`                                     | `019f6d6f-b784-7882-af20-ac4d14cce6d4` | `7374d22` | legacy/pre-policy     | integrated; lane and real PostgreSQL gate passed               | `148a3a3`         |
-| 1          | 1B protocol/planner        | `packages/protocols/**`, `packages/planner/**`, `data/protocols/**`                                                                                | `019f6d6f-b784-7882-af20-ac6a1e5afcef` | `7374d22` | legacy/pre-policy     | integrated; 39 lane tests plus full integration gate passed    | `ad419fe`         |
-| 1          | 1C local finger PPG        | `packages/assessments/providers/finger-ppg/**`                                                                                                     | `019f6d6f-b969-7180-9181-200678a737e5` | `7374d22` | legacy/pre-policy     | integrated; 22 lane tests plus full integration gate passed    | `7b7c7af`         |
-| 1          | 1D VitalLens               | `packages/assessments/providers/vitallens/**`                                                                                                      | `019f6d80-70a5-7733-89d1-44804892cb29` | `ad419fe` | legacy/pre-policy     | integrated; 27 lane tests plus full integration gate passed    | `e7873a9`         |
-| 2          | 2A voice/text              | `packages/voice/**`, `apps/web/src/features/voice/**`                                                                                              | `019f6d9e-969b-7330-a675-e8ce51f58962` | `aae76d3` | `gpt-5.6-sol`/`xhigh` | integrated; text/no-key and provider failure paths passed      | `1e4428e`         |
-| 2          | 2B API/actions/audit       | `packages/actions/**`, `packages/audit/**`, `packages/api-client/**`, `apps/web/src/app/api/**`, `apps/web/src/server/**`                          | `019f6d9e-96a0-7dd3-867e-287eb53ec786` | `aae76d3` | `gpt-5.6-sol`/`xhigh` | integrated; action/API/audit safety suite passed               | `fcab99d`         |
-| 2          | 2C visual system           | `packages/ui/**`, `apps/web/src/app/globals.css`, `apps/web/src/app/styleguide/**`                                                                 | `019f6d9e-9789-71a3-bc30-3c7f1fbfa11f` | `aae76d3` | `gpt-5.6-sol`/`high`  | integrated after stagnation recovery; browser gate passed      | `bd9b85a`         |
-| 3          | 3A patient experience      | `apps/web/src/app/(patient)/**`, `apps/web/src/features/patient/**`, `apps/web/src/features/workflows/**`, `apps/web/src/features/shared-round/**` | `019f6ddb-9db9-7ce1-b44e-4e25ecee4813` | `48ab92e` | `gpt-5.6-sol`/`xhigh` | integrated; clean allowlisted handoff and browser evidence     | `20b4206`         |
-| 3          | 3B clinician cockpit       | `apps/web/src/app/(clinician)/**`, `apps/web/src/features/clinician/**`                                                                            | `019f6ddb-9de0-7033-9aad-8adc2f37b5ba` | `48ab92e` | `gpt-5.6-sol`/`xhigh` | integrated; clean allowlisted handoff and browser evidence     | `57c29c7`         |
-| 4          | 4A patient E2E             | `tests/e2e/patient/**`, `tests/accessibility/patient/**`, `tests/performance/patient/**`                                                           | `019f6e2e-9abf-70b1-ad74-b44b026b1239` | `566ab81` | `gpt-5.6-sol`/`high`  | integrated; patient defect fixed centrally; all gates pass     | `1d56b70`         |
-| 4          | 4B clinician E2E           | `tests/e2e/clinician/**`, `tests/accessibility/clinician/**`, `tests/performance/clinician/**`                                                     | `019f6e2e-9abf-70b1-ad74-b4261f8909e2` | `566ab81` | `gpt-5.6-sol`/`high`  | integrated; functional, accessibility and performance pass     | `7e23c96`         |
-| 4          | 4C contract/integration    | `tests/unit/**`, `tests/contract/**`, `tests/integration/**`                                                                                       | `019f6e2e-9f5d-7011-a580-8caecf40b082` | `566ab81` | `gpt-5.6-sol`/`xhigh` | integrated; audit-payload defect fixed; 27/27 tests pass       | `996ecde`         |
-| 4          | 4D operations/security     | `.github/**`, `infra/deploy/**`, `docs/operations/**`, `docs/security/**`                                                                          | `019f6e4c-0272-7342-a18b-2c9caa9d6dbc` | `a2f5482` | `gpt-5.6-sol`/`xhigh` | integrated; central hosted controls reconciled; all gates pass | `6cf0d7c`         |
-| 5          | 5A submission/claim audit  | `docs/submission/**`                                                                                                                               | `019f6e6f-5e60-7f72-ad87-6b747ff3b469` | `8589723` | `gpt-5.6-sol`/`high`  | active; worktree `4f78/eMed`                                   | pending           |
-| 5          | 5B QA/recovery evidence    | `docs/qa/**`, `public/demo-backup/**`                                                                                                              | `019f6e6f-5e60-7f72-ad87-6b95e89e8e58` | `8589723` | `gpt-5.6-sol`/`high`  | active; worktree `37c1/eMed`                                   | pending           |
+| Checkpoint | Lane                       | Ownership                                                                                                                                          | Task/thread                            | Base      | Model/reasoning       | Status                                                            | Integrated commit |
+| ---------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | --------- | --------------------- | ----------------------------------------------------------------- | ----------------- |
+| 1          | 1A data/domain/persistence | `packages/domain/**`, `packages/persistence/**`, `packages/clinical-records/**`, `data/fhir/**`, `infra/db/**`                                     | `019f6d6f-b784-7882-af20-ac4d14cce6d4` | `7374d22` | legacy/pre-policy     | integrated; lane and real PostgreSQL gate passed                  | `148a3a3`         |
+| 1          | 1B protocol/planner        | `packages/protocols/**`, `packages/planner/**`, `data/protocols/**`                                                                                | `019f6d6f-b784-7882-af20-ac6a1e5afcef` | `7374d22` | legacy/pre-policy     | integrated; 39 lane tests plus full integration gate passed       | `ad419fe`         |
+| 1          | 1C local finger PPG        | `packages/assessments/providers/finger-ppg/**`                                                                                                     | `019f6d6f-b969-7180-9181-200678a737e5` | `7374d22` | legacy/pre-policy     | integrated; 22 lane tests plus full integration gate passed       | `7b7c7af`         |
+| 1          | 1D VitalLens               | `packages/assessments/providers/vitallens/**`                                                                                                      | `019f6d80-70a5-7733-89d1-44804892cb29` | `ad419fe` | legacy/pre-policy     | integrated; 27 lane tests plus full integration gate passed       | `e7873a9`         |
+| 2          | 2A voice/text              | `packages/voice/**`, `apps/web/src/features/voice/**`                                                                                              | `019f6d9e-969b-7330-a675-e8ce51f58962` | `aae76d3` | `gpt-5.6-sol`/`xhigh` | integrated; text/no-key and provider failure paths passed         | `1e4428e`         |
+| 2          | 2B API/actions/audit       | `packages/actions/**`, `packages/audit/**`, `packages/api-client/**`, `apps/web/src/app/api/**`, `apps/web/src/server/**`                          | `019f6d9e-96a0-7dd3-867e-287eb53ec786` | `aae76d3` | `gpt-5.6-sol`/`xhigh` | integrated; action/API/audit safety suite passed                  | `fcab99d`         |
+| 2          | 2C visual system           | `packages/ui/**`, `apps/web/src/app/globals.css`, `apps/web/src/app/styleguide/**`                                                                 | `019f6d9e-9789-71a3-bc30-3c7f1fbfa11f` | `aae76d3` | `gpt-5.6-sol`/`high`  | integrated after stagnation recovery; browser gate passed         | `bd9b85a`         |
+| 3          | 3A patient experience      | `apps/web/src/app/(patient)/**`, `apps/web/src/features/patient/**`, `apps/web/src/features/workflows/**`, `apps/web/src/features/shared-round/**` | `019f6ddb-9db9-7ce1-b44e-4e25ecee4813` | `48ab92e` | `gpt-5.6-sol`/`xhigh` | integrated; clean allowlisted handoff and browser evidence        | `20b4206`         |
+| 3          | 3B clinician cockpit       | `apps/web/src/app/(clinician)/**`, `apps/web/src/features/clinician/**`                                                                            | `019f6ddb-9de0-7033-9aad-8adc2f37b5ba` | `48ab92e` | `gpt-5.6-sol`/`xhigh` | integrated; clean allowlisted handoff and browser evidence        | `57c29c7`         |
+| 4          | 4A patient E2E             | `tests/e2e/patient/**`, `tests/accessibility/patient/**`, `tests/performance/patient/**`                                                           | `019f6e2e-9abf-70b1-ad74-b44b026b1239` | `566ab81` | `gpt-5.6-sol`/`high`  | integrated; patient defect fixed centrally; all gates pass        | `1d56b70`         |
+| 4          | 4B clinician E2E           | `tests/e2e/clinician/**`, `tests/accessibility/clinician/**`, `tests/performance/clinician/**`                                                     | `019f6e2e-9abf-70b1-ad74-b4261f8909e2` | `566ab81` | `gpt-5.6-sol`/`high`  | integrated; functional, accessibility and performance pass        | `7e23c96`         |
+| 4          | 4C contract/integration    | `tests/unit/**`, `tests/contract/**`, `tests/integration/**`                                                                                       | `019f6e2e-9f5d-7011-a580-8caecf40b082` | `566ab81` | `gpt-5.6-sol`/`xhigh` | integrated; audit-payload defect fixed; 27/27 tests pass          | `996ecde`         |
+| 4          | 4D operations/security     | `.github/**`, `infra/deploy/**`, `docs/operations/**`, `docs/security/**`                                                                          | `019f6e4c-0272-7342-a18b-2c9caa9d6dbc` | `a2f5482` | `gpt-5.6-sol`/`xhigh` | integrated; central hosted controls reconciled; all gates pass    | `6cf0d7c`         |
+| 5          | 5A submission/claim audit  | `docs/submission/**`                                                                                                                               | `019f6e6f-5e60-7f72-ad87-6b747ff3b469` | `8589723` | `gpt-5.6-sol`/`high`  | integrated; worker `03ba86f`, claims and links reviewed           | `9f2c485`         |
+| 5          | 5B QA/recovery evidence    | `docs/qa/**`, `public/demo-backup/**`                                                                                                              | `019f6e6f-5e60-7f72-ad87-6b95e89e8e58` | `8589723` | `gpt-5.6-sol`/`high`  | integrated; worker `ef8184d`, 33 requirements/17 scenarios mapped | `99acb5b`         |
 
 ## Integration invariants
 
@@ -63,9 +64,9 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 
 ## Blockers and decisions
 
-- None blocking local implementation.
+- None blocking the bounded local/no-key synthetic demo or final repository handoff.
 - Hosted deployment discovery found an authenticated Vercel CLI account with zero existing projects and no Neon credential/CLI/session. Chrome reached Neon sign-in; selecting GitHub would share account identity and create/sign into an external account, so it remains an explicit human authorization gate. No half-configured project or insecure in-memory hosted deployment was created.
-- In-app Browser initialization failed in the current runtime before page control; the CP0 user-perspective fallback ran in Playwright Chromium and iPhone-sized WebKit with axe. Retry the in-app Browser at later UI checkpoints and do not mislabel this as physical Safari evidence.
+- In-app Browser initialization failed in the current runtime before page control; Playwright remained accurately labelled. Checkpoint 6 separately used the installed Chrome extension for real user movements against the PostgreSQL-backed local candidate. Neither result is physical Safari/iPhone evidence.
 - Release provider is not selected. Local PPG is the no-key default; both adapters are implemented and compared later.
 - ElevenLabs is the hosted voice primary. OpenAI Realtime, LiveKit, browser Web Speech, voice biomarkers, respiratory rate, HRV, OCR, wearables, and live EHR integrations remain out of the hackathon path.
 - Neutral action wording: `programme review requested`; any same-day window is visibly `demo-only` until clinical review.
@@ -154,3 +155,21 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 - A fresh disposable PostgreSQL 16 cluster on isolated port 55439 applied the migration from empty state and passed all 14 persistence tests. The production-built protected demo then seeded and checked all three exact scenarios as `postgres`; patient access, clinician access, wrong-code denial, secure cookie attributes, 390 px overflow, zero serious/critical axe findings, and zero console/page errors all passed before the server and database were stopped cleanly.
 - CI workflow structure, checked-in JSON/YAML/Compose configuration, local links, immutable action SHAs, client-bundle secret markers, and Git whitespace remain checked. A current dependency advisory still requires the repository owner's explicit privacy approval through the manual workflow; no bypass or unapproved graph upload occurred.
 - Hosted Vercel/Neon, live ElevenLabs/VitalLens, and physical iPhone/Safari evidence remain external human/account gates. The application is deploy-ready in its synthetic profile, but no external deployment or physical/provider claim is made by Checkpoint 4.
+
+## Checkpoint 5 submission and evidence integration
+
+- Exactly two bounded documentation/evidence worktrees launched from frozen Checkpoint 4 evidence commit `8589723`, both with explicit `gpt-5.6-sol`/`high` and disjoint allowlists. No application, root configuration, lockfile, planning, or orchestration path was worker-owned.
+- Submission worker `03ba86f` delivered eight judge-ready artifacts: source/evidence index, copy-ready narrative, primary/recovery scripts, architecture, judging critique, claim audit, media plan, and GitHub/gallery story. Integration found and corrected one nested Markdown fence defect before accepting merge `9f2c485`.
+- QA worker `ef8184d` delivered eight evidence documents plus two visibly labelled static recovery assets. It maps all 33 requirement IDs and all 17 planned scenario rows, records exact Checkpoint 4 provenance, and keeps Aisha, hosted, physical, provider, advisory, clinical-review, assistive-technology, and soak gaps explicit. It integrated through `99acb5b`.
+- Relative repository links, Markdown fences, Prettier, Git whitespace, allowlist ownership, recovery labels, asset SHA-256 values, and credential/private-path patterns were reviewed. Documented local-only PostgreSQL example credentials remain explicitly demo defaults, not secrets.
+- The full post-merge gate passed: repository formatting; 13/13 package lint, typecheck, test, and build; 100/100 web tests; 13 unit, 7 contract, 7 integration, and five demo tests; six root browser cases; three patient and three clinician journeys; both accessibility suites; and both performance suites. The first sandboxed browser invocation could not bind port 3000 (`EPERM`); the identical approved localhost rerun passed completely.
+
+## Checkpoint 6 release freeze and user rehearsal evidence
+
+- A fresh disposable PostgreSQL 16 cluster on port 55440 accepted the migration and passed 14/14 persistence tests. The local no-key server returned `{"status":"ready"}` and `demo:seed`/`demo:check` reported all three exact scenarios as `postgres`.
+- Installed Google Chrome 150.0.7871.125 on macOS 26.5.1 build 25F80 completed three consecutive user-driven flows in the required normal/recovery/normal order. Exact-scope reset/check passed before each run in about five seconds. Story times were 1:20, 0:39, and 0:19—inside the 3:00/3:30 budgets.
+- Every run used structured text with external voice/model providers disabled. The installed desktop browser reported the camera path unsupported; HomeRounds visibly created no measurement, did not switch providers, created exactly one persisted synthetic task, accepted note/acknowledge/contact/complete mutations with audit references, and projected clinician completion back to the patient.
+- A separate installed-Chrome red-flag journey confirmed that the deterministic hard stop appears before any assessment request or camera control and ends with the generic no-diagnosis/no-service-contact acknowledgement.
+- The canonical root recovery storyboard/cue card now have byte-identical mirrors under `apps/web/public/demo-backup/**`. Both returned HTTP 200 from the running app, the storyboard exposed seven semantic headings and persistent recorded-synthetic/not-live boundaries in installed Chrome, and the production web build reran uncached successfully after publication.
+- The final exact-scope reset/check restored all three invited rounds with an empty clinician queue and `postgres` runtime. `W-07` is closed only for this local/no-key candidate evidence class.
+- Hosted Vercel/Neon remains pending explicit Neon account-login authorization; physical iPhone/Safari, live ElevenLabs/VitalLens, current external advisory, qualified clinical review, Aisha, manual assistive technology, and soak evidence remain named open gates. No local evidence is promoted into those classes.

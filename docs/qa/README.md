@@ -23,7 +23,7 @@ The QA files and recovery assets are packaging layered on top of that immutable 
 - [Desktop, responsive, device, browser, and provider matrix](./environment-matrix.md) — explicit separation of Chromium, Playwright WebKit layout, production-built localhost, physical Safari, hosted, and live-provider evidence.
 - [Release checklist and waiver/risk register](./release-checklist-and-waivers.md) — go/no-go controls, owners, closure actions, and the bounded no-key demo decision.
 - [Demo operator and recovery runbook](./demo-operator-runbook.md) — seed/reset/check, primary and recovery stories, access/readiness failure, no-key fallback, and rollback cues.
-- [Three-run rehearsal sheet](./three-run-rehearsal.md) — deliberately unfilled normal/recovery/normal record with time boxes and pass criteria.
+- [Three-run rehearsal sheet](./three-run-rehearsal.md) — completed normal/recovery/normal installed-Chrome record with time boxes, pass criteria, and evidence boundaries.
 - [Evidence and asset manifest](./evidence-asset-manifest.md) — durable files, asset labels, and prospective capture checklist.
 - [Static recovery storyboard](../../public/demo-backup/recovery-storyboard.html) and [operator cue card](../../public/demo-backup/operator-cue-card.txt) — clearly labelled synthetic/recorded recovery only.
 
@@ -37,7 +37,7 @@ The exact base supports these narrow claims:
 - the complete text/no-key path, quality abstention, red-flag stop, clinician loop, and labelled recorded-synthetic recovery are implemented and automated;
 - the in-app Browser plugin did not initialize, so Playwright fallback evidence remains labelled as Playwright.
 
-The base does **not** support a hosted Vercel/Neon claim, physical iPhone/Safari camera or sensor claim, live ElevenLabs or VitalLens claim, current external dependency-advisory claim, clinical-review claim, Aisha walkthrough claim, or three-consecutive-rehearsal claim. Those are open in the [waiver/risk register](./release-checklist-and-waivers.md).
+The Checkpoint 4 application base does **not** support a hosted Vercel/Neon claim, physical iPhone/Safari camera or sensor claim, live ElevenLabs or VitalLens claim, current external dependency-advisory claim, clinical-review claim, or Aisha walkthrough claim. Checkpoint 6 adds a three-consecutive-rehearsal pass for the exact local/no-key candidate only. External gaps remain open in the [waiver/risk register](./release-checklist-and-waivers.md).
 
 ## No-key release position
 

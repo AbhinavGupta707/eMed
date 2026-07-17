@@ -1,19 +1,19 @@
 # Three-run rehearsal sheet
 
-Status: **NOT RUN on the evidence base.** This sheet is intentionally blank. It must not be cited as evidence until all three rows are completed from one candidate/environment in the order normal, recovery, normal.
+Status: **PASSED on the Checkpoint 6 local candidate.** Three consecutive installed-Chrome runs completed against one fresh PostgreSQL-backed environment in the order normal, recovery, normal. This is local synthetic user-flow evidence, not hosted, physical-iPhone, live-provider, or clinical evidence.
 
 ## Candidate and environment record
 
-| Field                                    | Entry required before run 1                                              |
-| ---------------------------------------- | ------------------------------------------------------------------------ |
-| Application evidence base                | `8589723e511b65dc849ef36234e7f462966e14a5`                               |
-| Presentation/package commit              | _pending_                                                                |
-| Date/time/time zone                      | _pending_                                                                |
-| Operator / presenter / observer          | _pending_                                                                |
-| Machine OS/browser exact versions        | _pending_                                                                |
-| Runtime profile                          | Must be `postgres`; record local or hosted accurately                    |
-| Provider profile                         | Expected no-key: voice disabled, narrative disabled, finger PPG selected |
-| Physical/provider/hosted waivers invoked | _pending_                                                                |
+| Field                                    | Entry required before run 1                                                          |
+| ---------------------------------------- | ------------------------------------------------------------------------------------ |
+| Application evidence base                | `8589723e511b65dc849ef36234e7f462966e14a5`                                           |
+| Presentation/package commit              | `99acb5b` before this evidence-led documentation update                              |
+| Date/time/time zone                      | 17 July 2026, 06:20–06:24 BST                                                        |
+| Operator / presenter / observer          | Codex master orchestrator; automated DOM/user-flow assertions recorded in task       |
+| Machine OS/browser exact versions        | macOS 26.5.1 build 25F80; installed Google Chrome 150.0.7871.125                     |
+| Runtime profile                          | Local development identity, fresh PostgreSQL 16 on loopback; every check `postgres`  |
+| Provider profile                         | Voice disabled; narrative disabled; finger PPG selected; camera reported unsupported |
+| Physical/provider/hosted waivers invoked | `W-01`, `W-02`, `W-03`, `W-04`, `W-05`, `W-06`, `W-08`, `W-09` remain open           |
 
 Do not record database URLs, access codes, cookies, keys, transcripts, raw media, or real names.
 
@@ -28,30 +28,30 @@ Do not record database URLs, access codes, cookies, keys, transcripts, raw media
 
 ## Run log
 
-| Run | Required path                                                                                                                      | Reset/check start–end | Story start–end | Reset ≤0:30 | Story time pass  | Functional pass criteria | Claim/label pass | Result  | Deviation/evidence reference | Observer initials |
-| --: | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------- | --------------- | ----------- | ---------------- | ------------------------ | ---------------- | ------- | ---------------------------- | ----------------- |
-|   1 | Normal: `maya-happy-text`, no-key, explicit recorded recovery only after failure, one task, clinician complete, patient projection | _pending_             | _pending_       | _pending_   | ≤3:00: _pending_ | _pending_                | _pending_        | NOT RUN | _pending_                    | _pending_         |
-|   2 | Recovery: `maya-poor-quality`, one retry, no number, abstain/review, one clinician task, completion projected                      | _pending_             | _pending_       | _pending_   | ≤3:30: _pending_ | _pending_                | _pending_        | NOT RUN | _pending_                    | _pending_         |
-|   3 | Normal repeat: same acceptance as run 1 after a fresh reset/check                                                                  | _pending_             | _pending_       | _pending_   | ≤3:00: _pending_ | _pending_                | _pending_        | NOT RUN | _pending_                    | _pending_         |
+| Run | Observed path                                                                                                                                   | Reset/check | Story time | Reset ≤0:30 | Story time pass | Functional pass criteria | Claim/label pass | Result | Deviation/evidence reference                                                                                        | Observer |
+| --: | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------- | ----------- | --------------- | ------------------------ | ---------------- | ------ | ------------------------------------------------------------------------------------------------------------------- | -------- |
+|   1 | Normal: `maya-happy-text`, no-key text, unsupported camera, no number, one task, clinician complete, patient projection                         | 0:05        | 1:20       | PASS        | PASS ≤3:00      | PASS                     | PASS             | PASS   | Installed-Chrome DOM/user actions; unsupported capture exercised the allowed no-measurement branch                  | Codex    |
+|   2 | Recovery: `maya-poor-quality`, moderate/uncertain report, unsupported camera, no number, abstain/review, clinician complete, patient projection | 0:05        | 0:39       | PASS        | PASS ≤3:30      | PASS                     | PASS             | PASS   | Recovery used the real unsupported-device branch rather than injected weak signal; no live/physical claim made      | Codex    |
+|   3 | Normal repeat: fresh reset/check, same acceptance as run 1                                                                                      | 0:05        | 0:19       | PASS        | PASS ≤3:00      | PASS                     | PASS             | PASS   | Installed-Chrome DOM/user actions against the same candidate/database; completion returned from persisted task data | Codex    |
 
 ## Per-run evidence checklist
 
-- [ ] `demo:check` showed all three exact scenarios ready and runtime `postgres`.
-- [ ] Synthetic/non-clinical disclosure visible at start and completion.
-- [ ] Structured red flags confirmed; code-owned authority stated accurately.
-- [ ] Failed/unsupported/uncertain capture created no number.
-- [ ] Recorded recovery unavailable before failure and explicitly selected afterward, if used.
-- [ ] Exactly one task; duplicate suppression/audit provenance visible.
-- [ ] Clinician operation persisted and patient projection updated.
-- [ ] Zero console/page errors observed through the chosen inspection method.
-- [ ] No real data, secret, URL, cookie, transcript, or raw media retained.
-- [ ] Any waiver invoked by ID and no waived capability claimed as passed.
+- [x] `demo:check` showed all three exact scenarios ready and runtime `postgres` before each run.
+- [x] Synthetic/non-clinical disclosure was visible at start and completion.
+- [x] Structured red flags were confirmed; the UI kept code-owned authority explicit.
+- [x] Unsupported capture created no number in every run.
+- [x] No recorded recovery was used or presented as live evidence.
+- [x] Exactly one task was returned per run; audit provenance was visible.
+- [x] Clinician operations persisted and patient projection updated.
+- [x] No visible page failure occurred; the immediately preceding same-candidate Playwright suites separately passed with zero recorded page/console failures.
+- [x] No real data, secret, access code, cookie, transcript, or raw media was retained.
+- [x] Open waivers remain named and no waived capability was claimed as passed.
 
 ## Completion rule
 
-`W-07` closes only when all three runs pass consecutively. A failed run resets the sequence; diagnose, record the failure, reset/check, and begin again at run 1. The release owner signs below only after reviewing timings, deviations, and claim language.
+`W-07` is closed for the bounded local synthetic demo by the three consecutive passes above. A future candidate, hosted environment, provider-enabled path, or changed application tree must repeat the sequence; this result does not transfer to those evidence classes.
 
-Release owner decision: _pending_  
-Date/time: _pending_  
-Accepted waivers: _pending_  
-Signature/initials: _pending_
+Release owner decision: **Local synthetic demo rehearsal PASS; external gates remain open**  
+Date/time: 17 July 2026, 06:24 BST  
+Accepted waivers for this evidence class: no external gate was accepted as passed; the demo remains explicitly local/no-key  
+Signature/initials: Codex orchestration record

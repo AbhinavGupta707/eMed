@@ -1,6 +1,6 @@
 # GitHub README and project-gallery story
 
-This file contains copy to adapt into the repository README or a project gallery. It does not authorize editing the root README in this lane. Keep repository/product/video URLs as placeholders until verified.
+This file contains copy to adapt into the repository README or a project gallery. It does not authorize editing the root README in this lane. The public repository URL is verified; keep product and video URLs as placeholders until their separate evidence gates pass.
 
 ## Copy-ready GitHub README story
 

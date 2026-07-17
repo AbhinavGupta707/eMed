@@ -202,14 +202,15 @@ Require `demo:check` to report all three scenarios ready and the runtime profile
 
 ## Submission links and assets checklist
 
-| Item                    | Status                                                                             | Rule                                                                                            |
-| ----------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| Repository URL          | [https://github.com/AbhinavGupta707/eMed](https://github.com/AbhinavGupta707/eMed) | Public URL verified by the repository owner; verify the visible candidate SHA before publishing |
-| Product URL             | **Pending external gate**                                                          | Add only after exact Vercel/Neon deployment passes the hosted checklist                         |
-| Demo video              | **Pending recording**                                                              | Record from the exact candidate and use the script/shot list in this package                    |
-| Screenshots             | **Pending capture**                                                                | Use only approved shots from `MEDIA_PLAN.md`                                                    |
-| Candidate commit        | `8589723e511b65dc849ef36234e7f462966e14a5` for this package base                   | Update if the orchestrator integrates later checkpoints                                         |
-| Physical/provider proof | **Pending**                                                                        | Do not imply passing evidence through screenshots or tags                                       |
+| Item                        | Status                                                                             | Rule                                                                                            |
+| --------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Repository URL              | [https://github.com/AbhinavGupta707/eMed](https://github.com/AbhinavGupta707/eMed) | Public URL verified by the repository owner; verify the visible candidate SHA before publishing |
+| Product URL                 | **Pending external gate**                                                          | Add only after exact Vercel/Neon deployment passes the hosted checklist                         |
+| Demo video                  | **Pending recording**                                                              | Record from the exact candidate and use the script/shot list in this package                    |
+| Screenshots                 | **Pending capture**                                                                | Use only approved shots from `MEDIA_PLAN.md`                                                    |
+| Application evidence base   | `8589723e511b65dc849ef36234e7f462966e14a5`                                         | Immutable Checkpoint 4 code/runtime evidence base                                               |
+| Rehearsed package candidate | `99acb5b` before Checkpoint 6 evidence-only documentation updates                  | Installed-Chrome/PostgreSQL normal/recovery/normal and red-flag observation                     |
+| Physical/provider proof     | **Pending**                                                                        | Do not imply passing evidence through screenshots or tags                                       |
 
 ## Final copy check before paste
 

@@ -1,6 +1,6 @@
 # Checkpoint 8 — voice-led adaptive home round and local voice signal
 
-**Status:** shared contracts frozen; Wave A pending launch  
+**Status:** Wave A integrated and fully keyless-gated; Wave B pending launch  
 **Updated:** 17 July 2026  
 **Scope:** synthetic hackathon prototype only; not clinically validated and not for diagnosis
 

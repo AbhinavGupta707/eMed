@@ -1,6 +1,6 @@
 # HomeRounds orchestration state
 
-Updated: 17 July 2026 05:18 BST  
+Updated: 17 July 2026 05:20 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
 Goal: active  
 Integration branch: `main`
@@ -10,17 +10,18 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 ## Current checkpoint
 
 - Checkpoint: 4 — verification, hardening, operations and security
-- Status: Checkpoint 4 Wave A is integrated and conclusively tested; Wave B lane 4D is ready to launch from the exact tested Wave A integration commit
+- Status: Checkpoint 4 Wave A is integrated and conclusively tested; Wave B lane 4D is active from the frozen Wave A evidence commit
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
-- Current integration head: `3fd9697`
+- Current integration head: `a2f5482`
 - Checkpoint 2 worker launch base: `aae76d3a6fce26ee7ef8b8024839556f3c5570ad`
 - Tested Checkpoint 2 integration commit: `48ab92e` on `main`
 - Checkpoint 3 worker launch base: `48ab92ebad2137390f01ef9976ef8a7d1b248da5`
 - Tested Checkpoint 3 integration commit: `5534083` on `main`
 - Checkpoint 4 Wave A launch base: `566ab8175e16f184c2617c86792ef80c18873014`
 - Tested Checkpoint 4 Wave A integration commit: `3fd9697` on `main`
-- Next gate: launch 4D with explicit `gpt-5.6-sol`/`xhigh` from `3fd9697`; integrate and test its operations/security artifacts before Checkpoint 4 exit
+- Checkpoint 4 Wave B launch base: `a2f548250c2f179f1f799c8b23ae3bf2be9550cf`
+- Next gate: review and integrate active 4D, then test its operations/security artifacts and run the complete Checkpoint 4 exit gate
 - Physical iPhone gate: `pending-physical` (does not block automated implementation)
 - Live ElevenLabs gate: `pending-credentials` (text/disabled provider required)
 - Live VitalLens gate: `pending-explicit-opt-in-and-credentials` (fixture adapter required)
@@ -43,7 +44,7 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 | 4          | 4A patient E2E             | `tests/e2e/patient/**`, `tests/accessibility/patient/**`, `tests/performance/patient/**`                                                           | `019f6e2e-9abf-70b1-ad74-b44b026b1239` | `566ab81` | `gpt-5.6-sol`/`high`  | integrated; patient defect fixed centrally; all gates pass  | `1d56b70`         |
 | 4          | 4B clinician E2E           | `tests/e2e/clinician/**`, `tests/accessibility/clinician/**`, `tests/performance/clinician/**`                                                     | `019f6e2e-9abf-70b1-ad74-b4261f8909e2` | `566ab81` | `gpt-5.6-sol`/`high`  | integrated; functional, accessibility and performance pass  | `7e23c96`         |
 | 4          | 4C contract/integration    | `tests/unit/**`, `tests/contract/**`, `tests/integration/**`                                                                                       | `019f6e2e-9f5d-7011-a580-8caecf40b082` | `566ab81` | `gpt-5.6-sol`/`xhigh` | integrated; audit-payload defect fixed; 27/27 tests pass    | `996ecde`         |
-| 4          | 4D operations/security     | `.github/**`, `infra/deploy/**`, `docs/operations/**`, `docs/security/**`                                                                          | pending                                | `3fd9697` | `gpt-5.6-sol`/`xhigh` | ready to launch from tested Wave A base                     | pending           |
+| 4          | 4D operations/security     | `.github/**`, `infra/deploy/**`, `docs/operations/**`, `docs/security/**`                                                                          | `019f6e4c-0272-7342-a18b-2c9caa9d6dbc` | `a2f5482` | `gpt-5.6-sol`/`xhigh` | active; worktree `2152/eMed`                                | pending           |
 
 ## Integration invariants
 

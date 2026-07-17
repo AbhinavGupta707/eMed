@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { toFireworksCompatibleJsonSchema } from "./fireworks-schema";
 
 describe("Fireworks JSON Schema compatibility projection", () => {
-  it("uses the portable anyOf shape and removes provider-side refinements", () => {
+  it("flattens the root union while preserving provider-supported bounds", () => {
     const source = {
       oneOf: [
         {
@@ -26,8 +26,7 @@ describe("Fireworks JSON Schema compatibility projection", () => {
           required: ["decision", "id", "score"],
           additionalProperties: false
         }
-      ],
-      maxItems: 3
+      ]
     };
 
     const result = toFireworksCompatibleJsonSchema(source);
@@ -36,8 +35,13 @@ describe("Fireworks JSON Schema compatibility projection", () => {
       type: "object",
       properties: {
         decision: { type: "string", enum: ["select", "abstain"] },
-        id: { anyOf: [{ type: "string" }, { type: "null" }] },
-        score: { type: "number" }
+        id: {
+          anyOf: [
+            { type: "string", pattern: "^[a-z]+$", minLength: 1, maxLength: 80 },
+            { type: "null" }
+          ]
+        },
+        score: { type: "number", minimum: 0, maximum: 1 }
       },
       required: ["decision", "id", "score"],
       additionalProperties: false

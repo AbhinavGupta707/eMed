@@ -1,13 +1,6 @@
 const UNSUPPORTED_OR_NONESSENTIAL_SCHEMA_KEYWORDS = new Set([
   "format",
-  "maxItems",
-  "maxLength",
-  "maximum",
-  "minItems",
-  "minLength",
-  "minimum",
   "multipleOf",
-  "pattern",
   "uniqueItems"
 ]);
 

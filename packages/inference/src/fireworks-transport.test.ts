@@ -148,9 +148,9 @@ describe("allowlisted Fireworks model routing", () => {
     expect(serializedBody).toContain('"anyOf"');
     expect(serializedBody).toContain('"additionalProperties":false');
     expect(serializedBody).not.toContain('"oneOf"');
-    expect(serializedBody).not.toContain('"pattern"');
-    expect(serializedBody).not.toContain('"maxLength"');
-    expect(serializedBody).not.toContain('"maxItems"');
+    expect(serializedBody).toContain('"pattern"');
+    expect(serializedBody).toContain('"maxLength"');
+    expect(serializedBody).toContain('"maxItems"');
   });
 
   it("keeps Kimi K2.6 vision-only and rejects cross-task modalities", () => {

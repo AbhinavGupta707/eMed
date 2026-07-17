@@ -1,6 +1,6 @@
 # HomeRounds orchestration state
 
-Updated: 17 July 2026 03:28 BST  
+Updated: 17 July 2026 03:29 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
 Goal: active  
 Integration branch: `main`
@@ -13,7 +13,7 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 - Status: active; two exclusive `gpt-5.6-sol`/`xhigh` worktrees are implementing from the exact tested Checkpoint 2 commit while integration owns demo tooling
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
-- Current integration head: `48ab92e`
+- Current integration head: `ba2ad69`
 - Checkpoint 2 worker launch base: `aae76d3a6fce26ee7ef8b8024839556f3c5570ad`
 - Tested Checkpoint 2 integration commit: `48ab92e` on `main`
 - Checkpoint 3 worker launch base: `48ab92ebad2137390f01ef9976ef8a7d1b248da5`

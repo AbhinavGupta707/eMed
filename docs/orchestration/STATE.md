@@ -1,6 +1,6 @@
 # HomeRounds orchestration state
 
-Updated: 17 July 2026  
+Updated: 17 July 2026 03:13 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
 Goal: active  
 Integration branch: `main`
@@ -10,12 +10,13 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 ## Current checkpoint
 
 - Checkpoint: 2 — provider-neutral interaction, actions, API, and visual system
-- Status: three isolated lanes active from the tested shared base
+- Status: complete; all three lanes integrated and every automated checkpoint gate passed
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
-- Current integration head: `aae76d3`
+- Current integration head: `cbab07a`
 - Checkpoint 2 worker launch base: `aae76d3a6fce26ee7ef8b8024839556f3c5570ad`
-- Next gate: monitor without interfering, then review each clean worker commit for scope before sequential integration and full cross-lane promotion tests
+- Tested Checkpoint 2 integration commit: `cbab07a` on `main`
+- Next gate: push the recorded checkpoint, then launch Checkpoint 3 lanes 3A and 3B from exact commit `cbab07a` with `gpt-5.6-sol`/`xhigh`
 - Physical iPhone gate: `pending-physical` (does not block automated implementation)
 - Live ElevenLabs gate: `pending-credentials` (text/disabled provider required)
 - Live VitalLens gate: `pending-explicit-opt-in-and-credentials` (fixture adapter required)
@@ -30,9 +31,9 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 | 1          | 1B protocol/planner        | `packages/protocols/**`, `packages/planner/**`, `data/protocols/**`                                                       | `019f6d6f-b784-7882-af20-ac6a1e5afcef` | `7374d22` | legacy/pre-policy     | integrated; 39 lane tests plus full integration gate passed | `ad419fe`         |
 | 1          | 1C local finger PPG        | `packages/assessments/providers/finger-ppg/**`                                                                            | `019f6d6f-b969-7180-9181-200678a737e5` | `7374d22` | legacy/pre-policy     | integrated; 22 lane tests plus full integration gate passed | `7b7c7af`         |
 | 1          | 1D VitalLens               | `packages/assessments/providers/vitallens/**`                                                                             | `019f6d80-70a5-7733-89d1-44804892cb29` | `ad419fe` | legacy/pre-policy     | integrated; 27 lane tests plus full integration gate passed | `e7873a9`         |
-| 2          | 2A voice/text              | `packages/voice/**`, `apps/web/src/features/voice/**`                                                                     | `019f6d9e-969b-7330-a675-e8ce51f58962` | `aae76d3` | `gpt-5.6-sol`/`xhigh` | active                                                      | —                 |
-| 2          | 2B API/actions/audit       | `packages/actions/**`, `packages/audit/**`, `packages/api-client/**`, `apps/web/src/app/api/**`, `apps/web/src/server/**` | `019f6d9e-96a0-7dd3-867e-287eb53ec786` | `aae76d3` | `gpt-5.6-sol`/`xhigh` | active                                                      | —                 |
-| 2          | 2C visual system           | `packages/ui/**`, `apps/web/src/app/globals.css`, `apps/web/src/app/styleguide/**`                                        | `019f6d9e-9789-71a3-bc30-3c7f1fbfa11f` | `aae76d3` | `gpt-5.6-sol`/`high`  | active                                                      | —                 |
+| 2          | 2A voice/text              | `packages/voice/**`, `apps/web/src/features/voice/**`                                                                     | `019f6d9e-969b-7330-a675-e8ce51f58962` | `aae76d3` | `gpt-5.6-sol`/`xhigh` | integrated; text/no-key and provider failure paths passed   | `1e4428e`         |
+| 2          | 2B API/actions/audit       | `packages/actions/**`, `packages/audit/**`, `packages/api-client/**`, `apps/web/src/app/api/**`, `apps/web/src/server/**` | `019f6d9e-96a0-7dd3-867e-287eb53ec786` | `aae76d3` | `gpt-5.6-sol`/`xhigh` | integrated; action/API/audit safety suite passed            | `fcab99d`         |
+| 2          | 2C visual system           | `packages/ui/**`, `apps/web/src/app/globals.css`, `apps/web/src/app/styleguide/**`                                        | `019f6d9e-9789-71a3-bc30-3c7f1fbfa11f` | `aae76d3` | `gpt-5.6-sol`/`high`  | integrated after stagnation recovery; browser gate passed   | `bd9b85a`         |
 
 ## Integration invariants
 
@@ -71,3 +72,14 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 
 - Integration pre-registered the five exclusive worker packages, internal workspace links, and exact `@elevenlabs/react` `1.10.1`; workers must not mutate manifests or the lockfile.
 - Frozen install, formatting, lint, strict TypeScript, all existing tests, production build, desktop Chromium and iPhone-sized WebKit E2E with accessibility checks, dependency audit, and Git whitespace checks pass before worker launch.
+
+## Checkpoint 2 integration evidence
+
+- Lane commits `dd9b002` (API/actions/audit), `d93f71c` (voice/text), and `07cdefb` (visual system) were reviewed and integrated in dependency order; lane ownership remained exclusive. The stalled 2C turn was interrupted through Codex handoff, its dirty worktree state was preserved on its lane branch, and the orchestrator completed only the bounded accessibility recovery before merge.
+- The server exposes strict snapshot, round, report, assessment, action, queue, ElevenLabs-session, and VitalLens-proxy routes with demo identity, correlation, origin, rate-limit, validation, redaction, and typed no-key behavior. Provider output can propose only; deterministic application code owns protocol and action authority.
+- Voice/text parity includes a provider-neutral state machine, ephemeral editable transcript confirmation, cancellation/reconnect/timeouts, a disabled/text provider, and a server credential fetcher that maps only a short-lived WebRTC token into the client contract. No provider API key or agent configuration enters the client bundle.
+- The visual system includes responsive shells, fields, buttons, cards, banners, status/quality/progress/evidence/task states, explicit recovery states, and keyboard-operable dialog/drawer primitives. The rendered style guide has one main landmark and unique navigation labels.
+- Repository-wide formatting, 13-package lint, strict TypeScript, all unit/integration suites, and the production build pass. The web package passes 44 tests; voice passes 20; UI passes 11; the assessment package remains at 57 tests.
+- Six Playwright tests pass across desktop Chromium and the iPhone-12/mobile project. The style guide passes zero-violation axe checks (including an open modal), transcript confirmation, Escape close, explicit drawer close, baseline disclosures, and horizontal-overflow checks at 320, 375, 414, 768, 1024, 1280, 1440, and 1920 px.
+- A disposable PostgreSQL 16 cluster accepted `0001_homerounds_foundations.sql` from empty state and passed all 13 live repository tests. `pnpm audit --audit-level moderate` reports no known vulnerabilities.
+- Client-bundle secret-name inspection, source credential scan, Git whitespace/ignored/large-file review, raw-media persistence scan, transcript-storage scan, and logging scan pass. Live provider calls, hosted Neon/Vercel, and physical iPhone evidence remain pending human/credential gates and were not represented as automated evidence.

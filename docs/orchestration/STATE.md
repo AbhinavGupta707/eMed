@@ -10,11 +10,11 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 ## Current checkpoint
 
 - Checkpoint: 1 — deterministic foundations
-- Status: lanes 1A and 1C active; lane 1B integrated; wave 2 lane 1D active
+- Status: lanes 1A and 1D active; lanes 1B and 1C integrated
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 code base: `b4b8091` on `main`
 - Worker launch base: `7374d22` on `main` (code base plus orchestration-state commit)
-- Current integration head: `ad419fe` (lane 1B merged and independently gated)
+- Current integration head: `7b7c7af` (lanes 1B and 1C merged and independently gated)
 - Next gate: review and integrate the next clean completed lane; do not promote Checkpoint 1 until all four lanes and cross-lane gates pass
 - Physical iPhone gate: `pending-physical` (does not block automated implementation)
 - Live ElevenLabs gate: `pending-credentials` (text/disabled provider required)
@@ -28,7 +28,7 @@ Sleep guard: macOS `caffeinate -dimsu` session `9002`, active until approximatel
 | ---------- | -------------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------- | --------- | ----------------------------------------------------------- | ----------------- |
 | 1          | 1A data/domain/persistence | `packages/domain/**`, `packages/persistence/**`, `packages/clinical-records/**`, `data/fhir/**`, `infra/db/**` | `019f6d6f-b784-7882-af20-ac4d14cce6d4` | `7374d22` | active                                                      | —                 |
 | 1          | 1B protocol/planner        | `packages/protocols/**`, `packages/planner/**`, `data/protocols/**`                                            | `019f6d6f-b784-7882-af20-ac6a1e5afcef` | `7374d22` | integrated; 39 lane tests plus full integration gate passed | `ad419fe`         |
-| 1          | 1C local finger PPG        | `packages/assessments/providers/finger-ppg/**`                                                                 | `019f6d6f-b969-7180-9181-200678a737e5` | `7374d22` | active                                                      | —                 |
+| 1          | 1C local finger PPG        | `packages/assessments/providers/finger-ppg/**`                                                                 | `019f6d6f-b969-7180-9181-200678a737e5` | `7374d22` | integrated; 22 lane tests plus full integration gate passed | `7b7c7af`         |
 | 1          | 1D VitalLens               | `packages/assessments/providers/vitallens/**`                                                                  | `019f6d80-70a5-7733-89d1-44804892cb29` | `ad419fe` | active wave 2                                               | —                 |
 
 ## Integration invariants

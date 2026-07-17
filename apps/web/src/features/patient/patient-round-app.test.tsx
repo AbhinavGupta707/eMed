@@ -464,5 +464,8 @@ describe("patient round app", () => {
     expect(screen.getByText("Camera permission was not granted")).toBeVisible();
     expect(screen.getByText(/No camera value was recorded/i)).toBeVisible();
     expect(screen.queryByText(/103 bpm/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue without a measurement" }));
+    await screen.findByRole("heading", { name: "Confirm the next demo step" });
   });
 });

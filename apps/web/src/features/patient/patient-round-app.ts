@@ -173,6 +173,10 @@ function liveRoundMapExperience(state: PatientWorkflowState): RoundMapExperience
   }
   const assessmentComplete = POST_ASSESSMENT_STATES.has(round.state);
   const assessmentCurrent = round.state === "capturing" || round.state === "capture_retry";
+  const assessmentCompletedWithoutMeasurement =
+    assessmentComplete &&
+    (state.protocolResult?.missingFactKeys.includes("pulse_bpm") === true ||
+      (state.quality !== null && state.quality.status !== "pass"));
   const modules = [
     {
       candidate: {
@@ -220,6 +224,14 @@ function liveRoundMapExperience(state: PatientWorkflowState): RoundMapExperience
             };
       }
       if (assessmentComplete) {
+        if (assessmentCompletedWithoutMeasurement) {
+          return {
+            candidate,
+            status: "completed_without_measurement" as const,
+            statusDetail:
+              "No numeric pulse measurement was accepted; the deterministic workflow continued to review."
+          };
+        }
         return {
           candidate,
           status: "completed" as const,

@@ -1,0 +1,30 @@
+{
+  "resourceType": "Bundle",
+  "id": "synthetic-maya-malformed-unknown-data",
+  "type": "collection",
+  "meta": {
+    "security": [{ "system": "https://homerounds.example/security", "code": "DEMO-SYNTHETIC" }]
+  },
+  "entry": [
+    { "resource": { "resourceType": "Patient", "id": "synthetic-maya" } },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "pulse-malformed-demo",
+        "subject": { "reference": "Patient/synthetic-maya" },
+        "status": "final",
+        "code": { "coding": [{ "code": "8867-4", "display": "Heart rate" }] },
+        "effectiveDateTime": "2026-07-16T10:00:00.000Z",
+        "valueQuantity": { "value": "not-a-number", "code": "/min" }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "QuestionnaireResponse",
+        "id": "unsupported-demo-resource",
+        "subject": { "reference": "Patient/synthetic-maya" },
+        "status": "completed"
+      }
+    }
+  ]
+}

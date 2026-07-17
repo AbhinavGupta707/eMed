@@ -1,0 +1,19 @@
+digraph G {
+  graph [rankdir=TB, bgcolor="white", pad="0.16", nodesep="0.28", ranksep="0.38", fontname="DejaVu Sans", splines=ortho];
+  node [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=10.5, color="#16324F", penwidth=1.2, fillcolor="#F6F9FB", margin="0.17,0.12", width=6.5];
+  edge [color="#507687", penwidth=1.35, arrowsize=0.62];
+
+  ui [label="EXPERIENCE LAYER\nPatient PWA: voice, video, assessments and plan\nClinician cockpit: queue, evidence, approval and handoff\nOptional caregiver view: consented support", fillcolor="#EEF5F8"];
+  api [label="API, IDENTITY AND SESSION LAYER\nAuthentication • consent • rate limits • WebRTC session tokens • BFF"];
+  core [label="HOMEROUNDS CORE\nRound orchestrator and state machine\nAdaptive assessment planner and registry\nClinical safety kernel: red flags, protocols and action allowlist\nOnePlan reconciler • care-action service", fillcolor="#EAF4F4"];
+  ai [label="AI AND SIGNAL SERVICES\nRealtime multimodal conversation and tool use\nSource-grounded record/document synthesis\nOn-device/server modules: MediaPipe, PPG, respiratory rate, speech features\nCapture-quality service rejects unusable inputs", fillcolor="#F0F5EA"];
+  data [label="DATA AND PROVENANCE\nFHIR R4 clinical store • operational Postgres • optional encrypted object store\nAppend-only audit: source, model, protocol version, quality, consent and action", fillcolor="#F3EFF5"];
+  ext [label="EXTERNAL ADAPTERS\nSMART on FHIR / EHR • HealthKit / Health Connect / Fitbit\neMed check-ins, tests and consults • messaging, calendar and video consult", fillcolor="#FBF4E7"];
+
+  ui -> api -> core;
+  core -> ai;
+  ai -> data;
+  core -> data;
+  ext -> data;
+  ext -> core;
+}

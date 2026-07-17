@@ -1,0 +1,54 @@
+{
+  "name": "homerounds",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Adaptive asynchronous clinical-round demo using synthetic data.",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.22.0 <27"
+  },
+  "pnpm": {
+    "overrides": {
+      "esbuild": "0.25.12",
+      "postcss": "8.5.10"
+    }
+  },
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:unit": "vitest run tests/unit",
+    "test:contract": "vitest run tests/contract",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "playwright test",
+    "test:e2e:patient": "playwright test --config tests/e2e/patient/playwright.config.ts",
+    "test:e2e:clinician": "playwright test --config tests/e2e/clinician/playwright.config.ts",
+    "test:a11y": "playwright test --config tests/accessibility/patient/playwright.config.ts && playwright test --config tests/accessibility/clinician/playwright.config.ts",
+    "test:performance": "playwright test --config tests/performance/patient/playwright.config.ts && playwright test --config tests/performance/clinician/playwright.config.ts",
+    "test:demo": "node --test scripts/demo/demo-tooling.test.mjs",
+    "demo:seed": "node scripts/demo/seed.mjs",
+    "demo:reset": "node scripts/demo/reset.mjs",
+    "demo:check": "node scripts/demo/check.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.12.1",
+    "@playwright/test": "1.61.1",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "@types/node": "22.20.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@vitest/coverage-v8": "4.1.10",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.2.10",
+    "jsdom": "29.1.1",
+    "prettier": "3.9.5",
+    "turbo": "2.10.5",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}

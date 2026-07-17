@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "dataClassification": "synthetic_demo",
+  "fixtureMode": "explicit_demo_only",
+  "triggerPrefix": "homerounds-demo:v1:",
+  "protocolId": "cardiometabolic_demo",
+  "defaultScenarioId": "maya-happy-text",
+  "scenarios": [
+    {
+      "id": "maya-happy-text",
+      "title": "Maya — happy text path",
+      "patientId": "synthetic-maya",
+      "patientLabel": "Maya (fictional demo patient)",
+      "triggerId": "homerounds-demo:v1:maya-happy-text",
+      "purpose": "Fictional cardiometabolic programme check-in — happy text path",
+      "burdenSeconds": 180,
+      "startPath": "/round",
+      "inputMode": "text",
+      "report": {
+        "weakness": "mild",
+        "palpitations": "absent",
+        "redFlags": {
+          "chestPain": "no",
+          "severeBreathlessness": "no",
+          "fainted": "no"
+        }
+      },
+      "capture": {
+        "mode": "recorded_valid_capture_replay",
+        "fixturePath": "/demo/recorded-valid-capture.v1.json",
+        "requiresExplicitSelection": true,
+        "permittedOnlyAfterLiveCaptureFailure": true
+      },
+      "expectedInitialState": "invited"
+    },
+    {
+      "id": "maya-poor-quality",
+      "title": "Maya — poor-quality capture",
+      "patientId": "synthetic-maya",
+      "patientLabel": "Maya (fictional demo patient)",
+      "triggerId": "homerounds-demo:v1:maya-poor-quality",
+      "purpose": "Fictional cardiometabolic programme check-in — capture quality recovery",
+      "burdenSeconds": 180,
+      "startPath": "/round",
+      "inputMode": "text",
+      "report": {
+        "weakness": "moderate",
+        "palpitations": "unknown",
+        "redFlags": {
+          "chestPain": "no",
+          "severeBreathlessness": "no",
+          "fainted": "no"
+        }
+      },
+      "capture": {
+        "mode": "quality_failure",
+        "qualityStatus": "retry",
+        "qualityReasons": ["weak_signal", "motion"],
+        "mustNotCreateMeasurement": true
+      },
+      "expectedInitialState": "invited"
+    },
+    {
+      "id": "maya-red-flag",
+      "title": "Maya — structured red-flag path",
+      "patientId": "synthetic-maya",
+      "patientLabel": "Maya (fictional demo patient)",
+      "triggerId": "homerounds-demo:v1:maya-red-flag",
+      "purpose": "Fictional cardiometabolic programme check-in — structured safety path",
+      "burdenSeconds": 180,
+      "startPath": "/round",
+      "inputMode": "text",
+      "report": {
+        "weakness": "severe",
+        "palpitations": "current",
+        "redFlags": {
+          "chestPain": "yes",
+          "severeBreathlessness": "no",
+          "fainted": "no"
+        }
+      },
+      "capture": {
+        "mode": "not_permitted_after_red_flag",
+        "mustNotStart": true
+      },
+      "expectedInitialState": "invited"
+    }
+  ]
+}

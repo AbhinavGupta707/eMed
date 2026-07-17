@@ -1,0 +1,33 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`deterministic protocol decision table > produces byte-for-byte equivalent golden decisions for a fixed input 1`] = `
+{
+  "evidence": [
+    {
+      "rationale": "The illustrative round completes with neutral programme review wording.",
+      "ruleId": "illustrative_normal_pulse",
+      "sourceIds": [
+        "demo_programme_policy_v1",
+      ],
+    },
+  ],
+  "kind": "result",
+  "result": {
+    "allowedActions": [
+      "create_programme_task",
+    ],
+    "explanationKey": "protocol.pulse.illustrative_normal",
+    "factIds": [
+      "13369361-df18-4b88-9b0f-3632b896a57f",
+      "dcfce5d5-b681-4593-81af-806256e9e352",
+    ],
+    "matchedRuleIds": [
+      "illustrative_normal_pulse",
+    ],
+    "missingFactKeys": [],
+    "outcome": "programme_review_requested",
+    "protocolId": "cardiometabolic_demo",
+    "protocolVersion": "1.0.0",
+  },
+}
+`;

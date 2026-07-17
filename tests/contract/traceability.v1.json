@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "lane": "4C",
+  "baseCommit": "566ab8175e16f184c2617c86792ef80c18873014",
+  "controls": [
+    {
+      "controlId": "4C-PROTOCOL-MUTATION",
+      "requirementIds": ["HR-A03", "HR-S01"],
+      "claim": "Closed protocol safety gates and critical thresholds are mutation-sensitive.",
+      "evidence": {
+        "testFile": "tests/unit/protocol-adversarial.test.ts",
+        "testName": "kills a critical high-threshold mutation with a boundary fixture"
+      }
+    },
+    {
+      "controlId": "4C-PROTOCOL-EDGE",
+      "requirementIds": ["HR-A03", "HR-S03"],
+      "claim": "Exact pulse edges are asserted and uncovered fractional inputs abstain.",
+      "evidence": {
+        "testFile": "tests/unit/protocol-adversarial.test.ts",
+        "testName": "asserts exact threshold edges and abstains in an uncovered fractional gap"
+      }
+    },
+    {
+      "controlId": "4C-PROTOCOL-REPLAY",
+      "requirementIds": ["HR-A03"],
+      "claim": "Fixed inputs replay to byte-identical decisions independent of rule ordering.",
+      "evidence": {
+        "testFile": "tests/unit/protocol-adversarial.test.ts",
+        "testName": "replays byte-identically despite rule and evidence ordering"
+      }
+    },
+    {
+      "controlId": "4C-API-STRICT",
+      "requirementIds": ["HR-A04", "HR-S02"],
+      "claim": "API requests and nested clinical objects reject unknown authority and media fields.",
+      "evidence": {
+        "testFile": "tests/contract/api-compatibility.test.ts",
+        "testName": "keeps requests and nested clinical objects strictly closed"
+      }
+    },
+    {
+      "controlId": "4C-API-BACKWARD-COMPATIBILITY",
+      "requirementIds": ["HR-P01", "HR-A02"],
+      "claim": "The current reader accepts the legacy round projection and current optional fields.",
+      "evidence": {
+        "testFile": "tests/contract/api-compatibility.test.ts",
+        "testName": "parses the legacy round response while accepting current optional projections"
+      }
+    },
+    {
+      "controlId": "4C-PATIENT-SCOPE",
+      "requirementIds": ["HR-S04", "HR-S05"],
+      "claim": "A patient session cannot create work outside its synthetic patient scope.",
+      "evidence": {
+        "testFile": "tests/integration/api-security-boundaries.test.ts",
+        "testName": "enforces patient scope before creating work"
+      }
+    },
+    {
+      "controlId": "4C-ROLE",
+      "requirementIds": ["HR-C01", "HR-S04"],
+      "claim": "Patient and clinician API roles remain separated.",
+      "evidence": {
+        "testFile": "tests/integration/api-security-boundaries.test.ts",
+        "testName": "enforces patient and clinician role separation"
+      }
+    },
+    {
+      "controlId": "4C-ORIGIN",
+      "requirementIds": ["HR-S04", "HR-S05"],
+      "claim": "Cross-origin mutations are rejected before repository work.",
+      "evidence": {
+        "testFile": "tests/integration/api-security-boundaries.test.ts",
+        "testName": "rejects foreign origins before mutation"
+      }
+    },
+    {
+      "controlId": "4C-RATE-LIMIT",
+      "requirementIds": ["HR-A05", "HR-S04"],
+      "claim": "Credential issuance has a stable per-session rate limit and retry signal.",
+      "evidence": {
+        "testFile": "tests/integration/api-security-boundaries.test.ts",
+        "testName": "rate-limits repeated voice credential requests per session"
+      }
+    },
+    {
+      "controlId": "4C-MODEL-AUTHORITY",
+      "requirementIds": ["HR-A04", "HR-S01", "HR-S02"],
+      "claim": "Model or transcript prose cannot determine urgency or execute an action.",
+      "evidence": {
+        "testFile": "tests/unit/model-voice-authority.test.ts",
+        "testName": "requires explicit structured controls even when transcript text demands an action"
+      }
+    },
+    {
+      "controlId": "4C-VOICE-AUTHORITY",
+      "requirementIds": ["HR-P02", "HR-A04", "HR-S01"],
+      "claim": "Voice provider proposals are presentation-only and reject authority fields.",
+      "evidence": {
+        "testFile": "tests/unit/model-voice-authority.test.ts",
+        "testName": "rejects provider attempts to set urgency, protocol outcome, or executable actions"
+      }
+    },
+    {
+      "controlId": "4C-QUALITY-RETRY",
+      "requirementIds": ["HR-P05", "HR-M02", "HR-S03"],
+      "claim": "A poor optical capture receives exactly one retry before deterministic abstention.",
+      "evidence": {
+        "testFile": "tests/integration/quality-action-resume.test.ts",
+        "testName": "enforces one quality retry, no measurement, idempotent action, optimistic completion, and resume projection"
+      }
+    },
+    {
+      "controlId": "4C-NO-MEASUREMENT-ON-FAILURE",
+      "requirementIds": ["HR-M02", "HR-S03"],
+      "claim": "Terminal capture-quality failure persists no measurement fact.",
+      "evidence": {
+        "testFile": "tests/integration/quality-action-resume.test.ts",
+        "testName": "enforces one quality retry, no measurement, idempotent action, optimistic completion, and resume projection"
+      }
+    },
+    {
+      "controlId": "4C-ACTION-IDEMPOTENCY",
+      "requirementIds": ["HR-C04", "HR-S04"],
+      "claim": "Concurrent action requests create one clinical task and auditable duplicate attempts.",
+      "evidence": {
+        "testFile": "tests/unit/action-repository-safety.test.ts",
+        "testName": "creates one task under adversarial concurrency and rejects a stale replay"
+      }
+    },
+    {
+      "controlId": "4C-OPTIMISTIC-CONCURRENCY",
+      "requirementIds": ["HR-A02", "HR-C03", "HR-C04"],
+      "claim": "Concurrent clinician completion permits one winner and rejects the stale writer.",
+      "evidence": {
+        "testFile": "tests/integration/quality-action-resume.test.ts",
+        "testName": "enforces one quality retry, no measurement, idempotent action, optimistic completion, and resume projection"
+      }
+    },
+    {
+      "controlId": "4C-TASK-RESUME-PROJECTION",
+      "requirementIds": ["HR-P01", "HR-C03"],
+      "claim": "Patient resume projects the persisted completed task status.",
+      "evidence": {
+        "testFile": "tests/integration/quality-action-resume.test.ts",
+        "testName": "enforces one quality retry, no measurement, idempotent action, optimistic completion, and resume projection"
+      }
+    },
+    {
+      "controlId": "4C-TRANSACTION-ROLLBACK",
+      "requirementIds": ["HR-C04", "HR-S04"],
+      "claim": "A final action transaction failure leaves no task, attempt, or audit fragment.",
+      "evidence": {
+        "testFile": "tests/unit/action-repository-safety.test.ts",
+        "testName": "rolls back task, attempt, and audit when the final transaction boundary fails"
+      }
+    },
+    {
+      "controlId": "4C-APPEND-ONLY-AUDIT",
+      "requirementIds": ["HR-C02", "HR-S04"],
+      "claim": "Audit records cannot be replaced through duplicate IDs or mutated returned objects.",
+      "evidence": {
+        "testFile": "tests/unit/action-repository-safety.test.ts",
+        "testName": "keeps audit records append-only and isolated from returned-object mutation"
+      }
+    },
+    {
+      "controlId": "4C-NO-SENSITIVE-PERSISTENCE",
+      "requirementIds": ["HR-A04", "HR-M03", "HR-S04"],
+      "claim": "Repository and workflow evidence reject or omit raw media, transcript, and secret material.",
+      "evidence": {
+        "testFile": "tests/unit/action-repository-safety.test.ts",
+        "testName": "rejects raw transcript, frame, and secret payloads at the persistence boundary"
+      }
+    },
+    {
+      "controlId": "4C-DEMO-RESET-SCOPE",
+      "requirementIds": ["HR-S05"],
+      "claim": "Synthetic reset SQL is transactionally limited to exact trigger and patient pairs.",
+      "evidence": {
+        "testFile": "tests/integration/demo-reset-scope.test.mjs",
+        "testName": "limits reset to exact trigger and patient pairs in dependency order"
+      }
+    }
+  ]
+}

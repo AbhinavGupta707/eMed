@@ -1,0 +1,36 @@
+{
+  "name": "@homerounds/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build --webpack",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@elevenlabs/react": "1.10.1",
+    "@homerounds/actions": "workspace:*",
+    "@homerounds/api-client": "workspace:*",
+    "@homerounds/assessments": "workspace:*",
+    "@homerounds/audit": "workspace:*",
+    "@homerounds/clinical-records": "workspace:*",
+    "@homerounds/contracts": "workspace:*",
+    "@homerounds/domain": "workspace:*",
+    "@homerounds/inference": "workspace:*",
+    "@homerounds/persistence": "workspace:*",
+    "@homerounds/planner": "workspace:*",
+    "@homerounds/protocols": "workspace:*",
+    "@homerounds/ui": "workspace:*",
+    "@homerounds/voice": "workspace:*",
+    "next": "16.2.10",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "tailwindcss": "4.3.3"
+  }
+}

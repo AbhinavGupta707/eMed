@@ -1,0 +1,12 @@
+digraph G {
+  graph [rankdir=TB, bgcolor="white", pad="0.15", nodesep="0.24", ranksep="0.32", fontname="DejaVu Sans", splines=ortho];
+  node [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=11, color="#16324F", penwidth=1.2, fillcolor="#F6F9FB", margin="0.16,0.11", width=6.2];
+  edge [color="#2A6F7F", penwidth=1.5, arrowsize=0.65];
+  a [label="0:00 — CONTRAST\nExisting dashboard looks fine, but the longitudinal model sees a change"];
+  b [label="0:25 — PROACTIVE ROUND\nHomeRounds starts a contextual voice check"];
+  c [label="0:55 — LIVE PHONE ASSESSMENT\nHeart-rate or breathing capture with a visible quality meter"];
+  d [label="1:35 — ADAPTIVE NEXT STEP\nPlanner chooses one follow-up that can change the action"];
+  e [label="2:05 — CONSEQUENCE\nBounded pathway selects same-day review and creates the task"];
+  f [label="2:35 — CLINICIAN HANDOFF\nEvidence, provenance, uncertainty and one-click response", fillcolor="#EAF4F4"];
+  a -> b -> c -> d -> e -> f;
+}

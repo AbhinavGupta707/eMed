@@ -1,0 +1,9 @@
+digraph G {
+  graph [rankdir=TB, bgcolor="white", pad="0.15", nodesep="0.30", ranksep="0.28", fontname="DejaVu Sans"];
+  node [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=11, color="#16324F", penwidth=1.2, margin="0.17,0.13", width=6.5];
+  edge [style=invis];
+  l1 [label="LEVEL 1 — PROTOTYPE-READY MEASUREMENT OR WORKFLOW\n• EHR/document synthesis with source links\n• Medication/package scan and reconciliation\n• Finger-camera heart rate with quality gate\n• Front-camera respiratory rate with quality gate\n• Guided movement, gait and tapping metrics\n• Manual or connected weight, BP and wearable import", fillcolor="#E6F4EA", color="#3D7A4A"];
+  l2 [label="LEVEL 2 — RESEARCH OR TREND-ONLY MODULE\n• Passive face-video pulse trends\n• Voice changes relative to personal baseline\n• Cough features or counts\n• Eye movement / nystagmus quantification\n• Wound measurement and serial comparison\n• Disease-specific movement classifiers", fillcolor="#FFF4E6", color="#A56A16"];
+  l3 [label="LEVEL 3 — EXPLICITLY OUT OF CLAIM\n• Camera-only blood pressure, oxygen saturation or glucose\n• Autonomous diagnosis or ‘all clear’ reassurance\n• Medication starting, stopping or dose changes\n• Emergency exclusion from a weak phone signal\n• Population model without subgroup validation", fillcolor="#FDECEC", color="#A23B3B"];
+  l1 -> l2 -> l3;
+}

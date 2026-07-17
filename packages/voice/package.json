@@ -1,0 +1,19 @@
+{
+  "name": "@homerounds/voice",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@homerounds/contracts": "workspace:*",
+    "zod": "4.4.3"
+  }
+}

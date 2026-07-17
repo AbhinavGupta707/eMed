@@ -1,0 +1,35 @@
+digraph G {
+  graph [rankdir=TB, bgcolor="transparent", pad="0.12", nodesep="0.28", ranksep="0.38", fontname="DejaVu Sans"];
+  node [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=10.5, color="#16324F", penwidth=1.2, fillcolor="#F6F9FB", margin="0.14,0.09"];
+  edge [color="#507687", penwidth=1.4, arrowsize=0.65, fontname="DejaVu Sans", fontsize=9.5];
+  start [label="New symptom, trend or check-in", fillcolor="#EAF4F4"];
+  red [label="Deterministic red-flag screen"];
+  urgent [label="Emergency instruction + urgent handoff\nNo generative delay", fillcolor="#FDECEC", color="#A23B3B"];
+  context [label="Build source-grounded patient snapshot"];
+  select [label="Select one eligible assessment module"];
+  quality [label="Did the capture pass quality checks?"];
+  retry [label="Coach and retry once, or use an alternative"];
+  protocol [label="Execute versioned pathway / rules"];
+  enough [label="Is there enough reliable information for a bounded action?"];
+  abstain [label="Abstain and request clinician review", fillcolor="#FFF4E6", color="#A56A16"];
+  action [label="Create allowed action\nself-care, follow-up, task or clinician review"];
+  approval [label="Does this action require human approval?"];
+  wait [label="Pause; clinician approves, edits or rejects"];
+  close [label="Explain outcome, document evidence, schedule follow-up", fillcolor="#EAF4F4"];
+
+  start -> red;
+  red -> urgent [label="yes"];
+  red -> context [label="no"];
+  context -> select -> quality;
+  quality -> retry [label="no"];
+  retry -> quality [label="retry"];
+  retry -> abstain [label="still poor"];
+  quality -> protocol [label="yes"];
+  protocol -> enough;
+  enough -> abstain [label="no"];
+  enough -> action [label="yes"];
+  action -> approval;
+  approval -> wait [label="yes"];
+  approval -> close [label="no"];
+  wait -> close [label="approved / modified"];
+}

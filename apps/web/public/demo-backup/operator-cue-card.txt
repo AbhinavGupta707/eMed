@@ -1,0 +1,25 @@
+RECORDED SYNTHETIC RECOVERY — NOT LIVE
+HomeRounds fictional hackathon prototype; not clinically validated and not a care channel.
+
+SAY FIRST
+“The live environment is unavailable, so this is the recorded synthetic recovery path.”
+
+SAFE ORDER
+1. Structured text works with voice and narrative providers disabled.
+2. Deterministic code owns red flags, quality, protocol, state, and allowed actions.
+3. A failed or uncertain capture creates no measurement.
+4. The recorded synthetic fixture is explicit, raw-media-free recovery only after failure.
+5. Poor quality abstains for review; one idempotent synthetic clinician task closes the loop.
+6. The red-flag scenario stops before camera access and contacts no real service.
+
+NEVER CLAIM
+- a live sensor or live optical result;
+- a live ElevenLabs or VitalLens call;
+- a hosted Vercel/Neon deployment;
+- a physical iPhone/Safari camera, torch, permission, thermal, or lifecycle run;
+- medical-grade accuracy, diagnosis, treatment, clinical validation, or real eMed integration.
+
+STOP IF
+real data, a secret, raw media, wrong scope, duplicate task, false number, or red-flag bypass appears.
+
+RECORDED SYNTHETIC RECOVERY — NOT LIVE

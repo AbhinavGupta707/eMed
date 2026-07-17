@@ -1,0 +1,13 @@
+digraph G {
+  graph [rankdir=TB, bgcolor="white", pad="0.18", nodesep="0.32", ranksep="0.40", fontname="DejaVu Sans", splines=ortho];
+  node [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=12, color="#16324F", penwidth=1.4, fillcolor="#F4F8FB", margin="0.18,0.12", width=4.9];
+  edge [color="#2A6F7F", penwidth=1.8, arrowsize=0.72, fontname="DejaVu Sans", fontsize=9.5];
+  context [label="1. UNDERSTAND CONTEXT\nrecords, medicines, labs, goals and personal baseline"];
+  trigger [label="2. START A ROUND\nproactive, scheduled, on-demand or clinician-requested"];
+  assess [label="3. GATHER THE NEXT USEFUL FACT\nvoice, camera, simple task, home device or question"];
+  decide [label="4. APPLY BOUNDED CLINICAL LOGIC\nquality gates, red flags, protocol and uncertainty"];
+  act [label="5. COMPLETE THE NEXT ACTION\nself-care instruction, follow-up, refill or clinician review"];
+  learn [label="6. CLOSE THE LOOP\nrecord outcome, update baseline and reduce future burden", fillcolor="#EAF4F4"];
+  context -> trigger -> assess -> decide -> act -> learn;
+  learn -> context [label="longitudinal memory", constraint=false, style=dashed, color="#6C8795"];
+}

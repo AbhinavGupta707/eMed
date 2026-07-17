@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "recorded_valid_capture_replay",
+  "dataClassification": "synthetic_demo",
+  "label": "Recorded synthetic valid capture — demo recovery only",
+  "notClinicallyValidated": true,
+  "containsRawMedia": false,
+  "containsPatientData": false,
+  "automaticFallbackAllowed": false,
+  "usePolicy": {
+    "requiresDemoMode": true,
+    "requiresLiveCaptureFailure": true,
+    "requiresExplicitUserSelection": true,
+    "mustRemainVisiblyLabelled": true,
+    "mustNeverReplaceOrModifyLiveMeasurement": true
+  },
+  "measurementPrototype": {
+    "provider": "finger_ppg",
+    "value": 78,
+    "unit": "bpm",
+    "durationMs": 20000,
+    "algorithmVersion": "homerounds-finger-ppg-fixture-v1",
+    "providerModelVersion": null,
+    "quality": {
+      "status": "pass",
+      "score": 0.92,
+      "reasons": [],
+      "metrics": {
+        "fixtureReplay": 1,
+        "signalCoverage": 1,
+        "cadenceRegularity": 0.98
+      }
+    },
+    "rawMediaRef": null
+  },
+  "provenance": {
+    "source": "deterministic_synthetic_engineering_fixture",
+    "recordedAt": "2026-07-17T09:00:00.000Z",
+    "physicalDeviceEvidence": false,
+    "medicalDeviceValidation": false
+  }
+}

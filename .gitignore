@@ -1,0 +1,17 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+node_modules/
+.next/
+apps/web/next-env.d.ts
+dist/
+coverage/
+playwright-report/
+test-results/
+.turbo/
+*.log
+*.tsbuildinfo
+.vercel/
+.idea/
+.vscode/

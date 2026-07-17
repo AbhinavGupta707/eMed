@@ -1,0 +1,225 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+  NEXT_TELEMETRY_DISABLED: 1
+  TURBO_TELEMETRY_DISABLED: 1
+
+jobs:
+  static:
+    name: Format, lint, and strict types
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the exact revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-home-rounds
+
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+
+  tests:
+    name: Package, unit, contract, integration, and demo tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: homerounds_ci
+          POSTGRES_PASSWORD: homerounds_ci
+          POSTGRES_DB: homerounds_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U homerounds_ci -d homerounds_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://homerounds_ci:homerounds_ci@127.0.0.1:5432/homerounds_ci
+    steps:
+      - name: Check out the exact revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-home-rounds
+
+      - name: Run all workspace package suites against PostgreSQL where supported
+        run: pnpm test
+      - run: pnpm test:unit
+      - run: pnpm test:contract
+      - run: pnpm test:integration
+      - run: pnpm test:demo
+
+  build:
+    name: Production build and client-secret boundary
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out the exact revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-home-rounds
+
+      - run: pnpm build
+
+      - name: Reject server-only configuration names in browser bundles
+        shell: bash
+        run: |
+          set -euo pipefail
+          static_dir="apps/web/.next/static"
+          test -d "$static_dir"
+          for marker in DATABASE_URL DEMO_ACCESS_SECRET ELEVENLABS_API_KEY VITALLENS_API_KEY; do
+            if grep -R -F -q -- "$marker" "$static_dir"; then
+              echo "::error::Server-only configuration marker entered a browser bundle: $marker"
+              exit 1
+            fi
+          done
+
+  browser-smoke:
+    name: Playwright smoke (Chromium and iPhone-sized WebKit profile)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out the exact revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-home-rounds
+      - run: pnpm exec playwright install --with-deps chromium webkit
+      - run: pnpm test:e2e
+
+      - name: Retain failure traces for three days
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-smoke-failure-${{ github.run_id }}
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 3
+
+  browser-journeys:
+    name: Playwright ${{ matrix.suite }} journey
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - suite: patient
+            command: pnpm test:e2e:patient
+          - suite: clinician
+            command: pnpm test:e2e:clinician
+    steps:
+      - name: Check out the exact revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-home-rounds
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: ${{ matrix.command }}
+
+      - name: Retain failure traces for three days
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-${{ matrix.suite }}-failure-${{ github.run_id }}
+          path: |
+            test-results/
+            tests/**/test-results/
+            /tmp/homerounds-${{ matrix.suite }}-e2e-results/
+          if-no-files-found: ignore
+          retention-days: 3
+
+  accessibility:
+    name: Patient and clinician accessibility
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the exact revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-home-rounds
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:a11y
+
+      - name: Retain failure traces for three days
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-accessibility-failure-${{ github.run_id }}
+          path: |
+            test-results/
+            tests/**/test-results/
+            /tmp/homerounds-patient-a11y-results/
+          if-no-files-found: ignore
+          retention-days: 3
+
+  performance:
+    name: Patient and clinician performance budgets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the exact revision
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-home-rounds
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:performance
+
+      - name: Retain failure traces for three days
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-performance-failure-${{ github.run_id }}
+          path: |
+            test-results/
+            tests/**/test-results/
+            /tmp/homerounds-patient-performance-results/
+          if-no-files-found: ignore
+          retention-days: 3
+
+  secrets:
+    name: Full-history secret scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out full history without persisted credentials
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Scan Git history and the working tree
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: false
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false

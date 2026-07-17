@@ -1,0 +1,17 @@
+{
+  "resourceType": "Bundle",
+  "id": "synthetic-maya-missing-data",
+  "type": "collection",
+  "meta": {
+    "security": [{ "system": "https://homerounds.example/security", "code": "DEMO-SYNTHETIC" }]
+  },
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "synthetic-maya",
+        "name": [{ "text": "Maya (fictional demo patient)" }]
+      }
+    }
+  ]
+}

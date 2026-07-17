@@ -1,0 +1,139 @@
+{
+  "resourceType": "Bundle",
+  "id": "synthetic-maya-curated-bundle",
+  "type": "collection",
+  "meta": {
+    "security": [
+      {
+        "system": "https://homerounds.example/security",
+        "code": "DEMO-SYNTHETIC",
+        "display": "Fictional demonstration data only"
+      }
+    ]
+  },
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "synthetic-maya",
+        "identifier": [
+          {
+            "system": "https://homerounds.example/synthetic-patients",
+            "value": "FICTIONAL-MAYA-001"
+          }
+        ],
+        "name": [{ "text": "Maya (fictional demo patient)" }]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "condition-t2d-demo",
+        "subject": { "reference": "Patient/synthetic-maya" },
+        "clinicalStatus": {
+          "coding": [{ "code": "active", "display": "Active" }]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "44054006",
+              "display": "Type 2 diabetes mellitus (fixture)"
+            }
+          ]
+        },
+        "recordedDate": "2026-01-10T09:00:00.000Z"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "MedicationStatement",
+        "id": "medication-metformin-demo",
+        "subject": { "reference": "Patient/synthetic-maya" },
+        "status": "active",
+        "medicationCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "109081006",
+              "display": "Metformin (fixture record)"
+            }
+          ]
+        },
+        "effectiveDateTime": "2026-01-10T09:00:00.000Z"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "pulse-current-demo",
+        "subject": { "reference": "Patient/synthetic-maya" },
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8867-4",
+              "display": "Heart rate"
+            }
+          ]
+        },
+        "effectiveDateTime": "2026-07-16T10:00:00.000Z",
+        "valueQuantity": { "value": 72, "unit": "beats/minute", "code": "/min" }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "hba1c-current-demo",
+        "subject": { "reference": "Patient/synthetic-maya" },
+        "status": "final",
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "4548-4",
+              "display": "Haemoglobin A1c"
+            }
+          ]
+        },
+        "effectiveDateTime": "2026-07-08T10:00:00.000Z",
+        "valueQuantity": { "value": 52, "unit": "mmol/mol", "code": "mmol/mol" }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "CarePlan",
+        "id": "care-plan-demo",
+        "subject": { "reference": "Patient/synthetic-maya" },
+        "status": "active",
+        "intent": "plan",
+        "title": "Fictional cardiometabolic programme review",
+        "category": [
+          {
+            "coding": [{ "code": "demo-programme", "display": "Demo programme" }]
+          }
+        ],
+        "period": {
+          "start": "2026-01-10T09:00:00.000Z",
+          "end": "2026-12-31T23:59:59.000Z"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Provenance",
+        "id": "provenance-curated-demo",
+        "target": [
+          { "reference": "Condition/condition-t2d-demo" },
+          { "reference": "MedicationStatement/medication-metformin-demo" },
+          { "reference": "Observation/pulse-current-demo" },
+          { "reference": "Observation/hba1c-current-demo" },
+          { "reference": "CarePlan/care-plan-demo" }
+        ],
+        "recorded": "2026-07-16T12:00:00.000Z",
+        "agent": [{ "who": { "reference": "Organization/synthetic-fixture-curator" } }]
+      }
+    }
+  ]
+}

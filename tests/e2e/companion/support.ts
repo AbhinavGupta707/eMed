@@ -79,7 +79,7 @@ export function expectOnlyHandledRecoveryFailures(failures: BrowserFailures): vo
   expect(
     failures.consoleErrors.filter(
       (message) =>
-        !/Failed to load resource: the server responded with a status of 410 \(Gone\)/.test(
+        !/Failed to load resource: the server responded with a status of 410 (?:\(Gone\)|\(\))/.test(
           message
         ) && !/ERR_INTERNET_DISCONNECTED/.test(message)
     )

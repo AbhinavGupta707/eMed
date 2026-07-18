@@ -8,6 +8,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { HEART_EVIDENCE } from "./showcase-data";
 import { HeartShowcase } from "./showcase-shell";
 
 beforeEach(() => {
@@ -20,6 +21,11 @@ afterEach(() => {
 });
 
 describe("heart-failure showcase", () => {
+  it("only presents evidence from assessments performed in the heart round", () => {
+    expect(HEART_EVIDENCE).toHaveLength(4);
+    expect(HEART_EVIDENCE.map(({ id }) => id)).not.toContain("voice");
+  });
+
   it("opens with the subtle-change explanation and separate condition packs", () => {
     render(createElement(HeartShowcase));
 

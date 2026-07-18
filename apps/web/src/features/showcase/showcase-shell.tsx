@@ -1130,9 +1130,6 @@ function HeartEvidenceSynthesis({ onContinue }: { onContinue: () => void }) {
           <strong>1</strong> rejected
         </span>
         <span>
-          <strong>1</strong> supporting
-        </span>
-        <span>
           <strong>1</strong> unresolved
         </span>
       </div>
@@ -1157,8 +1154,8 @@ function HeartEvidenceSynthesis({ onContinue }: { onContinue: () => void }) {
         <div className={styles.handoffContents}>
           <div>
             <span>Evidence included</span>
-            <strong>5 source-linked passports</strong>
-            <small>2 accepted · 1 rejected · 1 supporting · 1 unresolved</small>
+            <strong>4 source-linked passports</strong>
+            <small>2 accepted · 1 rejected · 1 unresolved</small>
           </div>
           <div>
             <span>Why review now</span>
@@ -1272,7 +1269,7 @@ function HeartClinicianScene({ onComplete }: { onComplete: () => void }) {
       </div>
       <div className={styles.receivedBanner}>
         <span>Received from Maya’s HomeRounds</span>
-        <strong>5 evidence passports · complete provenance · no raw media</strong>
+        <strong>4 evidence passports · complete provenance · no raw media</strong>
         <small>Requested: review combined change, reconcile instruction, return a plan</small>
       </div>
       <div className={styles.clinicianGrid}>
@@ -1302,11 +1299,6 @@ function HeartClinicianScene({ onComplete }: { onComplete: () => void }) {
               <span>Accepted fallback</span>
               <strong>Finger pulse 96 bpm</strong>
               <p>Facial pulse rejected for motion</p>
-            </article>
-            <article>
-              <span>Supporting</span>
-              <strong>Voice more effortful</strong>
-              <p>Compared with compatible baseline</p>
             </article>
             <article>
               <span>Unresolved</span>

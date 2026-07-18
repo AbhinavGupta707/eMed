@@ -25,9 +25,12 @@ test("the versioned agent spec matches the frozen browser contract", () => {
   assert.match(spec.prompt, /deterministic HomeRounds safety gate/i);
   assert.match(spec.prompt, /preserve every unknown or unsure/i);
   assert.match(spec.prompt, /walking or climbing stairs/i);
-  assert.match(spec.prompt, /when the change began/i);
   assert.match(spec.prompt, /weakness alone is never sufficient/i);
   assert.match(spec.prompt, /do not say that you have enough information/i);
+  assert.match(spec.prompt, /chest pain now/i);
+  assert.match(spec.prompt, /severe breathlessness at rest now/i);
+  assert.match(spec.prompt, /unasked palpitations and fainting fields as unknown/i);
+  assert.match(spec.prompt, /do not ask about onset, timing, progression/i);
   assert.doesNotMatch(spec.firstMessage, /synthetic|demo/i);
 });
 

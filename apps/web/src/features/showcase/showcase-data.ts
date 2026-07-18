@@ -135,15 +135,6 @@ export const HEART_EVIDENCE: readonly EvidencePassport[] = [
     explanation: "The fallback signal passed the configured quality gate."
   },
   {
-    id: "voice",
-    label: "Voice pattern",
-    value: "More effortful than usual",
-    source: "Sustained-vowel comparison",
-    comparison: "Maya’s previous compatible samples",
-    status: "supporting",
-    explanation: "Supporting context only; never independent action authority."
-  },
-  {
     id: "medication",
     label: "Medication package",
     value: "Not available during round",

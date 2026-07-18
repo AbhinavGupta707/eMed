@@ -260,9 +260,12 @@ export function createServerRuntime(overrides: ServerRuntimeOverrides = {}): Ser
   };
 }
 
-let singleton: ServerRuntime | undefined;
+type HomeRoundsGlobalRuntime = typeof globalThis & {
+  __homeRoundsServerRuntime?: ServerRuntime;
+};
 
 export function getServerRuntime(): ServerRuntime {
-  singleton ??= createServerRuntime();
-  return singleton;
+  const scope = globalThis as HomeRoundsGlobalRuntime;
+  scope.__homeRoundsServerRuntime ??= createServerRuntime();
+  return scope.__homeRoundsServerRuntime;
 }

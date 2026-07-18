@@ -32,6 +32,13 @@ test("warm patient shell and saved-state refresh stay inside local browser budge
     page.getByRole("heading", { level: 1, name: "Ready when you are, Maya." })
   ).toBeVisible();
 
+  // Webpack development mode may finish a one-time route/HMR update after the first visible
+  // render. Complete one unmeasured reload so the budget below measures a genuinely warm shell.
+  await page.reload({ waitUntil: "load" });
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Ready when you are, Maya." })
+  ).toBeVisible();
+
   const renderStartedAt = Date.now();
   await page.reload({ waitUntil: "load" });
   await expect(

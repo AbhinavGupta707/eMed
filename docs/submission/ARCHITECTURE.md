@@ -117,14 +117,14 @@ The supported closed-loop mutations are synthetic note save, acknowledgement, co
 
 ## Runtime and trust boundaries
 
-| Boundary                   | Implemented control                                                                                    | Important limitation                                                                                        |
-| -------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| Browser → HomeRounds API   | Zod validation, exact-origin checks for mutations, role/synthetic-patient scope, bounded request sizes | Shared-code demo sessions are not real identity, MFA, tenancy, or production RBAC                           |
-| Browser → ElevenLabs       | Server-issued short-lived WebRTC token; long-lived key stays server-side                               | Live account, retention, residency, privacy, and session evidence pending                                   |
-| Browser → local finger PPG | In-browser derived-sample processing; no provider frame network path                                   | Physical device/browser/population performance not validated                                                |
-| Browser → VitalLens        | Explicit consent, bounded payload, fixed server proxy, server-only key                                 | Third-party US processing boundary; live/privacy/account gate pending                                       |
-| Application → PostgreSQL   | Transactions, idempotency, optimistic concurrency, append-only audit controls                          | Hosted Neon, backups, and restore evidence pending                                                          |
-| Public demo access         | Signed role-scoped Secure/HttpOnly/SameSite=Strict cookie and exact-origin shared-code exchange        | One shared synthetic-demo code and process-local throttling are not production authentication/abuse control |
+| Boundary                   | Implemented control                                                                                    | Important limitation                                                                              |
+| -------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| Browser → HomeRounds API   | Zod validation, exact-origin checks for mutations, role/synthetic-patient scope, bounded request sizes | Public synthetic guest sessions are not real identity, MFA, tenancy, or production RBAC           |
+| Browser → ElevenLabs       | Server-issued short-lived WebRTC token; long-lived key stays server-side                               | Live account, retention, residency, privacy, and session evidence pending                         |
+| Browser → local finger PPG | In-browser derived-sample processing; no provider frame network path                                   | Physical device/browser/population performance not validated                                      |
+| Browser → VitalLens        | Explicit consent, bounded payload, fixed server proxy, server-only key                                 | Third-party US processing boundary; live/privacy/account gate pending                             |
+| Application → PostgreSQL   | Transactions, idempotency, optimistic concurrency, append-only audit controls                          | Hosted Neon, backups, and restore evidence pending                                                |
+| Public demo access         | Frictionless bounded guest entry and signed role-scoped Secure/HttpOnly/SameSite=Strict cookie         | Open synthetic roles and process-local throttling are not production authentication/abuse control |
 
 ## Three seeded scenarios
 

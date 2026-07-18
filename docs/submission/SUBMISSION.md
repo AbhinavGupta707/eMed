@@ -165,15 +165,14 @@ HomeRounds reimagines at-home chronic-condition management as a short, adaptive 
 
 ### Judge path in a prepared environment
 
-1. Open the exact submitted URL: **[PENDING—insert only after hosted verification]**.
-2. Enter the organizer-provided synthetic-demo access code if the submitted environment is protected.
-3. Choose **Poor signal, honest recovery**.
-4. Complete the structured answers using text; confirm the editable check-in text.
-5. At the optical step, use the observed failure/unsupported route or choose **Continue without a measurement**. Do not use the recorded recovery asset for a live-capture claim.
-6. Confirm **Create synthetic review task**.
-7. Open **Clinician cockpit**, select the returned task, and inspect **Evidence chain**, **Uncertainty and review boundary**, and **Event and audit timeline**.
-8. Acknowledge, record a contact attempt, and complete the task. Return to the patient view and refresh to show **Synthetic review completed**.
-9. Run the red-flag scenario if time permits; the ordinary camera flow must stop.
+1. Open **https://homerounds.vercel.app**.
+2. Choose **Poor signal, honest recovery**; the public hackathon build creates the bounded synthetic patient session automatically.
+3. Complete the structured answers using text; confirm the editable check-in text.
+4. At the optical step, use the observed failure/unsupported route or choose **Continue without a measurement**. Do not use the recorded recovery asset for a live-capture claim.
+5. Confirm **Create synthetic review task**.
+6. Open **Clinician cockpit**, select the returned task, and inspect **Evidence chain**, **Uncertainty and review boundary**, and **Event and audit timeline**.
+7. Acknowledge, record a contact attempt, and complete the task. Return to the patient view and refresh to show **Synthetic review completed**.
+8. Run the red-flag scenario if time permits; the ordinary camera flow must stop.
 
 ### Local reproduction from the repository
 

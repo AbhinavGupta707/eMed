@@ -1,6 +1,6 @@
 # HomeRounds orchestration state
 
-Updated: 18 July 2026 12:53 BST  
+Updated: 18 July 2026 13:15 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
 Goal: autonomously integrate and verify Checkpoints 9–11 Human Warmth final pass  
 Integration branch: `main`
@@ -10,7 +10,7 @@ Heartbeat: `homerounds-checkpoints-9-11-orchestration-heartbeat`, active every 1
 ## Current checkpoint
 
 - Checkpoint: 11 — proactive, remembered, closed-loop release integrated, archived, and promoted
-- Status: Checkpoints 0–11 are integrated and green to the recorded software evidence class. The three Wave A workers and final release-evidence lane 11D completed exclusive clean handoffs, were reviewed in the required order, integrated, and archived. Production deployment `dpl_ttSZBxuVN3Kb2xM3pfgh6DD2RwzC` serves deployed application commit `1d14f5c` from the public alias `https://homerounds.vercel.app`; the subsequent ledger-only commit changes no runtime product code. An unauthenticated in-app-browser load rendered HomeRounds without a Vercel sign-in wall or console warnings/errors. Physical iPhone 12 Safari and Windows Chrome/Edge remain honestly `pending-physical`; they do not block software verification or become implied claims.
+- Status: Checkpoints 0–11 are integrated and green to the recorded software evidence class. The three Wave A workers and final release-evidence lane 11D completed exclusive clean handoffs, were reviewed in the required order, integrated, and archived. Frictionless synthetic guest entry commit `78fa688` is deployed as production `dpl_F8cDkGhcG82euwuH2mgWwhtRbQmM` at `https://homerounds.vercel.app`. Clean in-app-browser patient and clinician runs each entered the requested role directly, rendered the correct first screen, skipped the retired code prompt, and recorded no warning/error console entries. Physical iPhone 12 Safari and Windows Chrome/Edge remain honestly `pending-physical`; they do not block software verification or become implied claims.
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
 - Rehearsed application/package candidate: `99acb5b` before Checkpoint 6 evidence-led documentation updates
@@ -58,12 +58,13 @@ Heartbeat: `homerounds-checkpoints-9-11-orchestration-heartbeat`, active every 1
 - Checkpoint 11 Wave A integration commits: 11A `d99c943`; trigger package registration `c5428c0`; 11B `b00099a`; 11C `984a818`; browser stabilization `7509fd6`; tested central integration `95003fd`
 - Checkpoint 11 11D launch base: `d8dd86d4d93c8e0103ce29684ab13890b3366628`
 - Checkpoint 11 11D worker commit: `fa5a35e32e090f5efa66fd3658619f6182568f1b`; reviewed and integrated at `1e2504a`; the 22 files stay within the seven assigned final-pass evidence roots and the task is archived
+- Checkpoint 11 frictionless public guest-entry commit: `78fa688`; the visible access form was deleted, while one-hour signed role cookies, destination allowlists, source-keyed issuance limits, and server-only provider keys remain
 - Next gate: run the documented physical iPhone 12 Safari and Windows Chrome/Edge plug-in pass against the public production alias, reconcile any physical finding, and complete the remaining Neon cold-resume/two-context and extended-soak evidence before making broader closure claims
 - Physical iPhone gate: `pending-physical` (Xcode lists the Mac and simulators only; no physical iPhone was connected)
 - Live ElevenLabs gate: `installed-chrome-webrtc-proposal-confirmation-pass` (private authenticated agent matches the versioned prompt, 120-second bound, bounded dynamic variables, and exact two typed client tools; real microphone conversation produced a visible structured proposal that remained inert until all six fields and final confirmation were explicitly reviewed)
 - Live VitalLens gate: `server-key-present-and-live-synthetic-no-face-boundary-pass; physical-capture-pending` (the opt-in request used identifier-free, in-memory synthetic RGB24 frames and returned a typed non-measurement with buffer zeroisation; no hosted/physical accuracy, face capture, or clinical-validity claim)
 - Fireworks gate: `deepseek-and-kimi-exact-three-run-pass` (DeepSeek V4 Pro adaptive selection and Kimi K2.6 medication-label vision each pass three consecutive exact-contract live runs; required suites remain keyless and visibly skip both tests without explicit opt-in)
-- Hosted Vercel/Neon gate: `checkpoint-11-production-ready-public-root-pass; full-hosted-two-context-closure-pending` (corrected Preview build `dpl_Ef2xFXPp9TishPqhFvkpZmEU19Z5` set `APP_BASE_URL` to the public production origin and was promoted as production deployment `dpl_ttSZBxuVN3Kb2xM3pfgh6DD2RwzC`; alias `https://homerounds.vercel.app` is Ready and rendered the proactive invitation in an unauthenticated in-app-browser context with no Vercel login wall or warning/error console entries. The application retains its own one-hour, role-scoped synthetic-demo access-code boundary; provider keys remain server-only. Neon cold-resume and the complete hosted two-context closure remain pending.)
+- Hosted Vercel/Neon gate: `checkpoint-11-production-ready-frictionless-patient-clinician-entry-pass; full-hosted-two-context-closure-pending` (release-candidate Preview `dpl_7pv6dtrXovS351P7FCuyPCrmSrfq` was promoted as production deployment `dpl_F8cDkGhcG82euwuH2mgWwhtRbQmM`; `https://homerounds.vercel.app` is Ready. A clean browser loaded the invitation, followed patient entry to `Ready when you are, Maya.`, then followed clinician entry to `Clinician cockpit`, with no access-code screen, Vercel login wall, or warning/error console entries. A server-only signing secret still protects one-hour role-scoped cookies and provider keys remain server-only. Neon cold-resume, physical phone QR/sensing, and the complete hosted two-context closure remain pending.)
 - GitHub visibility: verified `PUBLIC`; source/fixtures must remain synthetic and secret-free
 
 ## Checkpoint lane ledger

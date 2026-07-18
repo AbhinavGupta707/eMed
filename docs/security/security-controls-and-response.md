@@ -6,12 +6,12 @@ Current identity is a synthetic demo mechanism:
 
 - signed cookie payload contains session ID, role (`patient`, `clinician`, or system), optional synthetic patient scope, expiry, and `synthetic_demo` classification;
 - signature uses the server-only demo secret; cookie attributes are `Secure`, `HttpOnly`, and `SameSite=Strict`;
-- `/access` performs an exact-origin, size-bounded, rate-limited shared-code exchange and allows only fixed patient/clinician roles and safe relative destinations;
+- public guest entry is process-rate-limited and allows only fixed patient/clinician roles and allowlisted destinations; `/access` redirects through that same bounded issuer;
 - patient routes enforce matching patient scope and clinician routes enforce role;
 - development-only loopback can use an explicit role header when no demo secret exists;
 - state-changing requests also require exact origin.
 
-This is not real authentication. Session issuance uses one shared synthetic-demo code. There is no OIDC/OAuth, MFA, password recovery, user lifecycle, tenant boundary, RBAC/ABAC policy store, purpose-of-use, break-glass, consent management, per-session revocation, or distributed login throttling. Vercel deployment protection is an additional demo control, not a replacement for application identity. Do not handle real data.
+This is not real authentication. The public hackathon build intentionally offers frictionless synthetic guest entry. There is no OIDC/OAuth, MFA, password recovery, user lifecycle, tenant boundary, RBAC/ABAC policy store, purpose-of-use, break-glass, consent management, per-session revocation, or distributed login throttling. Do not handle real data.
 
 ## Audit, idempotency, and concurrency
 

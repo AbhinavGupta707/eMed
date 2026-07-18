@@ -1,13 +1,16 @@
 .page {
   min-height: 100dvh;
-  padding: clamp(var(--space-2), 2vw, var(--space-6));
+  padding: clamp(var(--space-3), 2vw, var(--space-6));
 }
 
 .shell {
-  width: min(100%, 78rem);
-  min-height: calc(100dvh - clamp(var(--space-4), 4vw, var(--space-12)));
+  width: min(100%, 80rem);
+  min-height: calc(100dvh - clamp(var(--space-6), 4vw, var(--space-12)));
   margin-inline: auto;
   grid-template-columns: minmax(0, 1fr);
+  border-color: rgb(216 207 194 / 80%);
+  background: rgb(255 253 248 / 72%);
+  box-shadow: var(--shadow-2);
 }
 
 .header {
@@ -20,74 +23,100 @@
 }
 
 .brand {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3);
   color: var(--primary);
-  font-size: var(--text-lg);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.brandMark {
-  display: grid;
-  width: 2.25rem;
-  height: 2.25rem;
-  place-items: center;
-  border-radius: 0.65rem 0.65rem 0.65rem 0.2rem;
-  background: var(--primary);
-  color: var(--primary-foreground);
-  font-size: var(--text-sm);
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
 }
 
 .headerActions,
-.primaryActions {
+.primaryActions,
+.handoffActions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
 }
 
+.headerProgress {
+  color: var(--terracotta-strong);
+  font-size: var(--text-sm);
+  font-weight: 750;
+}
+
 .content {
   display: flex;
-  width: min(100%, 58rem);
+  width: min(100%, 61rem);
   margin-inline: auto;
   flex-direction: column;
-  gap: clamp(var(--space-5), 4vw, var(--space-8));
+  gap: clamp(var(--space-6), 4vw, var(--space-10));
 }
 
-.primaryPanel {
+.content > nav {
+  width: min(100%, 38rem);
+  margin-inline: auto;
+}
+
+.primaryPanel,
+.handoffPanel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: clamp(var(--space-5), 3vw, var(--space-8));
+  padding-block: clamp(var(--space-2), 2vw, var(--space-5));
 }
 
-.introCopy {
-  max-width: 48rem;
+.introCopy,
+.handoffCopy {
+  max-width: 49rem;
 }
 
 .introCopy h1,
 .introCopy p,
+.handoffCopy h1,
+.handoffCopy p,
+.screenEyebrow,
 .privacyNote,
 .footerCopy,
-.measurementValue {
+.measurementValue,
+.handoffStatus p,
+.readableCode {
   margin: 0;
 }
 
-.introCopy h1 {
-  max-width: 22ch;
-  font-size: clamp(2rem, 7vw, 3.75rem);
-  font-weight: 760;
-  line-height: 1.04;
-  letter-spacing: -0.05em;
+.screenEyebrow {
+  margin-bottom: var(--space-3);
+  color: var(--terracotta-strong);
+  font-size: var(--text-sm);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.introCopy p {
-  max-width: 45rem;
+.introCopy h1,
+.handoffCopy h1 {
+  max-width: 23ch;
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  font-weight: 500;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+.introCopy p:not(.screenEyebrow),
+.handoffCopy p:not(.screenEyebrow) {
+  max-width: 44rem;
   margin-top: var(--space-4);
-  color: var(--muted-foreground);
+  color: var(--surface-foreground);
   font-size: clamp(var(--text-base), 2vw, var(--text-lg));
-  line-height: 1.6;
+  line-height: 1.65;
+}
+
+.focusCard,
+.reviewCard,
+.handoffCard {
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-1);
 }
 
 .plainList {
@@ -120,7 +149,7 @@
   height: 1.25rem;
   flex: 0 0 auto;
   margin: 0.18rem 0 0;
-  accent-color: var(--primary);
+  accent-color: var(--terracotta);
 }
 
 .checkboxChoice span,
@@ -131,7 +160,7 @@
 
 .choiceGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
   gap: var(--space-3);
 }
 
@@ -143,13 +172,13 @@
 }
 
 .choice:has(input:checked) {
-  border-color: var(--primary);
-  background: var(--secondary);
-  box-shadow: 0 0 0 1px var(--primary);
+  border-color: var(--terracotta);
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--terracotta);
 }
 
 .choice:hover {
-  border-color: var(--primary);
+  border-color: var(--terracotta);
 }
 
 .choice small {
@@ -170,45 +199,61 @@
 }
 
 .privacyNote {
+  max-width: 66ch;
   color: var(--muted-foreground);
   font-size: var(--text-sm);
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .primaryActions {
   justify-content: flex-end;
 }
 
-.definitionList {
+.definitionList,
+.reportSummary {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: 0;
   margin: 0;
 }
 
-.definitionList > div {
+.definitionList > div,
+.reportSummary > div {
   display: grid;
-  grid-template-columns: minmax(7rem, 0.4fr) minmax(0, 1fr);
+  grid-template-columns: minmax(9rem, 0.45fr) minmax(0, 1fr);
   gap: var(--space-4);
-  padding-bottom: var(--space-4);
+  padding-block: var(--space-4);
   border-bottom: 1px solid var(--border);
 }
 
-.definitionList > div:last-child {
+.definitionList > div:first-child,
+.reportSummary > div:first-child {
+  padding-top: 0;
+}
+
+.definitionList > div:last-child,
+.reportSummary > div:last-child {
   padding-bottom: 0;
   border-bottom: 0;
 }
 
-.definitionList dt {
+.definitionList dt,
+.reportSummary dt {
   color: var(--muted-foreground);
   font-size: var(--text-sm);
   font-weight: 700;
 }
 
-.definitionList dd {
+.definitionList dd,
+.reportSummary dd {
   margin: 0;
   color: var(--foreground);
   font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.reportSummary dd {
+  white-space: pre-wrap;
 }
 
 .measurementValue {
@@ -219,7 +264,83 @@
   text-align: center;
 }
 
-@media (max-width: 44rem) {
+.handoffPanel {
+  width: min(100%, 58rem);
+  margin-inline: auto;
+}
+
+.handoffCard {
+  display: grid;
+  gap: var(--space-5);
+  padding: clamp(var(--space-5), 4vw, var(--space-8));
+  border: 1px solid var(--border);
+  background: var(--card);
+}
+
+.pairingVisual {
+  display: grid;
+  min-height: 10rem;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.handoffStatus {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--accent);
+}
+
+.handoffStatus svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--primary);
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.handoffStatus strong {
+  color: var(--primary);
+}
+
+.handoffStatus p {
+  margin-top: var(--space-1);
+  color: var(--muted-foreground);
+  line-height: 1.55;
+}
+
+.readableCode {
+  padding: var(--space-3);
+  border: 1px dashed var(--input);
+  border-radius: var(--radius-md);
+  color: var(--muted-foreground);
+  text-align: center;
+}
+
+.readableCode strong {
+  margin-left: var(--space-2);
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+}
+
+.handoffResult {
+  padding-block: var(--space-4);
+  border-block: 1px solid var(--border);
+}
+
+.handoffActions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 48rem) {
   .page {
     padding: 0;
   }
@@ -228,6 +349,7 @@
     min-height: 100dvh;
     border-inline: 0;
     border-radius: 0;
+    box-shadow: none;
   }
 
   .header,
@@ -239,42 +361,58 @@
     width: 100%;
   }
 
-  .headerActions > button {
-    flex: 1 1 9rem;
+  .headerProgress {
+    display: flex;
+    min-height: var(--touch-target);
+    align-items: center;
+    margin-right: auto;
   }
 
-  .choiceGrid {
-    grid-template-columns: 1fr;
+  .primaryActions,
+  .handoffActions {
+    align-items: stretch;
+    flex-direction: column-reverse;
   }
 
-  .primaryActions {
-    flex-direction: column;
-  }
-
-  .primaryActions > button {
+  .primaryActions > button,
+  .handoffActions > button {
     width: 100%;
   }
 
-  .definitionList > div {
+  .definitionList > div,
+  .reportSummary > div {
     grid-template-columns: 1fr;
     gap: var(--space-1);
   }
 }
 
-@media (max-width: 22rem) {
-  .brand {
-    font-size: var(--text-base);
+@media (max-width: 25rem) {
+  .headerActions > button {
+    flex: 1 1 100%;
   }
 
-  .headerActions > span {
-    width: 100%;
-    justify-content: center;
+  .choiceGrid {
+    grid-template-columns: 1fr;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: no-preference) {
+  .choice,
+  .checkboxChoice,
+  .handoffCard {
+    transition:
+      border-color var(--motion-fast) var(--ease-standard),
+      background-color var(--motion-fast) var(--ease-standard),
+      transform var(--motion-fast) var(--ease-standard);
+  }
+}
+
+@media (forced-colors: active) {
+  .focusCard,
+  .reviewCard,
+  .handoffCard,
   .choice,
   .checkboxChoice {
-    transition: none;
+    border: 1px solid CanvasText;
   }
 }

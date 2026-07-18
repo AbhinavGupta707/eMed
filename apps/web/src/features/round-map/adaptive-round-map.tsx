@@ -3,9 +3,8 @@
 
 "use client";
 
-import { Banner, Spinner, StatusChip } from "@homerounds/ui";
-import { useId, useMemo, useState } from "react";
-import { jsx, jsxs } from "react/jsx-runtime";
+import { Banner, Button, Spinner, StatusChip } from "@homerounds/ui";
+import { useMemo } from "react";
 
 import styles from "./adaptive-round-map.module.css";
 import {
@@ -15,48 +14,37 @@ import {
   roundMapStatusLabel,
   type RoundMapExperience,
   type RoundMapModule,
-  type RoundMapModuleStatus,
   type RoundMapPresentationKind
 } from "./model";
 
 export type AdaptiveRoundMapProps = Readonly<{
   experience: RoundMapExperience;
   onRetry?: () => void;
+  onContinue?: () => void;
 }>;
-
-const statusSymbols: Readonly<Record<RoundMapModuleStatus, string>> = {
-  completed: "✓",
-  completed_without_measurement: "○",
-  current: "●",
-  selected: "→",
-  skipped: "—",
-  unavailable: "×",
-  next: "+"
-};
 
 function presentationChip(kind: RoundMapPresentationKind): {
   label: string;
-  variant: "complete" | "information" | "attention" | "action" | "neutral";
+  variant: "complete" | "information" | "attention" | "neutral";
 } {
   switch (kind) {
     case "accepted":
-      return { label: "Eligible selection accepted", variant: "complete" };
+      return { label: "Next step ready", variant: "complete" };
     case "loading":
-      return { label: "Selection loading", variant: "information" };
+      return { label: "Choosing the next step", variant: "information" };
     case "retrying":
-      return { label: "Selection retrying", variant: "information" };
+      return { label: "Checking again", variant: "information" };
     case "unavailable":
-      return { label: "AI unavailable", variant: "attention" };
+      return { label: "Usual route available", variant: "attention" };
     case "abstained":
-      return { label: "AI abstained", variant: "neutral" };
+      return { label: "Usual route continues", variant: "neutral" };
     case "rejected":
-      return { label: "Suggestion rejected", variant: "attention" };
     case "stale":
-      return { label: "Stale result rejected", variant: "attention" };
+      return { label: "Saved route protected", variant: "attention" };
     case "safety_fallback":
-      return { label: "Safety gate in control", variant: "attention" };
+      return { label: "Safety check in control", variant: "attention" };
     case "deterministic":
-      return { label: "Deterministic route", variant: "neutral" };
+      return { label: "Next step ready", variant: "neutral" };
   }
 }
 
@@ -65,279 +53,136 @@ function sourceLabel(
 ): string {
   switch (source) {
     case "ai_checked":
-      return "Why this was selected";
+      return "What this can clarify";
     case "deterministic_fallback":
-      return "Why the deterministic fallback continues";
+      return "Why the usual next step continues";
     case "deterministic_template":
-      return "Why this module is next";
+      return "Why this step is next";
   }
 }
 
-function moduleLiveAnnouncement(module: RoundMapModule): string {
-  return `${module.candidate.label}. ${roundMapStatusLabel(module.status)}. ${roundMapStatusDescription(module)}`;
+function focusModule(experience: RoundMapExperience): RoundMapModule | undefined {
+  const active = experience.modules.find(({ status }) => status === "current");
+  if (active) return active;
+
+  const selected = experience.modules.find(({ status }) => status === "selected");
+  if (selected) return selected;
+
+  if (
+    experience.selection.status === "settled" &&
+    experience.selection.outcome.status === "accepted" &&
+    experience.selection.outcome.envelope.decision.decision === "select"
+  ) {
+    const id = experience.selection.outcome.envelope.decision.candidateModuleId;
+    const recommended = experience.modules.find(({ candidate }) => candidate.id === id);
+    if (recommended) return recommended;
+  }
+
+  return (
+    experience.modules.find(({ status }) => status === "next") ??
+    [...experience.modules]
+      .reverse()
+      .find(({ status }) => status === "completed" || status === "completed_without_measurement")
+  );
 }
 
-export function AdaptiveRoundMap({ experience: input, onRetry }: AdaptiveRoundMapProps) {
+function canContinue(roundTask: RoundMapModule | undefined): boolean {
+  return roundTask?.status === "selected" || roundTask?.status === "next";
+}
+
+export function AdaptiveRoundMap({ experience: input, onRetry, onContinue }: AdaptiveRoundMapProps) {
   const experience = useMemo(() => RoundMapExperienceSchema.parse(input), [input]);
   const presentation = useMemo(() => roundMapSelectionPresentation(experience), [experience]);
-  const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
-  const [interactionAnnouncement, setInteractionAnnouncement] = useState("");
-  const detailId = useId();
-  const activeModule = experience.modules.find(({ candidate }) => candidate.id === activeModuleId);
+  const roundTask = focusModule(experience);
   const chip = presentationChip(presentation.kind);
+  const completedCount = experience.modules.filter(
+    ({ status }) => status === "completed" || status === "completed_without_measurement"
+  ).length;
 
-  function openModule(module: RoundMapModule): void {
-    setActiveModuleId(module.candidate.id);
-    setInteractionAnnouncement(moduleLiveAnnouncement(module));
-  }
+  return (
+    <section aria-labelledby="round-recommendation-title" className={styles.roundMap}>
+      <div className={styles.headingRow}>
+        <div>
+          <p className={styles.eyebrow}>Your next step</p>
+          <h1 className={styles.heading} id="round-recommendation-title">
+            {presentation.title}
+          </h1>
+        </div>
+        <StatusChip variant={chip.variant}>{chip.label}</StatusChip>
+      </div>
 
-  function closeModule(): void {
-    const trigger = activeModuleId
-      ? document.getElementById(`${detailId}-trigger-${activeModuleId}`)
-      : null;
-    setActiveModuleId(null);
-    setInteractionAnnouncement("Module details closed. Focus returned to the Round Map.");
-    window.requestAnimationFrame(() => trigger?.focus());
-  }
+      <p className={styles.intro}>{presentation.description}</p>
 
-  const selectionAnnouncement = `${presentation.title}. ${presentation.description}`;
-  return jsxs("section", {
-    "aria-labelledby": `${detailId}-title`,
-    className: styles.roundMap,
-    children: [
-      jsxs("div", {
-        className: styles.headingRow,
-        children: [
-          jsxs("div", {
-            children: [
-              jsx("p", { className: styles.eyebrow, children: "Adaptive evidence route" }),
-              jsx("h2", {
-                className: styles.heading,
-                id: `${detailId}-title`,
-                children: "Round Map"
-              })
-            ]
-          }),
-          jsx(StatusChip, { variant: chip.variant, children: chip.label })
-        ]
-      }),
-      jsx("p", {
-        className: styles.intro,
-        children:
-          "Your confirmed steps stay visible. AI may propose one eligible next module, but deterministic safety, quality, and protocol checks remain in control."
-      }),
-      experience.syntheticStoryLabel
-        ? jsx(StatusChip, {
-            variant: "information",
-            children: experience.syntheticStoryLabel
-          })
-        : null,
-      experience.resumedConfirmedProgress
-        ? jsx(Banner, {
-            title: "Saved round resumed with confirmed progress",
-            variant: "success",
-            children: jsx("p", {
-              children:
-                "Completed modules remain confirmed. Ephemeral camera, voice, and unfinished selection data were not restored."
-            })
-          })
-        : null,
-      jsx("ol", {
-        "aria-label": "Evidence modules",
-        className: styles.modules,
-        children: experience.modules.map((module) => {
-          const expanded = activeModuleId === module.candidate.id;
-          return jsx(
-            "li",
-            {
-              children: jsxs("button", {
-                "aria-controls": expanded ? detailId : undefined,
-                "aria-expanded": expanded,
-                className: styles.moduleButton,
-                id: `${detailId}-trigger-${module.candidate.id}`,
-                onClick: () => openModule(module),
-                type: "button",
-                children: [
-                  jsxs("span", {
-                    className: styles.moduleStatus,
-                    children: [
-                      jsx("span", {
-                        "aria-hidden": "true",
-                        className: styles.statusSymbol,
-                        children: statusSymbols[module.status]
-                      }),
-                      roundMapStatusLabel(module.status)
-                    ]
-                  }),
-                  jsx("span", {
-                    className: styles.moduleLabel,
-                    children: module.candidate.label
-                  }),
-                  jsx("span", {
-                    className: styles.moduleDescription,
-                    children: roundMapStatusDescription(module)
-                  })
-                ]
-              })
-            },
-            module.candidate.id
-          );
-        })
-      }),
-      activeModule
-        ? jsxs("section", {
-            "aria-labelledby": `${detailId}-module-title`,
-            className: styles.detailPanel,
-            id: detailId,
-            children: [
-              jsxs("div", {
-                className: styles.detailHeader,
-                children: [
-                  jsxs("div", {
-                    children: [
-                      jsx("p", {
-                        className: styles.eyebrow,
-                        children: roundMapStatusLabel(activeModule.status)
-                      }),
-                      jsx("h3", {
-                        className: styles.selectionTitle,
-                        id: `${detailId}-module-title`,
-                        children: activeModule.candidate.label
-                      })
-                    ]
-                  }),
-                  jsx("button", {
-                    className: styles.closeButton,
-                    onClick: closeModule,
-                    type: "button",
-                    children: "Close details"
-                  })
-                ]
-              }),
-              jsx("p", {
-                className: styles.moduleDetail,
-                children: activeModule.candidate.description
-              }),
-              jsxs("dl", {
-                className: styles.uncertaintyList,
-                children: [
-                  jsxs("div", {
-                    children: [
-                      jsx("dt", { children: "Current status" }),
-                      jsx("dd", { children: roundMapStatusLabel(activeModule.status) })
-                    ]
-                  }),
-                  jsxs("div", {
-                    children: [
-                      jsx("dt", { children: "Approximate time" }),
-                      jsxs("dd", {
-                        children: [activeModule.candidate.estimatedBurdenSeconds, " seconds"]
-                      })
-                    ]
-                  })
-                ]
-              })
-            ]
-          })
-        : null,
-      jsxs("section", {
-        "aria-labelledby": `${detailId}-selection-title`,
-        className: styles.selectionPanel,
-        children: [
-          jsxs("div", {
-            className: styles.selectionHeader,
-            children: [
-              jsxs("div", {
-                children: [
-                  jsx("p", { className: styles.eyebrow, children: "Selection status" }),
-                  jsx("h3", {
-                    className: styles.selectionTitle,
-                    id: `${detailId}-selection-title`,
-                    children: presentation.title
-                  })
-                ]
-              }),
-              presentation.kind === "loading" || presentation.kind === "retrying"
-                ? jsx(Spinner, {
-                    label:
-                      presentation.kind === "loading" ? "Selecting module" : "Retrying selection"
-                  })
-                : null
-            ]
-          }),
-          jsx("p", {
-            className: styles.selectionDescription,
-            children: presentation.description
-          }),
-          jsxs("div", {
-            className: styles.rationaleBlock,
-            children: [
-              jsx("span", {
-                className: styles.rationaleLabel,
-                children: sourceLabel(presentation.rationaleSource)
-              }),
-              jsx("p", { className: styles.rationale, children: presentation.rationale })
-            ]
-          }),
-          jsxs("dl", {
-            className: styles.uncertaintyList,
-            children: [
-              jsxs("div", {
-                children: [
-                  jsx("dt", { children: "AI uncertainty" }),
-                  jsx("dd", {
-                    children: presentation.uncertainty
-                      ? `${presentation.uncertainty[0]?.toUpperCase()}${presentation.uncertainty.slice(1)}`
-                      : "Not used for this route"
-                  })
-                ]
-              }),
-              jsxs("div", {
-                children: [
-                  jsx("dt", { children: "Confirmed progress" }),
-                  jsxs("dd", {
-                    children: [
-                      experience.modules.filter(({ status }) => status === "completed").length,
-                      " completed module(s) preserved"
-                    ]
-                  })
-                ]
-              })
-            ]
-          }),
-          presentation.missingInformation.length > 0
-            ? jsxs("div", {
-                children: [
-                  jsx("p", {
-                    className: styles.rationaleLabel,
-                    children: "Information still missing"
-                  }),
-                  jsx("ul", {
-                    className: styles.missingList,
-                    children: presentation.missingInformation.map((item) =>
-                      jsx("li", { children: item }, item)
-                    )
-                  })
-                ]
-              })
-            : null,
-          presentation.retryable && onRetry
-            ? jsx("button", {
-                className: styles.retryButton,
-                onClick: onRetry,
-                type: "button",
-                children: "Retry selection from saved progress"
-              })
-            : null
-        ]
-      }),
-      jsx("p", {
-        "aria-atomic": "true",
-        "aria-live": "polite",
-        className: styles.liveRegion,
-        role: "status",
-        children: interactionAnnouncement || selectionAnnouncement
-      })
-    ]
-  });
+      {experience.resumedConfirmedProgress ? (
+        <Banner title="Your confirmed progress is still here" variant="success">
+          <p>Completed answers remain saved. Unfinished voice or camera activity was not restored.</p>
+        </Banner>
+      ) : null}
+
+      {roundTask ? (
+        <article className={styles.selectedTask}>
+          <div className={styles.selectedTaskHeader}>
+            <span aria-hidden="true" className={styles.taskNumber}>
+              {roundTask.status === "completed" ||
+              roundTask.status === "completed_without_measurement"
+                ? "✓"
+                : "1"}
+            </span>
+            <div>
+              <p className={styles.taskStatus}>{roundMapStatusLabel(roundTask.status)}</p>
+              <h2>{roundTask.candidate.label}</h2>
+            </div>
+          </div>
+          <p className={styles.taskDescription}>{roundMapStatusDescription(roundTask)}</p>
+          <dl className={styles.taskFacts}>
+            <div>
+              <dt>What it adds</dt>
+              <dd>{roundTask.candidate.description}</dd>
+            </div>
+            <div>
+              <dt>About how long</dt>
+              <dd>{roundTask.candidate.estimatedBurdenSeconds} seconds</dd>
+            </div>
+          </dl>
+        </article>
+      ) : null}
+
+      <section aria-labelledby="why-this-step-title" className={styles.rationalePanel}>
+        <p className={styles.rationaleLabel}>{sourceLabel(presentation.rationaleSource)}</p>
+        <h2 id="why-this-step-title">The smallest useful check right now</h2>
+        <p className={styles.rationale}>{presentation.rationale}</p>
+        {presentation.missingInformation.length > 0 ? (
+          <div className={styles.missingInformation}>
+            <strong>Still not clear</strong>
+            <ul>
+              {presentation.missingInformation.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+      </section>
+
+      <div className={styles.actions}>
+        {presentation.kind === "loading" || presentation.kind === "retrying" ? (
+          <span className={styles.loadingStatus}>
+            <Spinner label="Checking the next step" /> Checking your saved answers…
+          </span>
+        ) : null}
+        {presentation.retryable && onRetry ? (
+          <Button onClick={onRetry} variant="secondary">
+            Check the recommendation again
+          </Button>
+        ) : null}
+        {canContinue(roundTask) && onContinue ? (
+          <Button onClick={onContinue}>Continue to this check</Button>
+        ) : null}
+      </div>
+
+      <p className={styles.progressNote}>
+        {completedCount} confirmed step{completedCount === 1 ? "" : "s"} kept · Only the selected
+        task is shown
+      </p>
+    </section>
+  );
 }

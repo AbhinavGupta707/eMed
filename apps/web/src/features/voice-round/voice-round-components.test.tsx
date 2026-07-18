@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 describe("voice round presentation", () => {
-  it("labels concise synthetic history, purpose, and source boundaries", () => {
+  it("shows concise saved context with a correction and limitation boundary", () => {
     const context = VoiceSessionContextSchema.parse({
       syntheticDataOnly: true,
       patientAlias: "Aisha (synthetic)",
@@ -32,10 +32,10 @@ describe("voice round presentation", () => {
 
     render(createElement(HistoryPurposeCard, { context }));
 
-    expect(screen.getByRole("region", { name: "History and purpose" })).toBeVisible();
-    expect(screen.getByText("Synthetic data only")).toBeVisible();
-    expect(screen.getByText("Source: invited HomeRounds round")).toBeVisible();
-    expect(screen.getByText("Source: bounded synthetic history summary")).toBeVisible();
+    expect(screen.getByRole("region", { name: "What I already know" })).toBeVisible();
+    expect(screen.getByText("Short saved summary")).toBeVisible();
+    expect(screen.getByText("From your check-in invitation")).toBeVisible();
+    expect(screen.getByText("From your short saved profile")).toBeVisible();
     expect(screen.getByText(/not a diagnosis or a complete record/i)).toBeVisible();
   });
 
@@ -64,9 +64,9 @@ describe("voice round presentation", () => {
       })
     );
 
-    expect(screen.getByText("Draft — not submitted")).toBeVisible();
-    expect(screen.getAllByText("Proposed as unresolved")).toHaveLength(2);
-    expect(screen.getByText(/A proposed “yes” or “unsure” remains visible/i)).toBeVisible();
+    expect(screen.getByText("Not submitted")).toBeVisible();
+    expect(screen.getAllByText("Not yet clear")).toHaveLength(2);
+    expect(screen.getByText(/A “yes” or “unsure” answer stays visible/i)).toBeVisible();
     expect(screen.getAllByText("Required safety answer")).toHaveLength(3);
     expect(screen.getByText(/Review progress: 0 of 6 fields/i)).toBeVisible();
     for (const select of screen.getAllByRole("combobox")) {
@@ -111,7 +111,7 @@ describe("voice round presentation", () => {
       target: { value: "no" }
     });
     fireEvent.change(screen.getByLabelText("Fainted"), { target: { value: "no" } });
-    fireEvent.change(screen.getByLabelText("Patient note"), { target: { value: "keep" } });
+    fireEvent.change(screen.getByLabelText("Anything else"), { target: { value: "keep" } });
 
     fireEvent.click(screen.getByRole("button", { name: "Confirm reviewed report" }));
     expect(onConfirmed).not.toHaveBeenCalled();

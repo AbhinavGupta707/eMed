@@ -56,7 +56,7 @@ export function createRecordedCaptureReplayLoader(
       cache: "no-store",
       credentials: "same-origin"
     });
-    if (!response.ok) throw new Error("Recorded demo capture could not be loaded.");
+    if (!response.ok) throw new Error("The labelled sample reading could not be loaded.");
     return RecordedCaptureReplaySchema.parse(await response.json());
   };
 }

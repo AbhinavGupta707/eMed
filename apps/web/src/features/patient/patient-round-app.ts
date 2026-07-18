@@ -29,7 +29,6 @@ import {
   FieldSet,
   MeasurementQuality,
   Spinner,
-  StatusChip,
   StepProgress,
   type ProgressStep
 } from "@homerounds/ui";
@@ -68,6 +67,7 @@ import {
   createRecordedCaptureReplayLoader,
   type RecordedCaptureReplayLoader
 } from "./recorded-capture-replay";
+import { DeviceHandoff } from "./device-handoff";
 import styles from "./patient-round.module.css";
 function createRequiredChildrenElement<
   Props extends {
@@ -128,6 +128,11 @@ const cancellableStates = new Set<RoundState>([
   "capture_retry",
   "assessment_complete",
   "follow_up_selected"
+]);
+const recommendationViews = new Set<PatientWorkflowView>([
+  "voice_biomarker",
+  "medication_review",
+  "measurement_prepare"
 ]);
 function browserId(): string {
   return globalThis.crypto.randomUUID();
@@ -198,14 +203,14 @@ function liveRoundMapExperience(state: PatientWorkflowState): RoundMapExperience
         id: "patient.report",
         kind: "structured_follow_up",
         label: "Confirmed symptom check-in",
-        description: "The structured answers you explicitly confirmed for this synthetic round.",
+        description: "The structured answers you reviewed and confirmed for this check-in.",
         producesFactKeys: ["follow_up_answer"],
         availability: { status: "available" },
         estimatedBurdenSeconds: 35,
         deterministicRank: 0
       },
       status: "completed",
-      statusDetail: "Your confirmed structured answers are saved; narrative text is not retained."
+      statusDetail: "Your confirmed answers are saved; conversation text is not retained."
     },
     ...route.candidates.map((candidate) => {
       if (candidate.availability.status === "unavailable") {
@@ -216,7 +221,7 @@ function liveRoundMapExperience(state: PatientWorkflowState): RoundMapExperience
           return {
             candidate,
             status: "skipped" as const,
-            statusDetail: "The validated route did not require this optional evidence step."
+            statusDetail: "Your selected route did not require this optional check."
           };
         }
         if (route.medicationSkipped) {
@@ -230,7 +235,7 @@ function liveRoundMapExperience(state: PatientWorkflowState): RoundMapExperience
           ? {
               candidate,
               status: "completed" as const,
-              statusDetail: "Your reviewed synthetic label observations were explicitly confirmed."
+              statusDetail: "The label details you reviewed were explicitly confirmed."
             }
           : {
               candidate,
@@ -243,7 +248,7 @@ function liveRoundMapExperience(state: PatientWorkflowState): RoundMapExperience
           return {
             candidate,
             status: "skipped" as const,
-            statusDetail: "The validated route did not require this optional research signal."
+            statusDetail: "Your selected route did not require this optional voice check."
           };
         }
         if (route.voiceBiomarkerSkipped) {
@@ -272,7 +277,7 @@ function liveRoundMapExperience(state: PatientWorkflowState): RoundMapExperience
             candidate,
             status: "completed_without_measurement" as const,
             statusDetail:
-              "No numeric pulse measurement was accepted; the deterministic workflow continued to review."
+              "No numeric pulse reading was accepted; the check-in continued without one."
           };
         }
         return {
@@ -285,7 +290,7 @@ function liveRoundMapExperience(state: PatientWorkflowState): RoundMapExperience
         return {
           candidate,
           status: "current" as const,
-          statusDetail: "The deterministic capture-quality gate is checking this step."
+          statusDetail: "Signal quality is being checked before any reading can be accepted."
         };
       }
       const pulseReady =
@@ -299,7 +304,7 @@ function liveRoundMapExperience(state: PatientWorkflowState): RoundMapExperience
         status: pulseReady ? ("selected" as const) : ("next" as const),
         statusDetail: pulseReady
           ? "This quality-gated step is ready."
-          : "This deterministic fallback remains next after the selected review step."
+          : "This usual next step remains available after the selected review."
       };
     })
   ];
@@ -313,7 +318,7 @@ function liveRoundMapExperience(state: PatientWorkflowState): RoundMapExperience
       route.voiceBiomarkerCompleted ||
       route.voiceBiomarkerSkipped,
     selection: { status: "settled", outcome: route.selection, committed: true },
-    syntheticStoryLabel: "Live synthetic adaptive route"
+    syntheticStoryLabel: null
   });
 }
 function progressSteps(view: PatientWorkflowView): readonly ProgressStep[] {
@@ -324,7 +329,11 @@ function progressSteps(view: PatientWorkflowView): readonly ProgressStep[] {
     state: index < current ? "complete" : index === current ? "current" : "upcoming"
   }));
 }
-function PatientHeader({ state, controller }: PatientShellProps) {
+function PatientHeader({
+  state,
+  controller,
+  view
+}: PatientShellProps & { view: PatientWorkflowView }) {
   const canCancel = state.round ? cancellableStates.has(state.round.state) : false;
   return createElement(
     "div",
@@ -338,13 +347,9 @@ function PatientHeader({ state, controller }: PatientShellProps) {
       },
       createElement(
         "span",
-        {
-          "aria-hidden": "true",
-          className: styles.brandMark
-        },
-        "HR"
-      ),
-      createElement("span", null, "HomeRounds")
+        null,
+        "HomeRounds"
+      )
     ),
     createElement(
       "div",
@@ -352,11 +357,9 @@ function PatientHeader({ state, controller }: PatientShellProps) {
         className: styles.headerActions
       },
       createElement(
-        StatusChip,
-        {
-          variant: "information"
-        },
-        "Synthetic demo"
+        "span",
+        { className: styles.headerProgress },
+        `Check-in · ${stepIndex(view) + 1} of 4`
       ),
       createRequiredChildrenElement(
         Button,
@@ -366,7 +369,7 @@ function PatientHeader({ state, controller }: PatientShellProps) {
           size: "compact",
           variant: "quiet"
         },
-        "Refresh saved state"
+        "Resume saved progress"
       ),
       canCancel
         ? createRequiredChildrenElement(
@@ -377,7 +380,7 @@ function PatientHeader({ state, controller }: PatientShellProps) {
               size: "compact",
               variant: "quiet"
             },
-            "Cancel round"
+            "End check-in"
           )
         : null
     )
@@ -428,9 +431,13 @@ function InvitationPanel({ state, controller }: PatientShellProps) {
         {
           id: "invitation-title"
         },
-        "Your two-minute check is ready"
+        "Ready when you are, Maya."
       ),
-      createElement("p", null, state.round?.purpose)
+      createElement(
+        "p",
+        null,
+        "A short check-in about how you have been feeling since your last saved round."
+      )
     ),
     createElement(
       Card,
@@ -438,11 +445,11 @@ function InvitationPanel({ state, controller }: PatientShellProps) {
       createElement(
         CardHeader,
         null,
-        createElement(CardTitle, null, "Before you start"),
+        createElement(CardTitle, null, "A short, guided check-in"),
         createElement(
           CardDescription,
           null,
-          "You stay in control of every submitted answer and action."
+          "You stay in control of every answer, optional check, and next step."
         )
       ),
       createElement(
@@ -456,22 +463,22 @@ function InvitationPanel({ state, controller }: PatientShellProps) {
           createElement(
             "li",
             null,
-            "Required safety questions are answered with structured controls."
+            "You will answer three required safety questions first."
           ),
           createElement(
             "li",
             null,
-            "Voice is optional, editable, and cannot choose urgency or an action."
+            "Voice is optional, editable, and always has a complete text alternative."
           ),
           createElement(
             "li",
             null,
-            "A camera estimate appears only after the configured quality gate passes."
+            "A camera reading appears only when signal quality passes."
           ),
           createElement(
             "li",
             null,
-            "No raw camera frames or raw voice audio are stored by HomeRounds."
+            "HomeRounds does not store raw camera frames or raw voice audio."
           )
         ),
         createElement(
@@ -487,7 +494,7 @@ function InvitationPanel({ state, controller }: PatientShellProps) {
           createElement(
             "span",
             null,
-            "I understand this is a synthetic demonstration, not clinically validated software, and not a medical service."
+            "I understand this check does not diagnose a condition or contact a medical service."
           )
         )
       ),
@@ -509,7 +516,7 @@ function InvitationPanel({ state, controller }: PatientShellProps) {
                 }),
                 "Starting\u2026"
               )
-            : "Start the check"
+            : "Start my check-in"
         )
       )
     )
@@ -576,6 +583,7 @@ function ReportPanel({
   createId: () => string;
   now: () => string;
 }) {
+  const [stage, setStage] = useState<"safety" | "conversation" | "review">("safety");
   const [chestPain, setChestPain] = useState<string | null>(null);
   const [severeBreathlessness, setSevereBreathlessness] = useState<string | null>(null);
   const [fainted, setFainted] = useState<string | null>(null);
@@ -583,6 +591,7 @@ function ReportPanel({
   const [palpitations, setPalpitations] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<TranscriptConfirmation | null>(null);
   const [agentProposal, setAgentProposal] = useState<VoiceAgentProposalState | null>(null);
+  const [reportReviewed, setReportReviewed] = useState(false);
   const round = state.round;
   const voiceContext = useMemo<VoiceSessionContext>(
     () => ({
@@ -590,9 +599,9 @@ function ReportPanel({
       patientAlias: "Maya",
       roundPurpose:
         round?.purpose ??
-        "Fictional cardiometabolic programme check-in for a scheduled home round.",
+        "A short home check-in about how you have been feeling.",
       historySummary:
-        "Synthetic history: Maya is enrolled in a fictional cardiometabolic monitoring programme. Prior demo rounds provide bounded context only and do not establish a diagnosis."
+        "Your saved sample profile includes a usual baseline and recent medication context. It does not establish a diagnosis."
     }),
     [round?.purpose]
   );
@@ -605,7 +614,7 @@ function ReportPanel({
     palpitations !== null &&
     confirmation !== null;
   function submitReport(): void {
-    if (!complete || !round || !confirmation) return;
+    if (!complete || !round || !confirmation || !reportReviewed) return;
     const report = createConfirmedPatientReport({
       reportId: createId(),
       confirmation,
@@ -625,166 +634,330 @@ function ReportPanel({
     });
     void controller.submitConfirmedReport(report);
   }
-  return createElement(
-    "section",
-    {
-      "aria-labelledby": "report-title",
-      className: styles.primaryPanel
-    },
-    createElement(
-      "div",
-      {
-        className: styles.introCopy
-      },
+  const safetyComplete =
+    chestPain !== null && severeBreathlessness !== null && fainted !== null;
+  const conversationComplete = weakness !== null && palpitations !== null && confirmation !== null;
+  const labelFor = (options: readonly ChoiceOption[], value: string | null) =>
+    options.find((option) => option.value === value)?.label ?? "Not answered";
+
+  if (stage === "safety") {
+    return createElement(
+      "section",
+      { "aria-labelledby": "report-title", className: styles.primaryPanel },
       createElement(
-        "h1",
-        {
-          id: "report-title"
-        },
-        "Tell us what is happening now"
-      ),
-      createElement(
-        "p",
-        null,
-        "Answer every safety question yourself. Voice or typed narrative cannot skip them."
-      )
-    ),
-    createRequiredChildrenElement(
-      Banner,
-      {
-        title: "Safety questions are checked first",
-        variant: "warning"
-      },
-      createElement(
-        "p",
-        null,
-        "A \u201Cyes\u201D answer stops the ordinary demo flow. \u201CI\u2019m not sure\u201D remains uncertain and is sent for review; it is never treated as \u201Cno\u201D."
-      )
-    ),
-    createElement(
-      Card,
-      null,
-      createElement(
-        CardHeader,
-        null,
-        createElement(CardTitle, null, "Required safety answers"),
-        createElement(CardDescription, null, "All three answers are required before submission.")
-      ),
-      createElement(
-        CardContent,
-        null,
-        createElement(ChoiceField, {
-          legend: "Are you having chest pain now?",
-          name: "chest-pain",
-          onChange: (value) => setChestPain(RedFlagAnswerSchema.parse(value)),
-          options: redFlagOptions,
-          value: chestPain
-        }),
-        createElement(ChoiceField, {
-          legend: "Are you severely short of breath now?",
-          name: "severe-breathlessness",
-          onChange: (value) => setSevereBreathlessness(RedFlagAnswerSchema.parse(value)),
-          options: redFlagOptions,
-          value: severeBreathlessness
-        }),
-        createElement(ChoiceField, {
-          legend: "Have you fainted?",
-          name: "fainted",
-          onChange: (value) => setFainted(RedFlagAnswerSchema.parse(value)),
-          options: redFlagOptions,
-          value: fainted
-        })
-      )
-    ),
-    createElement(
-      Card,
-      null,
-      createElement(
-        CardHeader,
-        null,
-        createElement(CardTitle, null, "Your structured check-in"),
+        "div",
+        { className: styles.introCopy },
+        createElement("p", { className: styles.screenEyebrow }, "First, a safety check"),
+        createElement("h1", { id: "report-title" }, "Three questions before we talk."),
         createElement(
-          CardDescription,
+          "p",
           null,
-          "These confirmed controls, not narrative text, become protocol facts."
+          "Answer each one yourself. “I’m not sure” stays uncertain and is never treated as “no”."
+        )
+      ),
+      createRequiredChildrenElement(
+        Banner,
+        { title: "These answers come first", variant: "warning" },
+        createElement(
+          "p",
+          null,
+          "A “yes” answer ends the ordinary check-in before voice, camera, or a recommendation can continue."
         )
       ),
       createElement(
-        CardContent,
+        Card,
+        { className: styles.focusCard },
+        createElement(
+          CardHeader,
+          null,
+          createElement(CardTitle, null, "How are you right now?"),
+          createElement(CardDescription, null, "Choose one answer for every question.")
+        ),
+        createElement(
+          CardContent,
+          null,
+          createElement(ChoiceField, {
+            legend: "Are you having chest pain now?",
+            name: "chest-pain",
+            onChange: (value) => setChestPain(RedFlagAnswerSchema.parse(value)),
+            options: redFlagOptions,
+            value: chestPain
+          }),
+          createElement(ChoiceField, {
+            legend: "Are you severely short of breath now?",
+            name: "severe-breathlessness",
+            onChange: (value) => setSevereBreathlessness(RedFlagAnswerSchema.parse(value)),
+            options: redFlagOptions,
+            value: severeBreathlessness
+          }),
+          createElement(ChoiceField, {
+            legend: "Have you fainted?",
+            name: "fainted",
+            onChange: (value) => setFainted(RedFlagAnswerSchema.parse(value)),
+            options: redFlagOptions,
+            value: fainted
+          })
+        ),
+        createElement(
+          CardFooter,
+          null,
+          createRequiredChildrenElement(
+            Button,
+            { disabled: !safetyComplete, onClick: () => setStage("conversation") },
+            "Continue to conversation"
+          )
+        )
+      )
+    );
+  }
+
+  if (stage === "conversation") {
+    return createElement(
+      "section",
+      { "aria-labelledby": "report-title", className: styles.primaryPanel },
+      createElement(
+        "div",
+        { className: styles.introCopy },
+        createElement("p", { className: styles.screenEyebrow }, "Conversation"),
+        createElement("h1", { id: "report-title" }, "Tell me what’s changed."),
+        createElement(
+          "p",
+          null,
+          "Speak naturally or type instead. You will check the words and every structured answer before continuing."
+        )
+      ),
+      round ? createElement(HistoryPurposeCard, { context: voiceContext }) : null,
+      createElement(
+        Card,
+        { className: styles.focusCard },
+        createElement(
+          CardHeader,
+          null,
+          createElement(CardTitle, null, "Two details to keep clear"),
+          createElement(
+            CardDescription,
+            null,
+            "Choose “I’m not sure” whenever that is the most accurate answer."
+          )
+        ),
+        createElement(
+          CardContent,
+          null,
+          createElement(ChoiceField, {
+            legend: "How weak do you feel?",
+            name: "weakness",
+            onChange: (value) => setWeakness(PatientReportSchema.shape.weakness.parse(value)),
+            options: weaknessOptions,
+            value: weakness
+          }),
+          createElement(ChoiceField, {
+            legend: "Are you noticing a racing, pounding, or fluttering feeling?",
+            name: "palpitations",
+            onChange: (value) =>
+              setPalpitations(PatientReportSchema.shape.palpitations.parse(value)),
+            options: palpitationOptions,
+            value: palpitations
+          })
+        )
+      ),
+      round
+        ? createElement(VoiceInteractionPanel, {
+            context: voiceContext,
+            createId,
+            onConfirmed: setConfirmation,
+            onProposal: (proposal: VoiceAgentProposalState) => {
+              setAgentProposal(proposal);
+              setStage("review");
+            },
+            provider: voiceProvider,
+            roundId: round.id
+          })
+        : null,
+      confirmation
+        ? createRequiredChildrenElement(
+            Banner,
+            { title: "Your words are ready to review", variant: "success" },
+            createElement("p", null, "Nothing is submitted until you review the report next.")
+          )
+        : null,
+      createElement(
+        "div",
+        { className: styles.primaryActions },
+        createRequiredChildrenElement(
+          Button,
+          { onClick: () => setStage("safety"), variant: "quiet" },
+          "Back to safety answers"
+        ),
+        createRequiredChildrenElement(
+          Button,
+          { disabled: !conversationComplete, onClick: () => setStage("review") },
+          "Review my report"
+        )
+      )
+    );
+  }
+
+  if (round && agentProposal) {
+    return createElement(
+      "section",
+      { "aria-labelledby": "report-title", className: styles.primaryPanel },
+      createElement(
+        "div",
+        { className: styles.introCopy },
+        createElement("p", { className: styles.screenEyebrow }, "Review"),
+        createElement("h1", { id: "report-title" }, "Check every answer before we continue."),
+        createElement(
+          "p",
+          null,
+          "The conversation only prepared a draft. You decide what each field should say."
+        )
+      ),
+      createElement(VoiceAgentProposalReview, {
+        createId,
+        now,
+        onConfirmed: (report) => controller.submitConfirmedReport(report),
+        proposal: agentProposal.proposal,
+        roundId: round.id
+      }),
+      createElement(
+        "div",
+        { className: styles.primaryActions },
+        createRequiredChildrenElement(
+          Button,
+          {
+            onClick: () => {
+              setAgentProposal(null);
+              setStage("conversation");
+            },
+            variant: "quiet"
+          },
+          "Return to conversation"
+        )
+      )
+    );
+  }
+
+  return createElement(
+    "section",
+    { "aria-labelledby": "report-review-title", className: styles.primaryPanel },
+    createElement(
+      "div",
+      { className: styles.introCopy },
+      createElement("p", { className: styles.screenEyebrow }, "Review"),
+      createElement("h1", { id: "report-review-title" }, "Let’s make sure I understood."),
+      createElement(
+        "p",
         null,
-        createElement(ChoiceField, {
-          legend: "How weak do you feel?",
-          name: "weakness",
-          onChange: (value) => setWeakness(PatientReportSchema.shape.weakness.parse(value)),
-          options: weaknessOptions,
-          value: weakness
-        }),
-        createElement(ChoiceField, {
-          legend: "Are you noticing a racing, pounding, or fluttering feeling?",
-          name: "palpitations",
-          onChange: (value) => setPalpitations(PatientReportSchema.shape.palpitations.parse(value)),
-          options: palpitationOptions,
-          value: palpitations
-        })
+        "Here are the answers you are about to submit. Edit anything that is not right."
       )
     ),
-    round ? createElement(HistoryPurposeCard, { context: voiceContext }) : null,
-    round
-      ? createElement(VoiceInteractionPanel, {
-          context: voiceContext,
-          createId: createId,
-          onConfirmed: setConfirmation,
-          onProposal: setAgentProposal,
-          provider: voiceProvider,
-          roundId: round.id
-        })
-      : null,
-    round && agentProposal
-      ? createElement(VoiceAgentProposalReview, {
-          createId,
-          now,
-          onConfirmed: (report) => controller.submitConfirmedReport(report),
-          proposal: agentProposal.proposal,
-          roundId: round.id
-        })
-      : null,
+    createElement(
+      Card,
+      { className: styles.reviewCard },
+      createElement(
+        CardHeader,
+        null,
+        createElement(CardTitle, null, "Your structured report"),
+        createElement(CardDescription, null, "Unknown and unsure answers remain exactly as shown.")
+      ),
+      createElement(
+        CardContent,
+        null,
+        createElement(
+          "dl",
+          { className: styles.reportSummary },
+          createElement(
+            "div",
+            null,
+            createElement("dt", null, "Chest pain now"),
+            createElement("dd", null, labelFor(redFlagOptions, chestPain))
+          ),
+          createElement(
+            "div",
+            null,
+            createElement("dt", null, "Severe breathlessness now"),
+            createElement("dd", null, labelFor(redFlagOptions, severeBreathlessness))
+          ),
+          createElement(
+            "div",
+            null,
+            createElement("dt", null, "Fainted"),
+            createElement("dd", null, labelFor(redFlagOptions, fainted))
+          ),
+          createElement(
+            "div",
+            null,
+            createElement("dt", null, "Weakness"),
+            createElement("dd", null, labelFor(weaknessOptions, weakness))
+          ),
+          createElement(
+            "div",
+            null,
+            createElement("dt", null, "Racing or fluttering feeling"),
+            createElement("dd", null, labelFor(palpitationOptions, palpitations))
+          ),
+          createElement(
+            "div",
+            null,
+            createElement("dt", null, "What you said"),
+            createElement("dd", null, confirmation?.text ?? "Not answered")
+          )
+        ),
+        createElement(
+          "label",
+          { className: styles.checkboxChoice },
+          createElement("input", {
+            checked: reportReviewed,
+            onChange: (event) => setReportReviewed(event.currentTarget.checked),
+            type: "checkbox"
+          }),
+          createElement("span", null, "I reviewed every field and confirm these are my answers.")
+        )
+      ),
+      createElement(
+        CardFooter,
+        null,
+        createRequiredChildrenElement(
+          Button,
+          { onClick: () => setStage("safety"), variant: "quiet" },
+          "Edit answers"
+        ),
+        createRequiredChildrenElement(
+          Button,
+          { onClick: () => setStage("conversation"), variant: "secondary" },
+          "Edit conversation"
+        )
+      )
+    ),
     createElement(
       "p",
-      {
-        className: styles.privacyNote
-      },
-      "The confirmed narrative remains ephemeral. Up to 500 confirmed characters may inform the bounded evidence-module proposal, but narrative text is never stored; structured safety answers remain authoritative."
+      { className: styles.privacyNote },
+      "Your confirmed conversation text is not stored. The structured answers above are the report."
     ),
     createElement(
       "div",
-      {
-        className: styles.primaryActions
-      },
+      { className: styles.primaryActions },
       createRequiredChildrenElement(
         Button,
-        {
-          disabled: !complete || state.pending !== null,
-          onClick: submitReport
-        },
+        { disabled: !complete || !reportReviewed || state.pending !== null, onClick: submitReport },
         state.pending === "submitting_report" || state.pending === "transition"
           ? createElement(
               Fragment,
               null,
-              createElement(Spinner, {
-                label: "Checking answers"
-              }),
-              "Checking answers\u2026"
+              createElement(Spinner, { label: "Checking answers" }),
+              "Checking answers…"
             )
           : "Confirm and continue"
       )
     )
   );
+
 }
 function MeasurementPanel({ state, controller }: PatientShellProps) {
   const [consented, setConsented] = useState(false);
   const session = state.assessmentSession;
-  const providerLabel =
-    session?.provider === "vitallens" ? "VitalLens face check" : "Finger pulse check";
+  const selectedCheckLabel =
+    session?.provider === "vitallens" ? "Face pulse check" : "Finger pulse check";
   if (state.pending === "capturing" || state.pending === "submitting_measurement") {
     return createElement(
       "section",
@@ -807,7 +980,7 @@ function MeasurementPanel({ state, controller }: PatientShellProps) {
         createElement(
           "p",
           null,
-          "No number is shown unless the selected provider returns a passing quality result."
+          "No reading is shown unless signal quality passes."
         )
       ),
       createElement(FeedbackState, {
@@ -890,7 +1063,7 @@ function MeasurementPanel({ state, controller }: PatientShellProps) {
                 onClick: () => void controller.useRecordedDemoCapture(),
                 variant: "secondary"
               },
-              "Use labelled recorded demo capture"
+              "Use the labelled sample reading"
             )
           : null,
         createRequiredChildrenElement(
@@ -907,7 +1080,7 @@ function MeasurementPanel({ state, controller }: PatientShellProps) {
         ? createElement(
             "p",
             { className: styles.privacyNote },
-            "Recorded synthetic recovery is optional, never automatic, contains no raw media or patient data, and is not physical-device evidence."
+            "This labelled sample is optional and never automatic. It is not a live reading and contains no raw media or personal data."
           )
         : null
     );
@@ -931,7 +1104,7 @@ function MeasurementPanel({ state, controller }: PatientShellProps) {
           },
           "The selected camera check is unavailable"
         ),
-        createElement("p", null, "HomeRounds will not switch providers inside this round.")
+        createElement("p", null, "HomeRounds will not silently switch to another camera method.")
       ),
       createElement(FeedbackState, {
         action: createRequiredChildrenElement(
@@ -944,93 +1117,21 @@ function MeasurementPanel({ state, controller }: PatientShellProps) {
         ),
         description: "No camera value was recorded. You can stop this attempt and request review.",
         kind: "error",
-        title: providerLabel
+        title: selectedCheckLabel
       })
     );
   }
   if (!session) {
-    return createElement(
-      "section",
-      {
-        "aria-labelledby": "prepare-title",
-        className: styles.primaryPanel
-      },
-      createElement(
-        "div",
-        {
-          className: styles.introCopy
-        },
-        createElement(
-          "h1",
-          {
-            id: "prepare-title"
-          },
-          "Next, prepare a short camera pulse check"
-        ),
-        createElement(
-          "p",
-          null,
-          "The server selects exactly one registered provider. This page never changes it."
-        )
-      ),
-      createElement(
-        Card,
-        null,
-        createElement(
-          CardHeader,
-          null,
-          createElement(CardTitle, null, "What to expect"),
-          createElement(CardDescription, null, "The check is optional and remains quality gated.")
-        ),
-        createElement(
-          CardContent,
-          null,
-          createElement(
-            "ul",
-            {
-              className: styles.plainList
-            },
-            createElement("li", null, "Camera support and permission are checked explicitly."),
-            createElement(
-              "li",
-              null,
-              "Finger PPG processes derived samples locally and sends no frames."
-            ),
-            createElement(
-              "li",
-              null,
-              "VitalLens, when configured, requires separate third-party data-flow consent."
-            ),
-            createElement(
-              "li",
-              null,
-              "No estimate appears for poor, failed, or unavailable capture."
-            )
-          )
-        ),
-        createElement(
-          CardFooter,
-          null,
-          createRequiredChildrenElement(
-            Button,
-            {
-              disabled: state.pending !== null,
-              onClick: () => void controller.prepareMeasurement()
-            },
-            state.pending === "preparing_camera"
-              ? createElement(
-                  Fragment,
-                  null,
-                  createElement(Spinner, {
-                    label: "Preparing camera"
-                  }),
-                  "Preparing\u2026"
-                )
-              : "Check this device"
-          )
-        )
-      )
-    );
+    return createElement(DeviceHandoff, {
+      computerSupported: true,
+      onUseComputer: () => void controller.prepareMeasurement(),
+      rationale:
+        "A short camera check can add one quality-gated piece of information. No reading is accepted when quality is uncertain.",
+      status: "unavailable",
+      statusDetail:
+        "Secure phone pairing is not connected yet. You can complete this supported check on the computer.",
+      taskTitle: "A pulse check is the most useful next step."
+    });
   }
   return createElement(
     "section",
@@ -1048,8 +1149,8 @@ function MeasurementPanel({ state, controller }: PatientShellProps) {
         {
           id: "ready-title"
         },
-        "Your device is ready for the",
-        providerLabel.toLowerCase()
+        "Your device is ready for the ",
+        selectedCheckLabel.toLowerCase()
       ),
       createElement(
         "p",
@@ -1063,13 +1164,13 @@ function MeasurementPanel({ state, controller }: PatientShellProps) {
       createElement(
         CardHeader,
         null,
-        createElement(CardTitle, null, providerLabel),
+        createElement(CardTitle, null, selectedCheckLabel),
         createElement(
           CardDescription,
           null,
           session.provider === "finger_ppg"
             ? "Cover the rear camera and optional torch gently with a fingertip."
-            : "Keep your face centred. Cropped, downsampled frames would pass through the HomeRounds proxy."
+            : "Keep your face centred. A small cropped image sample may be processed by the selected camera service."
         )
       ),
       createElement(
@@ -1088,7 +1189,7 @@ function MeasurementPanel({ state, controller }: PatientShellProps) {
           createElement(
             "span",
             null,
-            "I consent to this synthetic-demo camera check and understand that no result is guaranteed."
+            "I agree to use the camera for this check and understand that a reading is not guaranteed."
           )
         ),
         createElement(
@@ -1122,10 +1223,10 @@ function qualityReason(reason: string): string {
     motion: "Movement interrupted the signal.",
     irregular_cadence: "Frame timing was not reliable.",
     estimator_disagreement: "The two signal estimates did not agree.",
-    provider_quality_failed: "The selected provider did not return passing quality.",
+    provider_quality_failed: "The camera check did not return passing quality.",
     permission_denied: "Camera permission was not granted.",
     unsupported_device: "This device does not support the selected check.",
-    provider_unavailable: "The selected provider was unavailable.",
+    provider_unavailable: "The selected camera check was unavailable.",
     cancelled: "The camera check was cancelled."
   };
   return descriptions[reason] ?? "The configured quality gate did not pass.";
@@ -1154,12 +1255,12 @@ function FollowUpPanel({ state, controller }: PatientShellProps) {
         {
           id: "follow-up-title"
         },
-        "One more structured question"
+        "One more question."
       ),
       createElement(
         "p",
         null,
-        "The deterministic protocol returned this question. No second follow-up is allowed."
+        "Your confirmed report needs this one answer. There will not be a second follow-up."
       )
     ),
     state.measurement
@@ -1169,10 +1270,10 @@ function FollowUpPanel({ state, controller }: PatientShellProps) {
             {
               className: styles.measurementValue
             },
-            "Demo pulse estimate:",
+            "Pulse reading: ",
             createElement("strong", null, state.measurement.value, "bpm")
           ),
-          reasons: ["The selected provider passed the configured demo quality gate."],
+          reasons: ["Signal quality passed before this reading was accepted."],
           status: "pass"
         })
       : null,
@@ -1234,12 +1335,12 @@ function ActionConfirmationPanel({ state, controller }: PatientShellProps) {
         {
           id: "action-title"
         },
-        "Confirm the next demo step"
+        "Choose what happens next."
       ),
       createElement(
         "p",
         null,
-        "The deterministic protocol proposes one allowlisted action. You decide whether to run it."
+        "HomeRounds has one available action. Nothing happens until you confirm it."
       )
     ),
     state.measurement
@@ -1249,10 +1350,10 @@ function ActionConfirmationPanel({ state, controller }: PatientShellProps) {
             {
               className: styles.measurementValue
             },
-            "Demo pulse estimate:",
+            "Pulse reading: ",
             createElement("strong", null, state.measurement.value, "bpm")
           ),
-          reasons: ["The selected provider passed the configured demo quality gate."],
+          reasons: ["Signal quality passed before this reading was accepted."],
           status: "pass"
         })
       : null,
@@ -1262,13 +1363,13 @@ function ActionConfirmationPanel({ state, controller }: PatientShellProps) {
       createElement(
         CardHeader,
         null,
-        createElement(CardTitle, null, "Programme review requested"),
+        createElement(CardTitle, null, "Save a review request"),
         createElement(
           CardDescription,
           null,
           abstained
-            ? "The protocol stopped because confirmed information was uncertain or incomplete."
-            : "The illustrative demo protocol requested neutral programme review."
+            ? "Some confirmed information is uncertain or incomplete, so the round can stop for review."
+            : "Your confirmed answers make a neutral sample review the next available action."
         )
       ),
       createElement(
@@ -1282,20 +1383,20 @@ function ActionConfirmationPanel({ state, controller }: PatientShellProps) {
           createElement(
             "div",
             null,
-            createElement("dt", null, "Owner"),
-            createElement("dd", null, "Fictional programme clinician")
+            createElement("dt", null, "Saved to"),
+            createElement("dd", null, "HomeRounds review queue")
           ),
           createElement(
             "div",
             null,
-            createElement("dt", null, "Protocol"),
-            createElement("dd", null, result.protocolVersion, "\u00B7 illustrative demo only")
+            createElement("dt", null, "Based on"),
+            createElement("dd", null, "Your confirmed answers and accepted quality results")
           ),
           createElement(
             "div",
             null,
             createElement("dt", null, "Timing"),
-            createElement("dd", null, "Demo-only window; no real response is promised")
+            createElement("dd", null, "Saved inside HomeRounds only; no clinic response is promised")
           )
         ),
         createElement(
@@ -1308,7 +1409,7 @@ function ActionConfirmationPanel({ state, controller }: PatientShellProps) {
             onChange: (event) => setConfirmed(event.currentTarget.checked),
             type: "checkbox"
           }),
-          createElement("span", null, "I confirm creation of one synthetic programme-review task.")
+          createElement("span", null, "I want to save one sample review request.")
         )
       ),
       createElement(
@@ -1329,7 +1430,7 @@ function ActionConfirmationPanel({ state, controller }: PatientShellProps) {
                 }),
                 "Confirming\u2026"
               )
-            : "Create synthetic review task"
+            : "Save review request"
         )
       )
     )
@@ -1353,12 +1454,12 @@ function EmergencyPanel({ state, controller }: PatientShellProps) {
         {
           id: "emergency-title"
         },
-        "Stop this demo round"
+        "Stop this check-in."
       ),
       createElement(
         "p",
         null,
-        "The deterministic safety gate ended the ordinary flow before any camera check."
+        "Your required safety answers ended the ordinary flow before any camera check."
       )
     ),
     createRequiredChildrenElement(
@@ -1380,7 +1481,7 @@ function EmergencyPanel({ state, controller }: PatientShellProps) {
           createElement(
             CardHeader,
             null,
-            createElement(CardTitle, null, "Confirm that you have seen the demo guidance"),
+            createElement(CardTitle, null, "Confirm that you have seen this guidance"),
             createElement(CardDescription, null, "No clinical service or responder is connected.")
           ),
           createElement(
@@ -1396,7 +1497,11 @@ function EmergencyPanel({ state, controller }: PatientShellProps) {
                 onChange: (event) => setConfirmed(event.currentTarget.checked),
                 type: "checkbox"
               }),
-              createElement("span", null, "I understand this is generic synthetic-demo guidance.")
+              createElement(
+                "span",
+                null,
+                "I understand this is general guidance and no emergency service is connected."
+              )
             )
           ),
           createElement(
@@ -1441,16 +1546,15 @@ function OutcomePanel({
             id: "outcome-title"
           },
           completed
-            ? "Synthetic review completed"
-            : (action?.message.heading ?? "Programme review requested")
+            ? "Review finished"
+            : "Your review request is saved"
         ),
         createElement(
           "p",
           null,
           completed
-            ? "The fictional clinician completed this saved demo task."
-            : (action?.message.body ??
-                "Your confirmed synthetic information is waiting in the saved round.")
+            ? "The saved sample review was marked complete inside HomeRounds."
+            : "This sample request is waiting inside HomeRounds. Nothing was sent to a real clinic."
         )
       ),
       createRequiredChildrenElement(
@@ -1459,9 +1563,9 @@ function OutcomePanel({
           title:
             action?.kind === "programme_task"
               ? action.created
-                ? "One synthetic task created"
-                : "Existing synthetic task reused"
-              : "Saved synthetic task restored",
+                ? "One sample request saved"
+                : "Existing request restored"
+              : "Saved request restored",
           variant: "success"
         },
         createElement("p", null, "Repeated confirmation does not create duplicate clinical work.")
@@ -1476,9 +1580,7 @@ function OutcomePanel({
           createElement(
             CardDescription,
             null,
-            action?.kind === "programme_task"
-              ? "This outcome is demo-only and not a medical service."
-              : "This task status comes from persisted task data."
+            "This saved status belongs only to the sample HomeRounds profile."
           )
         ),
         createElement(
@@ -1493,7 +1595,7 @@ function OutcomePanel({
               "div",
               null,
               createElement("dt", null, "Owner"),
-              createElement("dd", null, "Fictional programme clinician")
+              createElement("dd", null, "HomeRounds review queue")
             ),
             createElement(
               "div",
@@ -1503,9 +1605,9 @@ function OutcomePanel({
                 "dd",
                 null,
                 completed
-                  ? "Completed in clinician cockpit"
+                  ? "Completed in HomeRounds"
                   : projectedTask.status === "open"
-                    ? "Waiting for synthetic review"
+                    ? "Waiting in HomeRounds"
                     : projectedTask.status
               )
             ),
@@ -1516,9 +1618,7 @@ function OutcomePanel({
               createElement(
                 "dd",
                 null,
-                action?.kind === "programme_task"
-                  ? (action.message.serviceWindowLabel ?? projectedTask.serviceWindowLabel)
-                  : projectedTask.serviceWindowLabel
+                "No real response time is promised"
               )
             )
           )
@@ -1543,14 +1643,14 @@ function OutcomePanel({
           {
             id: "outcome-title"
           },
-          action.message.heading
+          "This check-in has stopped"
         ),
-        createElement("p", null, action.message.body)
+        createElement("p", null, "HomeRounds showed general safety guidance and did not continue to a camera check.")
       ),
       createRequiredChildrenElement(
         Banner,
         {
-          title: "Demo guidance recorded as shown",
+          title: "Guidance recorded as shown",
           variant: "warning"
         },
         createElement(
@@ -1580,9 +1680,9 @@ function OutcomePanel({
           id: "outcome-title"
         },
         abstained
-          ? "The demo stopped without a measurement"
+          ? "No reading was accepted"
           : completed
-            ? "Synthetic review completed"
+            ? "Review finished"
             : "Programme review requested"
       ),
       createElement(
@@ -1591,8 +1691,8 @@ function OutcomePanel({
         abstained
           ? "HomeRounds preserved the uncertainty and did not invent a camera value."
           : completed
-            ? "The fictional clinician completed this saved demo task."
-            : "Your confirmed synthetic information is waiting in the saved round."
+            ? "The sample review was marked complete inside HomeRounds."
+            : "Your confirmed information is waiting inside HomeRounds. Nothing was sent to a clinic."
       )
     ),
     createElement(
@@ -1619,7 +1719,7 @@ function OutcomePanel({
             createElement(
               "dd",
               null,
-              abstained ? "No review-task owner confirmed" : "Fictional programme clinician"
+              abstained ? "No review owner confirmed" : "HomeRounds review queue"
             )
           ),
           createElement(
@@ -1629,7 +1729,7 @@ function OutcomePanel({
             createElement(
               "dd",
               null,
-              completed ? "Completed in clinician cockpit" : "Waiting for synthetic review"
+              completed ? "Completed in HomeRounds" : "Waiting in HomeRounds"
             )
           ),
           createElement(
@@ -1689,7 +1789,7 @@ function ResumeRecoveryPanel({ state, controller }: PatientShellProps) {
           )
         : undefined,
       description:
-        "This build cannot safely reconstruct the exact assessment session or protocol decision from the current round projection.",
+        "Some short-lived check information has expired, so this step cannot be resumed safely.",
       kind: "error",
       title: "No local assumption was used"
     })
@@ -1716,9 +1816,9 @@ function ProcessingPanel({
         {
           id: "processing-title"
         },
-        "Checking the saved round"
+        "Checking your saved answers"
       ),
-      createElement("p", null, "The deterministic service is finishing the protocol state.")
+      createElement("p", null, "HomeRounds is finishing the next saved step.")
     ),
     createElement(FeedbackState, {
       action: createRequiredChildrenElement(
@@ -1729,9 +1829,9 @@ function ProcessingPanel({
         },
         "Reload saved state"
       ),
-      description: "Reload if this state does not update. No model controls this decision.",
+      description: "Reload if this state does not update. Your confirmed answers remain saved.",
       kind: "loading",
-      title: "Protocol evaluation in progress"
+      title: "Finishing your check-in"
     })
   );
 }
@@ -1766,7 +1866,7 @@ function CancelledPanel() {
         title: "Camera and microphone stopped",
         variant: "information"
       },
-      createElement("p", null, "You can close this page. This remains a synthetic demonstration.")
+      createElement("p", null, "You can close this page. No further step will run.")
     )
   );
 }
@@ -1787,7 +1887,7 @@ function LoadingPanel({ state, controller }: PatientShellProps) {
     });
   }
   return createElement(FeedbackState, {
-    description: "Looking for an existing synthetic round before creating anything new.",
+    description: "Looking for saved progress before starting anything new.",
     kind: "loading",
     title: "Loading your saved round"
   });
@@ -1856,7 +1956,7 @@ function VoiceBiomarkerPanel({
     }
     return createElement(FeedbackState, {
       description:
-        "Creating a one-use, attested local session. No microphone capture starts without your consent.",
+        "Preparing the optional voice check. No microphone capture starts without your consent.",
       kind: "loading",
       title: "Preparing the optional voice-signal station"
     });
@@ -2028,6 +2128,13 @@ export function PatientRoundApp({
     () => providedRoundMapExperience ?? liveRoundMapExperience(state),
     [providedRoundMapExperience, state]
   );
+  const [acceptedRecommendation, setAcceptedRecommendation] = useState<string | null>(null);
+  const selectedRecommendation = state.evidenceRoute?.selectedModuleId ?? null;
+  const showRecommendation =
+    roundMapExperience !== undefined &&
+    selectedRecommendation !== null &&
+    recommendationViews.has(view) &&
+    acceptedRecommendation !== selectedRecommendation;
   useEffect(() => {
     const online = () => controller.setOnline(true);
     const offline = () => controller.setOnline(false);
@@ -2068,11 +2175,12 @@ export function PatientRoundApp({
           {
             className: styles.footerCopy
           },
-          "Synthetic demonstration only \u00B7 not clinically validated \u00B7 not for medical decisions"
+          "Sample profile \u00B7 Not medical care"
         ),
         header: createElement(PatientHeader, {
           controller: controller,
-          state: state
+          state: state,
+          view
         })
       },
       createElement(
@@ -2080,25 +2188,14 @@ export function PatientRoundApp({
         {
           className: styles.content
         },
-        createRequiredChildrenElement(
-          Banner,
-          {
-            title: "Synthetic demonstration — not clinically validated",
-            variant: "warning"
-          },
-          createElement(
-            "p",
-            null,
-            "HomeRounds is a hackathon prototype. It does not diagnose, give medication advice, or connect you to a real care service."
-          )
-        ),
         createElement(StepProgress, {
           label: "Round progress",
           steps: progressSteps(view)
         }),
-        roundMapExperience
+        showRecommendation
           ? createElement(AdaptiveRoundMap, {
               experience: roundMapExperience,
+              onContinue: () => setAcceptedRecommendation(selectedRecommendation),
               ...(onRetryAdaptiveSelection ? { onRetry: onRetryAdaptiveSelection } : {})
             })
           : null,
@@ -2106,30 +2203,32 @@ export function PatientRoundApp({
           controller: controller,
           state: state
         }),
-        state.recordedReplayLabel
+        !showRecommendation && state.recordedReplayLabel
           ? createRequiredChildrenElement(
               Banner,
               {
-                title: state.recordedReplayLabel,
+                title: "Labelled sample reading used",
                 variant: "information"
               },
               createElement(
                 "p",
                 null,
-                "Explicit recorded synthetic recovery was used after a live-capture failure. It is not physical-device or medical-validation evidence."
+                "You chose a labelled sample after a live camera attempt failed. It is not a live or medically validated reading."
               )
             )
           : null,
-        createElement(PatientWorkflowContent, {
-          controller: controller,
-          createId: createId,
-          state: state,
-          view: view,
-          voiceProvider: voiceProvider,
-          voiceBiomarkerProvider,
-          medicationLabelProvider,
-          now
-        })
+        showRecommendation
+          ? null
+          : createElement(PatientWorkflowContent, {
+              controller: controller,
+              createId: createId,
+              state: state,
+              view: view,
+              voiceProvider: voiceProvider,
+              voiceBiomarkerProvider,
+              medicationLabelProvider,
+              now
+            })
       )
     )
   );

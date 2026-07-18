@@ -14,7 +14,7 @@ describe("responsive style guide source contract", () => {
   });
 
   it("keeps safety and synthetic-data disclosures visible", () => {
-    expect(pageSource).toContain("Synthetic demonstration");
+    expect(pageSource).toContain("Sample profile · Not medical care");
     expect(pageSource).toContain("Not clinically validated");
     expect(compactPageSource).toContain("not for real-world medical decisions");
   });

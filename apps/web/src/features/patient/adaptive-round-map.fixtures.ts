@@ -39,14 +39,14 @@ const modules = [
       id: "symptoms.follow-up",
       kind: "structured_follow_up",
       label: "One structured follow-up",
-      description: "One patient-confirmed answer if the deterministic protocol requires it.",
+      description: "One patient-confirmed answer if another detail is needed.",
       producesFactKeys: ["follow_up_answer"],
       availability: { status: "available" },
       estimatedBurdenSeconds: 15,
       deterministicRank: 2
     },
     status: "next",
-    statusDetail: "Available only if the deterministic protocol returns one follow-up."
+    statusDetail: "Available only if the confirmed report leaves one detail unclear."
   },
   {
     candidate: {
@@ -60,14 +60,14 @@ const modules = [
       deterministicRank: 3
     },
     status: "skipped",
-    statusDetail: "The current deterministic route does not require medication evidence."
+    statusDetail: "The confirmed report does not require a medication label check."
   },
   {
     candidate: {
       id: "pulse.remote",
       kind: "pulse_capture",
       label: "Optional remote camera check",
-      description: "A separately consented provider route that is disabled in this fixture.",
+      description: "A separately consented camera route that is not available here.",
       producesFactKeys: ["pulse_bpm"],
       availability: { status: "unavailable", reason: "missing_configuration" },
       estimatedBurdenSeconds: 30,
@@ -128,7 +128,7 @@ const deterministicFallback = {
   status: "fallback" as const,
   selectedModuleId: "pulse.local",
   patientRationale:
-    "The deterministic route kept the quality-gated finger pulse check as the next eligible step."
+    "The quality-gated finger pulse check is the most useful available next step."
 };
 
 export const AISHA_RESILIENCE_ROUND_MAPS = {

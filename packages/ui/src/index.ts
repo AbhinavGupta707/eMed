@@ -8,6 +8,7 @@ export * from "./field";
 export * from "./measurement-quality";
 export * from "./shell";
 export * from "./status-chip";
+export * from "./status-icon";
 export * from "./step-progress";
 export * from "./task-row";
 export * from "./transcript-confirmation";

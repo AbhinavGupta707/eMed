@@ -86,7 +86,7 @@ const FIELD_LABELS: Readonly<Record<ProposalReviewField, string>> = {
   chest_pain: "Chest pain now",
   severe_breathlessness: "Severe breathlessness now",
   fainted: "Fainted",
-  note: "Patient note"
+  note: "Anything else"
 };
 
 function proposedValue(proposal: VoiceAgentReportProposal, field: VoiceAgentReportField): string {
@@ -166,22 +166,21 @@ function VoiceAgentProposalReviewSession(props: VoiceAgentProposalReviewProps) {
     <section aria-labelledby={`${baseId}-heading`} className={styles.reviewPanel}>
       <div className={styles.headingRow}>
         <div>
-          <p className={styles.eyebrow}>Unconfirmed agent proposal</p>
-          <h2 id={`${baseId}-heading`}>Review every proposed field</h2>
+          <p className={styles.eyebrow}>Your report draft</p>
+          <h2 id={`${baseId}-heading`}>Let’s make sure I understood.</h2>
         </div>
-        <span className={styles.draftBadge}>Draft — not submitted</span>
+        <span className={styles.draftBadge}>Not submitted</span>
       </div>
 
       <p className={styles.boundaryNote}>
-        The voice agent can only propose this structure. Select an answer for every field, then
-        confirm it. HomeRounds keeps red-flag, protocol, quality, and action decisions
-        deterministic.
+        Here’s what I heard. Select an answer for every field and confirm the report yourself before
+        anything continues.
       </p>
 
       {hasSafetyAttention(snapshot.proposal) ? (
         <div className={styles.safetyReview} role="note">
-          <strong>Safety-answer review required.</strong> A proposed “yes” or “unsure” remains
-          visible and is never converted to “no”. This screen does not diagnose or set urgency.
+          <strong>Safety answers need your attention.</strong> A “yes” or “unsure” answer stays
+          visible and is never changed to “no”. This screen does not diagnose or set urgency.
         </div>
       ) : null}
 
@@ -196,12 +195,10 @@ function VoiceAgentProposalReviewSession(props: VoiceAgentProposalReviewProps) {
                 {definition.safetyAnswer ? (
                   <span className={styles.safetyLabel}>Required safety answer</span>
                 ) : null}
-                {isUnresolved ? (
-                  <span className={styles.unresolvedLabel}>Proposed as unresolved</span>
-                ) : null}
+                {isUnresolved ? <span className={styles.unresolvedLabel}>Not yet clear</span> : null}
               </div>
               <p>
-                Agent proposed:{" "}
+                Heard as:{" "}
                 <strong>{proposedValue(snapshot.proposal, definition.field)}</strong>
               </p>
               <select
@@ -225,10 +222,10 @@ function VoiceAgentProposalReviewSession(props: VoiceAgentProposalReviewProps) {
 
         <div className={styles.reviewField}>
           <div className={styles.fieldHeading}>
-            <label htmlFor={`${baseId}-note`}>Patient note</label>
+            <label htmlFor={`${baseId}-note`}>Anything else</label>
           </div>
           <p>
-            Agent proposed: <strong>{snapshot.proposal.note ?? "No note"}</strong>
+            Heard as: <strong>{snapshot.proposal.note ?? "Not sure"}</strong>
           </p>
           <select
             disabled={snapshot.status === "confirming" || snapshot.status === "confirmed"}
@@ -256,7 +253,7 @@ function VoiceAgentProposalReviewSession(props: VoiceAgentProposalReviewProps) {
         />
         <span>
           I reviewed every field and confirm these are my answers. Unknown and unsure selections may
-          remain unresolved for deterministic review.
+          remain unresolved for review.
         </span>
       </label>
 
@@ -290,8 +287,7 @@ function VoiceAgentProposalReviewSession(props: VoiceAgentProposalReviewProps) {
 
       <p className={styles.reviewSummary}>
         Review progress: {Object.values(snapshot.answers).filter((value) => value !== null).length}{" "}
-        of 6 fields. Contract: {snapshot.proposal.contractVersion}. No voice transcript is shown or
-        retained here.
+        of 6 fields. Your conversation is not shown or stored here.
       </p>
       {snapshot.firstIncompleteField !== null ? (
         <p className={styles.visuallyHidden} aria-live="polite">

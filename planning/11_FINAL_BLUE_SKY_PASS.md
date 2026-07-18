@@ -411,3 +411,23 @@ Live-provider suites are separate, explicitly opted in, secret-safe, and never r
 - Do not let ElevenLabs or Fireworks set urgency, accept capture quality, execute actions, or invent an assessment/action.
 - Do not represent synthetic appointment/refill/message flows as live external integrations.
 - Do not start phone-call/Twilio work in this pass.
+
+## 12. Post-Checkpoint-11 release-closure acceptance
+
+Checkpoint 11 completion does not itself end the autonomous run. After 11D is reviewed and integrated, the orchestrator runs a separate black-box acceptance pass on the exact final `main` commit and its Vercel Preview. No new feature lane is launched by default; any discovered software defect is fixed in the owning layer and the affected plus complete gates are rerun.
+
+Required closure evidence:
+
+- complete formatting, lint, strict type, unit, package, contract, integration, demo-tooling, build, secret, raw-media, and claim gates;
+- installed-Chrome patient and clinician journeys with console/network inspection;
+- two independent browser contexts acting as laptop and phone, covering QR pairing, token exchange, live sync, reconnect, expiry/reissue, cancellation, stale writes, and result acknowledgement;
+- voice and complete text paths, explicit report confirmation, Fireworks selection/abstention/failure, medication review, and deterministic red-flag authority;
+- finger pulse, VitalLens, sustained vowel, and medication stations across pass, quality rejection, permission denial, provider unavailable, timeout, cancellation, and retry limits, with no numeric result after failure;
+- first-baseline, insufficient-history, comparable-baseline, remembered preference, correction/deletion, proactive synthetic trigger, duplicate suppression, and stale-memory paths;
+- confirmed synthetic appointment/refill/care-team actions, clinician ownership/completion, patient-visible status, audit provenance, and no implication of a real external service;
+- cold navigation and cross-session Neon persistence on the hosted Preview;
+- keyboard-only use, persistent labels/captions, visible focus, non-color status, reduced motion, 200% zoom, serious/critical axe zero, and responsive widths 320, 375, 390, 414, 768, 1024, 1280, 1440, and 1920 px;
+- performance budgets, background/resume, network-loss recovery, and a 30-minute soak without duplicate actions, runaway polling, leaked media, or unhandled errors;
+- three consecutive timed runs of the complete hero story and the resilience/red-flag story, including operator recovery and backup route.
+
+Live-provider tests remain explicit opt-in and secret-safe. The closure record distinguishes fixture, emulated browser, installed Chrome, hosted Vercel/Neon, live provider, and physical-device evidence. iPhone 12 Safari and Windows Chrome/Edge remain `pending-physical` until the owner supplies those devices; their absence cannot hide or excuse any software-owned failure.

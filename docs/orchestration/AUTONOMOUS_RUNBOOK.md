@@ -56,6 +56,6 @@ The durable execution design is specified in `planning/02_WORKTREE_ORCHESTRATION
 
 ## Completion
 
-The unattended final pass completes only after Checkpoints 9, 10, and 11 are integrated sequentially from tested commits; every narrow and full available gate passes; the Human Warmth, companion, sensing, baseline, memory, trigger, action, clinician, accessibility, privacy, and safety contracts are reviewed; Vercel/Neon and opted-in provider evidence is recorded honestly; and physical iPhone/Windows checks remain explicitly `pending-physical` until the owner performs them.
+The unattended final pass completes only after Checkpoints 9, 10, and 11 are integrated sequentially from tested commits and the separate post-Checkpoint-11 release-closure acceptance in `planning/11_FINAL_BLUE_SKY_PASS.md` passes on the exact final commit and Vercel Preview. Every narrow and full available gate must pass; the Human Warmth, companion, sensing, baseline, memory, trigger, action, clinician, accessibility, privacy, and safety contracts must be reviewed; both timed demo stories must pass three consecutive rehearsals; Vercel/Neon and opted-in provider evidence must be recorded honestly; and physical iPhone/Windows checks remain explicitly `pending-physical` until the owner performs them.
 
 Delete the Checkpoints 9–11 heartbeat only after no unattended implementation, integration, test, deployment, or documentation work remains. Do not call the product fully complete while a software-owned gate is failing or unrun.

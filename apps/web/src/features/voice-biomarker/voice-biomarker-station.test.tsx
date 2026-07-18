@@ -152,6 +152,26 @@ describe("voice biomarker station", () => {
     expect(screen.getByRole("status")).toHaveTextContent(/station declined/i);
   });
 
+  it("honours companion consent and submits a typed unavailable recovery", async () => {
+    const onUnavailable = vi.fn(async () => undefined);
+    render(
+      createElement(VoiceBiomarkerStation, {
+        assessmentSessionId: SESSION_ID,
+        consentConfirmed: true,
+        onCompleted: vi.fn(async () => undefined),
+        onUnavailable,
+        provider: provider(vi.fn(), { available: false, reason: "unsupported_device" }),
+        roundId: ROUND_ID
+      })
+    );
+
+    expect(screen.getByText(/Consent confirmed for this one capture/i)).toBeVisible();
+    fireEvent.click(await screen.findByRole("button", { name: "Continue without a voice result" }));
+
+    await waitFor(() => expect(onUnavailable).toHaveBeenCalledWith("unsupported_device"));
+    expect(screen.getByRole("status")).toHaveTextContent(/recorded as unavailable/i);
+  });
+
   it("shows labelled progress and a keyboard-operable cancel path while capture is pending", async () => {
     let finish: ((outcome: VoiceBiomarkerAssessmentResult) => void) | undefined;
     const capture = vi.fn(

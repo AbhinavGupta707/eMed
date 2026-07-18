@@ -534,14 +534,14 @@ function MedicationLabelPanelSession({
     <section className={styles.panel} aria-labelledby={headingId}>
       <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>Synthetic-demo medication check</p>
+          <p className={styles.eyebrow}>Medication label review</p>
           <h2 id={headingId}>Review what a medication label shows</h2>
         </div>
         <span className={styles.boundaryBadge}>Confirmation required</span>
       </header>
 
       <div className={styles.safetyBoundary}>
-        <strong>Prototype boundary:</strong> use only a synthetic demo label with no person’s name,
+        <strong>Sample-only boundary:</strong> use only a synthetic label with no person’s name,
         pharmacy details, prescription number, barcode, or other identifier. Extraction may be
         wrong. It cannot diagnose, give dosing advice, or change a medication.
       </div>

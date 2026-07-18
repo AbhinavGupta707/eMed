@@ -3,7 +3,11 @@
 
 "use client";
 
-import type { VoiceBiomarkerFact, VoiceBiomarkerProvider } from "@homerounds/contracts";
+import type {
+  VoiceBiomarkerFact,
+  VoiceBiomarkerProvider,
+  VoiceBiomarkerUnavailableReason
+} from "@homerounds/contracts";
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
 import {
@@ -19,6 +23,8 @@ export type VoiceBiomarkerStationProps = Readonly<{
   assessmentSessionId: string;
   onCompleted: (fact: VoiceBiomarkerFact) => Promise<void>;
   onDeclined?: () => Promise<void>;
+  onUnavailable?: (reason: VoiceBiomarkerUnavailableReason) => Promise<void>;
+  consentConfirmed?: boolean;
   timer?: VoiceBiomarkerTimer;
 }>;
 
@@ -68,9 +74,14 @@ function VoiceBiomarkerStationSession(props: VoiceBiomarkerStationProps) {
   useEffect(() => {
     controller.setHandlers({
       onCompleted: props.onCompleted,
-      ...(props.onDeclined ? { onDeclined: props.onDeclined } : {})
+      ...(props.onDeclined ? { onDeclined: props.onDeclined } : {}),
+      ...(props.onUnavailable ? { onUnavailable: props.onUnavailable } : {})
     });
-  }, [controller, props.onCompleted, props.onDeclined]);
+  }, [controller, props.onCompleted, props.onDeclined, props.onUnavailable]);
+
+  useEffect(() => {
+    if (props.consentConfirmed) controller.setConsent(true);
+  }, [controller, props.consentConfirmed]);
 
   useEffect(() => {
     const lifecycleGeneration = lifecycle.begin();
@@ -112,18 +123,25 @@ function VoiceBiomarkerStationSession(props: VoiceBiomarkerStationProps) {
         </p>
       </details>
 
-      <label className={styles.consentRow}>
-        <input
-          checked={snapshot.consent}
-          disabled={isBusy || ["completed", "declined", "unavailable"].includes(snapshot.phase)}
-          onChange={(event) => controller.setConsent(event.target.checked)}
-          type="checkbox"
-        />
-        <span>
-          I consent to one separate local sustained-vowel capture. Raw audio stays in memory only
-          for analysis, is not uploaded, and is not included in the derived result.
-        </span>
-      </label>
+      {props.consentConfirmed ? (
+        <p className={styles.consentConfirmed}>
+          Consent confirmed for this one capture. Raw audio stays in memory only for analysis, is
+          not uploaded, and is not included in the derived result.
+        </p>
+      ) : (
+        <label className={styles.consentRow}>
+          <input
+            checked={snapshot.consent}
+            disabled={isBusy || ["completed", "declined", "unavailable"].includes(snapshot.phase)}
+            onChange={(event) => controller.setConsent(event.target.checked)}
+            type="checkbox"
+          />
+          <span>
+            I consent to one separate local sustained-vowel capture. Raw audio stays in memory only
+            for analysis, is not uploaded, and is not included in the derived result.
+          </span>
+        </label>
+      )}
 
       {snapshot.phase === "capturing" ? (
         <div className={styles.progressGroup}>
@@ -226,6 +244,15 @@ function VoiceBiomarkerStationSession(props: VoiceBiomarkerStationProps) {
             type="button"
           >
             Retry derived-result handoff
+          </button>
+        ) : null}
+        {snapshot.phase === "unavailable" && props.onUnavailable ? (
+          <button
+            className={styles.primaryButton}
+            onClick={() => void controller.continueUnavailable()}
+            type="button"
+          >
+            Continue without a voice result
           </button>
         ) : null}
         {!["completed", "declined", "declining"].includes(snapshot.phase) ? (

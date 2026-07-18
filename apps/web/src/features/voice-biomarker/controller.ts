@@ -46,6 +46,7 @@ export type VoiceBiomarkerStationControllerDependencies = Readonly<{
   assessmentSessionId: string;
   onCompleted: (fact: VoiceBiomarkerFact) => Promise<void>;
   onDeclined?: () => Promise<void>;
+  onUnavailable?: (reason: VoiceBiomarkerUnavailableReason) => Promise<void>;
   timer?: VoiceBiomarkerTimer;
   targetDurationMs?: number;
 }>;
@@ -90,6 +91,7 @@ export class VoiceBiomarkerStationController {
   readonly #assessmentSessionId: string;
   #onCompleted: (fact: VoiceBiomarkerFact) => Promise<void>;
   #onDeclined: (() => Promise<void>) | null;
+  #onUnavailable: ((reason: VoiceBiomarkerUnavailableReason) => Promise<void>) | null;
   readonly #timer: VoiceBiomarkerTimer;
   readonly #listeners = new Set<() => void>();
   #snapshot: VoiceBiomarkerStationSnapshot;
@@ -105,6 +107,7 @@ export class VoiceBiomarkerStationController {
     this.#assessmentSessionId = dependencies.assessmentSessionId;
     this.#onCompleted = dependencies.onCompleted;
     this.#onDeclined = dependencies.onDeclined ?? null;
+    this.#onUnavailable = dependencies.onUnavailable ?? null;
     this.#timer = dependencies.timer ?? defaultTimer;
     this.#snapshot = {
       phase: "checking",
@@ -129,9 +132,11 @@ export class VoiceBiomarkerStationController {
   setHandlers(handlers: {
     onCompleted: (fact: VoiceBiomarkerFact) => Promise<void>;
     onDeclined?: () => Promise<void>;
+    onUnavailable?: (reason: VoiceBiomarkerUnavailableReason) => Promise<void>;
   }): void {
     this.#onCompleted = handlers.onCompleted;
     this.#onDeclined = handlers.onDeclined ?? null;
+    this.#onUnavailable = handlers.onUnavailable ?? null;
   }
 
   async initialize(): Promise<void> {
@@ -315,6 +320,36 @@ export class VoiceBiomarkerStationController {
         phase: "failed",
         announcement:
           "The decline choice was not accepted. No capture started; try declining again.",
+        focusToken: this.#snapshot.focusToken + 1
+      });
+    }
+  }
+
+  async continueUnavailable(): Promise<void> {
+    const reason = this.#snapshot.unavailableReason;
+    if (this.#disposed || this.#snapshot.phase !== "unavailable" || reason === null) return;
+    this.#setSnapshot({
+      ...this.#snapshot,
+      phase: "declining",
+      announcement: "Recording that this optional voice station is unavailable."
+    });
+    try {
+      await this.#onUnavailable?.(reason);
+      if (this.#disposed) return;
+      this.#setSnapshot({
+        ...this.#snapshot,
+        phase: "declined",
+        consent: false,
+        announcement: "Voice station recorded as unavailable. No capture or result was retained.",
+        focusToken: this.#snapshot.focusToken + 1
+      });
+    } catch {
+      if (this.#disposed) return;
+      this.#setSnapshot({
+        ...this.#snapshot,
+        phase: "unavailable",
+        announcement:
+          "The unavailable result was not sent. No capture started; try the handoff again.",
         focusToken: this.#snapshot.focusToken + 1
       });
     }

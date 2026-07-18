@@ -3,9 +3,16 @@
 
 "use client";
 
+import type { CompanionPhoneSnapshot } from "@homerounds/companion";
 import type { ReactNode } from "react";
 
+import {
+  SelectedCompanionStation,
+  defaultCompanionStationFactories,
+  type CompanionStationFactories
+} from "./companion-stations";
 import { taskContent } from "./model";
+import { createNonMeasurementResult } from "./result-model";
 import styles from "./companion-shell.module.css";
 import { useCompanionSession } from "./use-companion-session";
 
@@ -18,8 +25,73 @@ function StatusMark({ children }: { children: ReactNode }) {
   );
 }
 
-export function CompanionShell() {
-  const { connection, snapshot, retryConnection, advance, busy } = useCompanionSession();
+export type CompanionShellProps = Readonly<{
+  factories?: CompanionStationFactories;
+  createId?: () => string;
+  now?: () => string;
+}>;
+
+function defaultId(): string {
+  return globalThis.crypto.randomUUID();
+}
+
+function defaultNow(): string {
+  return new Date().toISOString();
+}
+
+function completionCopy(snapshot: CompanionPhoneSnapshot): {
+  eyebrow: string;
+  heading: string;
+  body: string;
+} {
+  switch (snapshot.lastResult?.outcome) {
+    case "derived_candidate":
+      return {
+        eyebrow: "Phone step complete",
+        heading: "Sent for safety checks",
+        body: "The derived result is waiting for deterministic quality and workflow validation."
+      };
+    case "quality_rejected":
+      return {
+        eyebrow: "Phone step complete",
+        heading: "No reading was accepted",
+        body: "The quality check rejected the capture, so no numeric measurement was sent."
+      };
+    case "unavailable":
+      return {
+        eyebrow: "Phone step complete",
+        heading: "Check recorded as unavailable",
+        body: "No numeric measurement was sent. Your computer will show the supported next step."
+      };
+    case "declined":
+      return {
+        eyebrow: "Choice saved",
+        heading: "Optional check skipped",
+        body: "No capture or result was retained. Your computer will continue safely."
+      };
+    case undefined:
+      return {
+        eyebrow: "Phone step complete",
+        heading: "Handoff received",
+        body: "Your computer is checking the saved step."
+      };
+  }
+}
+
+export function CompanionShell({
+  factories = defaultCompanionStationFactories,
+  createId = defaultId,
+  now = defaultNow
+}: CompanionShellProps = {}) {
+  const { connection, snapshot, retryConnection, advance, submitResult, busy } =
+    useCompanionSession();
+  const dependencies = { createId, now };
+
+  function declineCurrentTask(activeSnapshot: CompanionPhoneSnapshot): void {
+    void submitResult(
+      createNonMeasurementResult(activeSnapshot, "declined", "patient_declined", dependencies)
+    );
+  }
 
   let content: ReactNode;
   if (connection === "connecting") {
@@ -75,6 +147,14 @@ export function CompanionShell() {
             >
               Continue
             </button>
+            <button
+              className={styles.secondary}
+              type="button"
+              onClick={() => declineCurrentTask(snapshot)}
+              disabled={busy}
+            >
+              Not now
+            </button>
             <StatusMark>Connected securely to your computer</StatusMark>
           </section>
         );
@@ -96,6 +176,14 @@ export function CompanionShell() {
             >
               I understand and want to continue
             </button>
+            <button
+              className={styles.secondary}
+              type="button"
+              onClick={() => declineCurrentTask(snapshot)}
+              disabled={busy}
+            >
+              Decline this optional check
+            </button>
           </section>
         );
         break;
@@ -113,23 +201,26 @@ export function CompanionShell() {
             >
               I’m ready
             </button>
+            <button
+              className={styles.secondary}
+              type="button"
+              onClick={() => declineCurrentTask(snapshot)}
+              disabled={busy}
+            >
+              Skip this check
+            </button>
           </section>
         );
         break;
       case "in_progress":
         content = (
-          <section className={styles.card} aria-labelledby="progress-title">
-            <p className={styles.eyebrow}>Check in progress</p>
-            <h1 id="progress-title">Keep this page open</h1>
-            <div
-              className={styles.progress}
-              role="progressbar"
-              aria-label={copy.title}
-              aria-valuetext="In progress"
-            >
-              <span />
-            </div>
-            <p>Only the result is sent. Camera and microphone recordings are not kept.</p>
+          <section className={`${styles.card} ${styles.stationCard}`} aria-label={copy.title}>
+            <SelectedCompanionStation
+              dependencies={dependencies}
+              factories={factories}
+              snapshot={snapshot}
+              submitResult={submitResult}
+            />
           </section>
         );
         break;
@@ -160,11 +251,12 @@ export function CompanionShell() {
         );
         break;
       case "completed":
+        const complete = completionCopy(snapshot);
         content = (
           <section className={styles.card} aria-labelledby="completed-title">
-            <p className={styles.eyebrow}>Phone step complete</p>
-            <h1 id="completed-title">Sent securely</h1>
-            <p>Your result is waiting for HomeRounds on your computer.</p>
+            <p className={styles.eyebrow}>{complete.eyebrow}</p>
+            <h1 id="completed-title">{complete.heading}</h1>
+            <p>{complete.body}</p>
             <StatusMark>Waiting for your computer</StatusMark>
           </section>
         );

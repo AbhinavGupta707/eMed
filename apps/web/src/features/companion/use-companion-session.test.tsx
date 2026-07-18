@@ -44,6 +44,24 @@ function sessionSuccess(snapshotValue = snapshot): Response {
   );
 }
 
+function resultSuccess(): Response {
+  return new Response(
+    JSON.stringify({
+      data: {
+        receipt: {
+          resultId: "6cb44f43-2d1d-4d1d-bb72-058c4c399434",
+          sessionVersion: 2,
+          status: "received_for_workflow_validation",
+          receivedAt: "2026-07-18T12:01:00.000Z",
+          replayed: false
+        }
+      },
+      meta: { correlationId: "companion-result-test" }
+    }),
+    { status: 200, headers: { "content-type": "application/json" } }
+  );
+}
+
 function Probe() {
   const controller = useCompanionSession();
   return createElement(
@@ -51,7 +69,27 @@ function Probe() {
     null,
     createElement("span", { "data-testid": "connection" }, controller.connection),
     createElement("span", { "data-testid": "phase" }, controller.snapshot?.taskPhase ?? "none"),
-    createElement("button", { type: "button", onClick: controller.retryConnection }, "Retry")
+    createElement("button", { type: "button", onClick: controller.retryConnection }, "Retry"),
+    controller.snapshot
+      ? createElement(
+          "button",
+          {
+            type: "button",
+            onClick: () =>
+              void controller.submitResult({
+                operationId: "42d276d8-dcb4-45de-8114-04ca6e5f57a1",
+                expectedSessionVersion: controller.snapshot!.sessionVersion,
+                taskId: controller.snapshot!.task.taskId,
+                taskKind: "finger_pulse",
+                clientObservedAt: "2026-07-18T12:01:00.000Z",
+                rawMediaStored: false,
+                outcome: "declined",
+                reason: "patient_declined"
+              })
+          },
+          "Submit decline"
+        )
+      : null
   );
 }
 
@@ -99,5 +137,26 @@ describe("companion browser resume controller", () => {
     await waitFor(() => expect(screen.getByTestId("connection")).toHaveTextContent("connected"));
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[1]?.[0]).toBe("/api/companion/session");
+  });
+
+  it("submits a schema-valid result and projects the receipt without a duplicate capture", async () => {
+    history.replaceState({}, "", "/companion");
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(sessionSuccess())
+      .mockResolvedValueOnce(resultSuccess());
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(createElement(Probe));
+    await waitFor(() => expect(screen.getByTestId("connection")).toHaveTextContent("connected"));
+    fireEvent.click(screen.getByRole("button", { name: "Submit decline" }));
+
+    await waitFor(() => expect(screen.getByTestId("phase")).toHaveTextContent("completed"));
+    expect(fetchMock.mock.calls[1]?.[0]).toBe("/api/companion/session/result");
+    expect(JSON.parse(String((fetchMock.mock.calls[1]?.[1] as RequestInit).body))).toMatchObject({
+      taskKind: "finger_pulse",
+      outcome: "declined",
+      rawMediaStored: false
+    });
   });
 });

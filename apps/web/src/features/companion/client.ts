@@ -8,10 +8,14 @@ import {
   CompanionPairingIssueSchema,
   CompanionPairingMutationRequestSchema,
   CompanionPhoneSnapshotSchema,
+  CompanionResultReceiptSchema,
   CompanionStatusUpdateRequestSchema,
+  CompanionTaskResultRequestSchema,
   type CompanionDesktopSnapshot,
   type CompanionPairingIssue,
   type CompanionPhoneSnapshot,
+  type CompanionResultReceipt,
+  type CompanionTaskResultRequest,
   type CompanionStatusUpdateRequest
 } from "@homerounds/companion/schemas";
 
@@ -46,6 +50,13 @@ const DesktopSnapshotEnvelopeSchema = z
 const CurrentDesktopSnapshotEnvelopeSchema = z
   .object({
     data: z.object({ snapshot: CompanionDesktopSnapshotSchema.nullable() }).strict(),
+    meta: z.object({ correlationId: z.string().min(1).max(120) }).strict()
+  })
+  .strict();
+
+const ResultReceiptEnvelopeSchema = z
+  .object({
+    data: z.object({ receipt: CompanionResultReceiptSchema }).strict(),
     meta: z.object({ correlationId: z.string().min(1).max(120) }).strict()
   })
   .strict();
@@ -154,6 +165,20 @@ export async function updateCompanionStatus(
   });
   if (!response.ok) throw await parsedError(response);
   return SnapshotEnvelopeSchema.parse(await response.json()).data.snapshot;
+}
+
+export async function submitCompanionResult(
+  inputValue: CompanionTaskResultRequest,
+  signal: AbortSignal
+): Promise<CompanionResultReceipt> {
+  const input = CompanionTaskResultRequestSchema.parse(inputValue);
+  const envelope = await companionPost(
+    "/api/companion/session/result",
+    input,
+    ResultReceiptEnvelopeSchema,
+    signal
+  );
+  return envelope.data.receipt;
 }
 
 export async function createCompanionPairing(

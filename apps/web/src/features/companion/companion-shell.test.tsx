@@ -41,6 +41,7 @@ function controller(overrides: Partial<ReturnType<typeof useCompanionSession>> =
     snapshot,
     retryConnection: vi.fn(),
     advance: vi.fn(async () => undefined),
+    submitResult: vi.fn(async () => undefined),
     busy: false,
     ...overrides
   };
@@ -82,17 +83,45 @@ describe("companion phone shell", () => {
   });
 
   it.each([
-    ["in_progress", "Keep this page open"],
     ["unavailable", "This check isn’t available here"],
-    ["completed", "Sent securely"],
     ["desktop_acknowledged", "Your computer received it"]
   ] as const)("renders the %s state with non-colour text", (taskPhase, heading) => {
     mockedUseCompanionSession.mockReturnValue(controller({ snapshot: { ...snapshot, taskPhase } }));
     render(createElement(CompanionShell));
     expect(screen.getByRole("heading", { name: heading })).toBeVisible();
-    if (taskPhase === "in_progress") {
-      expect(screen.getByRole("progressbar")).toHaveAccessibleName("Finger pulse check");
-    }
+  });
+
+  it("renders only the selected in-progress station with coarse provenance", () => {
+    mockedUseCompanionSession.mockReturnValue(
+      controller({ snapshot: { ...snapshot, taskPhase: "in_progress" } })
+    );
+    render(createElement(CompanionShell));
+
+    expect(screen.getByRole("heading", { name: "Finger pulse check" })).toBeVisible();
+    expect(screen.getByText("This phone")).toBeVisible();
+    expect(screen.getByText("Current secure browser session")).toBeVisible();
+    expect(screen.queryByText("Face pulse check")).not.toBeInTheDocument();
+    expect(screen.queryByText("Medication label check")).not.toBeInTheDocument();
+  });
+
+  it("acknowledges a quality rejection without implying a measurement", () => {
+    mockedUseCompanionSession.mockReturnValue(
+      controller({
+        snapshot: {
+          ...snapshot,
+          taskPhase: "completed",
+          lastResult: {
+            resultId: "ef9b5060-264a-4c98-a4a1-4c28e3b49d77",
+            outcome: "quality_rejected",
+            receivedAt: "2026-07-18T12:01:00.000Z"
+          }
+        }
+      })
+    );
+    render(createElement(CompanionShell));
+
+    expect(screen.getByRole("heading", { name: "No reading was accepted" })).toBeVisible();
+    expect(screen.getByText(/no numeric measurement was sent/i)).toBeVisible();
   });
 
   it("preserves an explicit network recovery and expiry/reissue path", () => {

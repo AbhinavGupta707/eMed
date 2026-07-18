@@ -5,12 +5,14 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import {
   CompanionPairingTokenSchema,
   type CompanionPhoneSnapshot,
-  type CompanionTaskPhase
+  type CompanionTaskPhase,
+  type CompanionTaskResultRequest
 } from "@homerounds/companion/schemas";
 import {
   CompanionClientError,
   exchangeCompanion,
   readCompanionSession,
+  submitCompanionResult,
   updateCompanionStatus
 } from "./client";
 import {
@@ -28,6 +30,7 @@ type CompanionSessionController = {
   snapshot: CompanionPhoneSnapshot | null;
   retryConnection: () => void;
   advance: () => Promise<void>;
+  submitResult: (result: CompanionTaskResultRequest) => Promise<void>;
   busy: boolean;
 };
 
@@ -72,6 +75,7 @@ export function useCompanionSession(): CompanionSessionController {
   const etagRef = useRef<string | null>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollAbortRef = useRef<AbortController | null>(null);
+  const mutationPendingRef = useRef(false);
 
   useLayoutEffect(() => {
     if (fragmentTokenRef.current === undefined) {
@@ -161,7 +165,7 @@ export function useCompanionSession(): CompanionSessionController {
   }, []);
 
   const advance = useCallback(async () => {
-    if (!snapshot || busy) return;
+    if (!snapshot || mutationPendingRef.current) return;
     let phase: Exclude<CompanionTaskPhase, "ready" | "completed" | "desktop_acknowledged">;
     let consent: { decision: "granted"; version: string; grantedAt: string } | undefined;
     switch (snapshot.taskPhase) {
@@ -188,6 +192,7 @@ export function useCompanionSession(): CompanionSessionController {
       case "desktop_acknowledged":
         return;
     }
+    mutationPendingRef.current = true;
     setBusy(true);
     const controller = new AbortController();
     try {
@@ -208,9 +213,48 @@ export function useCompanionSession(): CompanionSessionController {
     } catch (error: unknown) {
       setConnection(isExpired(error) ? "expired" : "network_recovery");
     } finally {
+      mutationPendingRef.current = false;
       setBusy(false);
     }
-  }, [busy, snapshot]);
+  }, [snapshot]);
 
-  return { connection, snapshot, retryConnection, advance, busy };
+  const submitResult = useCallback(
+    async (result: CompanionTaskResultRequest) => {
+      if (!snapshot || mutationPendingRef.current) return;
+      if (
+        result.taskId !== snapshot.task.taskId ||
+        result.taskKind !== snapshot.task.kind ||
+        result.expectedSessionVersion !== snapshot.sessionVersion
+      ) {
+        throw new Error("Companion result does not match the active task snapshot.");
+      }
+      mutationPendingRef.current = true;
+      setBusy(true);
+      const controller = new AbortController();
+      try {
+        const receipt = await submitCompanionResult(result, controller.signal);
+        etagRef.current = null;
+        setSnapshot({
+          ...snapshot,
+          sessionVersion: receipt.sessionVersion,
+          taskPhase: "completed",
+          lastResult: {
+            resultId: receipt.resultId,
+            outcome: result.outcome,
+            receivedAt: receipt.receivedAt
+          }
+        });
+        setConnection("connected");
+      } catch (error: unknown) {
+        if (isExpired(error)) setConnection("expired");
+        throw error;
+      } finally {
+        mutationPendingRef.current = false;
+        setBusy(false);
+      }
+    },
+    [snapshot]
+  );
+
+  return { connection, snapshot, retryConnection, advance, submitResult, busy };
 }

@@ -1,10 +1,7 @@
 import { z } from "zod";
 
-import {
-  DerivedBaselineSeriesSchema,
-  PersonalChangePolicySchema
-} from "../../../../../packages/baselines/src/index";
-import { BoundedPersonalizationProfileSchema } from "../../../../../packages/personalization/src/index";
+import { DerivedBaselineSeriesSchema, PersonalChangePolicySchema } from "@homerounds/baselines";
+import { BoundedPersonalizationProfileSchema } from "@homerounds/personalization";
 import seedDocument from "../../../../../data/demo/baselines/maya-history.v1.json";
 
 import type { BaselineServerService } from "./service";

@@ -74,6 +74,9 @@ importers:
       "@homerounds/audit":
         specifier: workspace:*
         version: link:../../packages/audit
+      "@homerounds/baselines":
+        specifier: workspace:*
+        version: link:../../packages/baselines
       "@homerounds/clinical-records":
         specifier: workspace:*
         version: link:../../packages/clinical-records
@@ -92,6 +95,9 @@ importers:
       "@homerounds/persistence":
         specifier: workspace:*
         version: link:../../packages/persistence
+      "@homerounds/personalization":
+        specifier: workspace:*
+        version: link:../../packages/personalization
       "@homerounds/planner":
         specifier: workspace:*
         version: link:../../packages/planner
@@ -179,6 +185,12 @@ importers:
         specifier: 4.4.3
         version: 4.4.3
 
+  packages/baselines:
+    dependencies:
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+
   packages/clinical-records:
     dependencies:
       "@homerounds/contracts":
@@ -239,6 +251,12 @@ importers:
       drizzle-kit:
         specifier: 0.31.10
         version: 0.31.10
+
+  packages/personalization:
+    dependencies:
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   packages/planner:
     dependencies:

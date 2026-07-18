@@ -1,11 +1,8 @@
 import {
   BoundedPersonalizationProfileSchema,
   type BoundedPersonalizationProfile
-} from "../../../../../packages/personalization/src/index";
-import {
-  DerivedBaselineSeriesSchema,
-  type DerivedBaselineSeries
-} from "../../../../../packages/baselines/src/index";
+} from "@homerounds/personalization";
+import { DerivedBaselineSeriesSchema, type DerivedBaselineSeries } from "@homerounds/baselines";
 
 export type BaselineSeriesRepository = {
   getSeries(patientId: string, contextKey: string): Promise<DerivedBaselineSeries | null>;

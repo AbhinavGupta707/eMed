@@ -13,14 +13,14 @@ import {
   type DerivedBaselineSample,
   type DerivedBaselineSeries,
   type PersonalChangePolicy
-} from "../../../../../packages/baselines/src/index";
+} from "@homerounds/baselines";
 import {
   BoundedPersonalizationProfileSchema,
   BoundedPersonalizationProjectionSchema,
   projectBoundedPersonalization,
   type BoundedPersonalizationProfile,
   type BoundedPersonalizationProjection
-} from "../../../../../packages/personalization/src/index";
+} from "@homerounds/personalization";
 
 import type { BaselineServerRepository } from "./repository";
 

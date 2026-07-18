@@ -1,0 +1,13 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": [
+    "./**/*.ts",
+    "../../integration/sensing/**/*.ts",
+    "../../e2e/sensing/**/*.ts",
+    "../../accessibility/sensing/**/*.ts",
+    "../../performance/sensing/**/*.ts"
+  ]
+}

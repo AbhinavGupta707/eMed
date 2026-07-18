@@ -23,7 +23,7 @@ export const DemoSessionSchema = z
 
 export type DemoSession = z.infer<typeof DemoSessionSchema>;
 
-const COOKIE_NAME = "homerounds_demo_session";
+export const DEMO_SESSION_COOKIE_NAME = "homerounds_demo_session";
 const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 function sign(encodedPayload: string, secret: string): string {
@@ -72,7 +72,7 @@ export function createDemoSessionAuthenticator(config: {
   const secret = config.secret;
   return {
     async authenticate(request) {
-      const signedCookie = cookieValue(request, COOKIE_NAME);
+      const signedCookie = cookieValue(request, DEMO_SESSION_COOKIE_NAME);
       if (signedCookie && secret) {
         const [encoded, signature, ...rest] = signedCookie.split(".");
         if (
@@ -114,5 +114,5 @@ export function createDemoSessionAuthenticator(config: {
 }
 
 export function demoSessionCookieHeader(value: string, maxAgeSeconds = 3_600): string {
-  return `${COOKIE_NAME}=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${z.number().int().positive().parse(maxAgeSeconds)}`;
+  return `${DEMO_SESSION_COOKIE_NAME}=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${z.number().int().positive().parse(maxAgeSeconds)}`;
 }

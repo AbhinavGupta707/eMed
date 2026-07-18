@@ -66,7 +66,7 @@ export class PostgresCompanionPairingRepository implements CompanionPairingRepos
         ) values (
           ${pairing.pairingId}, ${pairing.tokenHash}, ${pairing.roundId}, ${pairing.status},
           ${pairing.pairingVersion}, ${pairing.sessionId}, ${pairing.issuedAt},
-          ${recordJson(pairing)}::jsonb
+          ${recordJson(pairing)}::text::jsonb
         )
       `;
     });
@@ -145,7 +145,7 @@ export class PostgresCompanionPairingRepository implements CompanionPairingRepos
           ) values (
             ${session.sessionId}, ${session.sessionTokenHash}, ${session.pairingId},
             ${session.roundId}, ${session.status}, ${session.sessionVersion}, ${session.expiresAt},
-            ${recordJson(session)}::jsonb
+            ${recordJson(session)}::text::jsonb
           )
         `;
         const pairing = CompanionPairingRecordSchema.parse({
@@ -162,7 +162,7 @@ export class PostgresCompanionPairingRepository implements CompanionPairingRepos
         const updated = await transaction`
           update companion_pairings set
             status = ${pairing.status}, pairing_version = ${pairing.pairingVersion},
-            session_id = ${pairing.sessionId}, record = ${recordJson(pairing)}::jsonb
+            session_id = ${pairing.sessionId}, record = ${recordJson(pairing)}::text::jsonb
           where pairing_id = ${pairing.pairingId}
             and pairing_version = ${commit.expectedPairingVersion} and status = 'pending'
           returning record
@@ -300,14 +300,14 @@ export class PostgresCompanionPairingRepository implements CompanionPairingRepos
               result_id, pairing_id, session_id, round_id, received_at, validation_status, record
             ) values (
               ${result.resultId}, ${result.pairingId}, ${result.sessionId}, ${result.roundId},
-              ${result.receivedAt}, ${result.validationStatus}, ${recordJson(result)}::jsonb
+              ${result.receivedAt}, ${result.validationStatus}, ${recordJson(result)}::text::jsonb
             )
           `;
         }
         await transaction`
           update companion_sessions set
             status = ${nextSession.status}, session_version = ${nextSession.sessionVersion},
-            expires_at = ${nextSession.expiresAt}, record = ${recordJson(nextSession)}::jsonb
+            expires_at = ${nextSession.expiresAt}, record = ${recordJson(nextSession)}::text::jsonb
           where session_id = ${nextSession.sessionId}
             and session_version = ${commit.expectedSessionVersion}
         `;
@@ -318,7 +318,7 @@ export class PostgresCompanionPairingRepository implements CompanionPairingRepos
           ) values (
             ${operation.sessionId}, ${operation.operationId}, ${operation.kind},
             ${operation.requestFingerprint}, ${operation.committedSessionVersion},
-            ${operation.resultId}, ${operation.occurredAt}, ${recordJson(operation)}::jsonb
+            ${operation.resultId}, ${operation.occurredAt}, ${recordJson(operation)}::text::jsonb
           )
         `;
         const nextPairing = CompanionPairingRecordSchema.parse({
@@ -335,7 +335,7 @@ export class PostgresCompanionPairingRepository implements CompanionPairingRepos
         await transaction`
           update companion_pairings set
             status = ${nextPairing.status}, pairing_version = ${nextPairing.pairingVersion},
-            record = ${recordJson(nextPairing)}::jsonb
+            record = ${recordJson(nextPairing)}::text::jsonb
           where pairing_id = ${nextPairing.pairingId}
         `;
         return { session: nextSession, operation, result, replayed: false };
@@ -386,7 +386,7 @@ export class PostgresCompanionPairingRepository implements CompanionPairingRepos
               update companion_sessions set
                 status = ${revokedSession.status},
                 session_version = ${revokedSession.sessionVersion},
-                record = ${recordJson(revokedSession)}::jsonb
+                record = ${recordJson(revokedSession)}::text::jsonb
               where session_id = ${revokedSession.sessionId}
             `;
           }
@@ -394,7 +394,7 @@ export class PostgresCompanionPairingRepository implements CompanionPairingRepos
         await transaction`
           update companion_pairings set
             status = ${revoked.status}, pairing_version = ${revoked.pairingVersion},
-            record = ${recordJson(revoked)}::jsonb
+            record = ${recordJson(revoked)}::text::jsonb
           where pairing_id = ${revoked.pairingId}
         `;
         return revoked;
@@ -449,7 +449,7 @@ export class PostgresCompanionPairingRepository implements CompanionPairingRepos
               update companion_sessions set
                 status = ${revokedSession.status},
                 session_version = ${revokedSession.sessionVersion},
-                record = ${recordJson(revokedSession)}::jsonb
+                record = ${recordJson(revokedSession)}::text::jsonb
               where session_id = ${revokedSession.sessionId}
             `;
           }
@@ -457,7 +457,7 @@ export class PostgresCompanionPairingRepository implements CompanionPairingRepos
         await transaction`
           update companion_pairings set
             status = ${revoked.status}, pairing_version = ${revoked.pairingVersion},
-            record = ${recordJson(revoked)}::jsonb
+            record = ${recordJson(revoked)}::text::jsonb
           where pairing_id = ${revoked.pairingId}
         `;
         await transaction`
@@ -466,7 +466,7 @@ export class PostgresCompanionPairingRepository implements CompanionPairingRepos
           ) values (
             ${replacement.pairingId}, ${replacement.tokenHash}, ${replacement.roundId},
             ${replacement.status}, ${replacement.pairingVersion}, ${replacement.sessionId},
-            ${replacement.issuedAt}, ${recordJson(replacement)}::jsonb
+            ${replacement.issuedAt}, ${recordJson(replacement)}::text::jsonb
           )
         `;
         return replacement;

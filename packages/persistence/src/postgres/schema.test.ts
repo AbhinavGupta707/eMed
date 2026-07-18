@@ -23,6 +23,13 @@ async function companionMigrationSql(): Promise<string> {
   );
 }
 
+async function companionIntegrityMigrationSql(): Promise<string> {
+  return readFile(
+    new URL("../../../../infra/db/migrations/0004_companion_record_integrity.sql", import.meta.url),
+    "utf8"
+  );
+}
+
 describe("PostgreSQL migration invariants", () => {
   it("defines all production persistence tables in one transactional migration", async () => {
     const sql = await migrationSql();
@@ -111,5 +118,20 @@ describe("PostgreSQL migration invariants", () => {
     expect(sql).toContain("primary key (session_id, operation_id)");
     expect(sql).toContain("companion_results_raw_media_absent");
     expect(sql).toContain("pending_deterministic_workflow");
+  });
+
+  it("requires every durable companion envelope to remain a JSON object", async () => {
+    const sql = await companionIntegrityMigrationSql();
+    expect(sql.trimStart()).toMatch(/^begin;/i);
+    expect(sql.trimEnd()).toMatch(/commit;$/i);
+    for (const table of [
+      "companion_pairings",
+      "companion_sessions",
+      "companion_results",
+      "companion_operations"
+    ]) {
+      expect(sql).toContain(`${table}_record_object`);
+    }
+    expect(sql.match(/jsonb_typeof\(record\) = 'object'/g)).toHaveLength(4);
   });
 });

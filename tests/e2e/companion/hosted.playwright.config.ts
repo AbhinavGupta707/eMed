@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = process.env.HOMEROUNDS_HOSTED_BASE_URL;
+const protectionBypass = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
 if (!baseURL) {
   throw new Error("HOMEROUNDS_HOSTED_BASE_URL is required for the hosted companion check");
@@ -18,6 +19,13 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   use: {
     baseURL,
+    ...(protectionBypass
+      ? {
+          extraHTTPHeaders: {
+            "x-vercel-protection-bypass": protectionBypass
+          }
+        }
+      : {}),
     screenshot: "only-on-failure",
     trace: "retain-on-failure"
   },

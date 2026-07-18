@@ -137,18 +137,26 @@ export async function revokeAndReissueDesktopPairing(
   page: Page,
   issue: CompanionPairingIssue
 ): Promise<CompanionPairingIssue> {
-  const revoked = await page.request.post(`/api/companion/pairings/${issue.pairingId}/revoke`, {
-    headers: {
-      origin: new URL(page.url()).origin,
-      "x-homerounds-demo-role": "patient"
-    },
-    data: {
-      operationId: "11111111-2222-4333-8444-555555555555",
-      expectedPairingVersion: issue.pairingVersion
+  const revoked = await browserCompanionRequest(
+    page,
+    `/api/companion/pairings/${issue.pairingId}/revoke`,
+    {
+      method: "POST",
+      body: {
+        operationId: "11111111-2222-4333-8444-555555555555",
+        expectedPairingVersion: issue.pairingVersion
+      }
     }
-  });
-  expect(revoked.status()).toBe(200);
-  expect(DesktopEnvelopeSchema.parse(await revoked.json()).data.snapshot).toMatchObject({
+  );
+  const revokedBody = revoked.body as {
+    data?: unknown;
+    error?: { code?: string; correlationId?: string };
+  };
+  expect(
+    revoked.status,
+    `Companion revoke failed: ${revokedBody.error?.code ?? "unknown"} (${revokedBody.error?.correlationId ?? "no-correlation"})`
+  ).toBe(200);
+  expect(DesktopEnvelopeSchema.parse(revokedBody).data.snapshot).toMatchObject({
     connection: "revoked",
     reissueRequired: true
   });
@@ -186,6 +194,13 @@ export async function openPhone(
   const context = await browser.newContext({
     ...devices["iPhone 12"],
     baseURL: new URL(pairingLink).origin,
+    ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+      ? {
+          extraHTTPHeaders: {
+            "x-vercel-protection-bypass": process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+          }
+        }
+      : {}),
     reducedMotion: "reduce"
   });
   const page = await context.newPage();

@@ -51,6 +51,19 @@ test("runtime refuses production and non-demo profiles", () => {
   );
 });
 
+test("runtime carries an automation bypass only through request configuration", () => {
+  const runtime = createDemoRuntime(
+    { "base-url": "https://preview.example" },
+    {
+      APP_ENV: "demo",
+      DEMO_MODE: "true",
+      DEMO_ACCESS_SECRET: "synthetic-demo-secret",
+      VERCEL_AUTOMATION_BYPASS_SECRET: "synthetic-bypass-secret"
+    }
+  );
+  assert.equal(runtime.automationBypassSecret, "synthetic-bypass-secret");
+});
+
 test("reset SQL is exact-scope, transactional, and dependency ordered", async () => {
   const bundle = await loadScenarioBundle();
   const sql = buildScopedResetSql(bundle);

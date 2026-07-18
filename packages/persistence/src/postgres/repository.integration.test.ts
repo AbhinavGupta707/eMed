@@ -189,6 +189,14 @@ describe("PostgreSQL repository integration", () => {
           "utf8"
         );
         await client.unsafe(companionMigration);
+        const companionIntegrityMigration = await readFile(
+          new URL(
+            "../../../../infra/db/migrations/0004_companion_record_integrity.sql",
+            import.meta.url
+          ),
+          "utf8"
+        );
+        await client.unsafe(companionIntegrityMigration);
 
         const repository = new PostgresHomeRoundsRepository<unknown, unknown>(
           drizzle(client, { schema })

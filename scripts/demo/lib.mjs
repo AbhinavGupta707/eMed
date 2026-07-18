@@ -144,6 +144,7 @@ export function createDemoRuntime(options = {}, environment = process.env) {
     appEnvironment,
     baseUrl,
     demoAccessSecret: environment.DEMO_ACCESS_SECRET,
+    automationBypassSecret: environment.VERCEL_AUTOMATION_BYPASS_SECRET,
     databaseUrl: environment.DATABASE_URL
   };
 }
@@ -183,6 +184,9 @@ export async function requestApi(
 ) {
   const headers = new Headers(authHeaders(runtime, role, patientId));
   headers.set("accept", "application/json");
+  if (runtime.automationBypassSecret) {
+    headers.set("x-vercel-protection-bypass", runtime.automationBypassSecret);
+  }
   if (method !== "GET") {
     headers.set("origin", runtime.baseUrl.origin);
     headers.set("content-type", "application/json");

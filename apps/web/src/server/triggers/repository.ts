@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { DeterministicTriggerEvaluationSchema } from "../../../../../packages/triggers/src/index";
+import { DeterministicTriggerEvaluationSchema } from "@homerounds/triggers";
 
 const TriggeredEvaluationSchema = DeterministicTriggerEvaluationSchema.refine(
   (evaluation) => evaluation.status === "triggered",

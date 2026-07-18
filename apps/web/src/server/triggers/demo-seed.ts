@@ -4,7 +4,7 @@ import {
   EvaluateTriggerRequestSchema,
   ServerEligibleTriggerCandidateSchema,
   TriggerFactKeySchema
-} from "../../../../../packages/triggers/src/index";
+} from "@homerounds/triggers";
 import seedDocument from "../../../../../data/demo/triggers/maya-combined-change.v1.json";
 
 const SyntheticTriggerSeedSchema = z

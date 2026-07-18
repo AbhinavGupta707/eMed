@@ -25,6 +25,7 @@
     "@homerounds/personalization": "workspace:*",
     "@homerounds/planner": "workspace:*",
     "@homerounds/protocols": "workspace:*",
+    "@homerounds/triggers": "workspace:*",
     "@homerounds/ui": "workspace:*",
     "@homerounds/voice": "workspace:*",
     "next": "16.2.10",

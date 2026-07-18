@@ -6,7 +6,7 @@ import {
   evaluateDeterministicTrigger,
   type DeterministicTriggerEvaluation,
   type EvaluateTriggerRequest
-} from "../../../../../packages/triggers/src/index";
+} from "@homerounds/triggers";
 
 import {
   CommittedTriggerProposalSchema,

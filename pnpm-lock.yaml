@@ -104,6 +104,9 @@ importers:
       "@homerounds/protocols":
         specifier: workspace:*
         version: link:../../packages/protocols
+      "@homerounds/triggers":
+        specifier: workspace:*
+        version: link:../../packages/triggers
       "@homerounds/ui":
         specifier: workspace:*
         version: link:../../packages/ui
@@ -284,6 +287,12 @@ importers:
       "@homerounds/contracts":
         specifier: workspace:*
         version: link:../contracts
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+
+  packages/triggers:
+    dependencies:
       zod:
         specifier: 4.4.3
         version: 4.4.3

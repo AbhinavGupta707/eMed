@@ -48,6 +48,20 @@ describe("adaptive recommendation", () => {
     expect(onContinue).toHaveBeenCalledOnce();
   });
 
+  it("keeps an explicit continue action for a current evidence step", () => {
+    const experience = RoundMapExperienceSchema.parse({
+      ...MAYA_HAPPY_PATH_ROUND_MAP,
+      modules: MAYA_HAPPY_PATH_ROUND_MAP.modules.map((module) =>
+        module.status === "selected" ? { ...module, status: "current" as const } : module
+      )
+    });
+    const onContinue = vi.fn();
+    render(createElement(AdaptiveRoundMap, { experience, onContinue }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Continue to this check" }));
+    expect(onContinue).toHaveBeenCalledOnce();
+  });
+
   it("states plainly when a completed task produced no reading", () => {
     const noMeasurementExperience = RoundMapExperienceSchema.parse({
       ...MAYA_HAPPY_PATH_ROUND_MAP,

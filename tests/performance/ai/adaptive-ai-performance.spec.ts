@@ -42,7 +42,7 @@ test("warm shell, persisted API, slow selection, and CLS remain inside bounded l
   await installClsObserver(page);
   await page.goto(scenarioUrl(slowOrigin, "maya-happy-text"));
   await expect(
-    page.getByRole("heading", { level: 1, name: "Your two-minute check is ready" })
+    page.getByRole("heading", { level: 1, name: "Ready when you are, Maya." })
   ).toBeVisible();
 
   await page.reload({ waitUntil: "load" });
@@ -77,6 +77,8 @@ test("warm shell, persisted API, slow selection, and CLS remain inside bounded l
 
   await completeStructuredAnswers(page, calmAnswers);
   await confirmTypedNarrative(page, "Synthetic slow-provider performance context.");
+  await page.getByRole("button", { name: "Review my report" }).click();
+  await page.getByLabel("I reviewed every field and confirm these are my answers.").check();
   const selectionStartedAt = performance.now();
   const reportResponse = page.waitForResponse(
     (candidate) =>
@@ -91,7 +93,7 @@ test("warm shell, persisted API, slow selection, and CLS remain inside bounded l
   expect(selectionMs).toBeGreaterThanOrEqual(SLOW_SELECTION_MINIMUM_MS);
   expect(selectionMs).toBeLessThanOrEqual(SLOW_SELECTION_BUDGET_MS);
   await expect(
-    page.getByRole("heading", { level: 3, name: "Quality-gated finger pulse check was selected" })
+    page.getByRole("heading", { level: 2, name: "Quality-gated finger pulse check" })
   ).toBeVisible();
 
   const cumulativeLayoutShift = await page.evaluate(
@@ -108,11 +110,18 @@ test("provider failure reaches the deterministic route inside the warm API recov
   const failures = monitorBrowserFailures(page);
   await page.goto(scenarioUrl(failureOrigin, "maya-happy-text"));
   await expect(
-    page.getByRole("heading", { level: 1, name: "Your two-minute check is ready" })
+    page.getByRole("heading", { level: 1, name: "Ready when you are, Maya." })
   ).toBeVisible();
   const started = await startRound(page, scenarioUrl(failureOrigin, "maya-happy-text"));
+  const reportRouteWarmup = await page.request.post(
+    `${failureOrigin}/api/rounds/${started.round.id}/report`,
+    { headers: { origin: failureOrigin }, data: {} }
+  );
+  expect(reportRouteWarmup.status()).toBe(400);
   await completeStructuredAnswers(page, { ...calmAnswers, weakness: "I’m not sure" });
   await confirmTypedNarrative(page, "Synthetic failure-budget context.");
+  await page.getByRole("button", { name: "Review my report" }).click();
+  await page.getByLabel("I reviewed every field and confirm these are my answers.").check();
   const fallbackStartedAt = performance.now();
   const reportResponse = page.waitForResponse(
     (candidate) =>
@@ -125,7 +134,7 @@ test("provider failure reaches the deterministic route inside the warm API recov
   expect(response.status()).toBe(200);
   expect(fallbackMs).toBeLessThanOrEqual(FAILURE_FALLBACK_BUDGET_MS);
   await expect(
-    page.getByRole("heading", { level: 3, name: "AI selection is unavailable" })
+    page.getByRole("heading", { level: 1, name: "A personalised recommendation is unavailable" })
   ).toBeVisible();
 
   const warmup = await page.request.get(`${failureOrigin}/api/rounds/${started.round.id}`);

@@ -28,7 +28,7 @@ test("patient path is responsive, keyboard operable, touch sized, and axe clean"
   await installCameraState(page, "permission-denied");
   await page.goto("/round?scenario=maya-happy-text");
   await expect(
-    page.getByRole("heading", { level: 1, name: "Your two-minute check is ready" })
+    page.getByRole("heading", { level: 1, name: "Ready when you are, Maya." })
   ).toBeVisible();
 
   for (const width of plannedWidths) {
@@ -72,7 +72,7 @@ test("patient path is responsive, keyboard operable, touch sized, and axe clean"
   expect(undersizedTargets).toEqual([]);
 
   const consent = page.getByLabel(
-    "I understand this is a synthetic demonstration, not clinically validated software, and not a medical service."
+    "I understand this check does not diagnose a condition or contact a medical service."
   );
   const consentTarget = await consent.evaluate((input) => {
     const bounds = input.closest("label")?.getBoundingClientRect();
@@ -85,16 +85,20 @@ test("patient path is responsive, keyboard operable, touch sized, and axe clean"
   await consent.focus();
   await page.keyboard.press("Space");
   await expect(consent).toBeChecked();
-  const start = page.getByRole("button", { name: "Start the check" });
+  const start = page.getByRole("button", { name: "Start my check-in" });
   await start.focus();
   await page.keyboard.press("Enter");
   await expect(
-    page.getByRole("heading", { level: 1, name: "Tell us what is happening now" })
+    page.getByRole("heading", { level: 1, name: "Three questions before we talk." })
   ).toBeVisible();
   await expectNoSeriousOrCriticalAxeFindings(page);
 
   await submitTextReport(page, calmReport, { proveNoKeyVoiceFallback: true });
-  await page.getByRole("button", { name: "Check this device" }).click();
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Quality-gated finger pulse check" })
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Continue to this check" }).click();
+  await page.getByRole("button", { name: "Continue on this computer" }).click();
   await expect(
     page.getByRole("heading", { level: 1, name: "The selected camera check is unavailable" })
   ).toBeVisible();
@@ -105,12 +109,10 @@ test("patient path is responsive, keyboard operable, touch sized, and axe clean"
 
   await page.getByRole("button", { name: "Continue without a measurement" }).click();
   await expect(
-    page.getByRole("heading", { level: 1, name: "Confirm the next demo step" })
+    page.getByRole("heading", { level: 1, name: "Choose what happens next." })
   ).toBeVisible();
   await expect(numericMeasurement(page)).toHaveCount(0);
   await expectNoSeriousOrCriticalAxeFindings(page);
-  await expect(
-    page.getByText("Synthetic demonstration — not clinically validated", { exact: true })
-  ).toBeVisible();
+  await expect(page.getByText("Sample profile · Not medical care", { exact: true })).toBeVisible();
   await expectNoBrowserFailures(failures);
 });

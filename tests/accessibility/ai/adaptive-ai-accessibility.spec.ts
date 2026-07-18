@@ -39,6 +39,13 @@ async function answerWithKeyboard(page: Page, answers: StructuredAnswers): Promi
     answers.severeBreathlessness
   );
   await chooseWithKeyboard(page, "Have you fainted?", answers.fainted);
+  await activateWithKeyboard(
+    page.getByRole("button", { name: "Continue to conversation" }),
+    "Enter"
+  );
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Tell me what’s changed." })
+  ).toBeVisible();
   await chooseWithKeyboard(page, "How weak do you feel?", answers.weakness);
   await chooseWithKeyboard(
     page,
@@ -56,67 +63,71 @@ test("adaptive route is keyboard operable, responsive, reduced-motion safe, name
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto(`/round?scenario=${scenario}`);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Your two-minute check is ready" })
+    page.getByRole("heading", { level: 1, name: "Ready when you are, Maya." })
   ).toBeVisible();
   await expect(page.locator("main")).toHaveCount(1);
   await expectAxeSeriousAndCriticalClean(page);
 
   const consent = page.getByLabel(
-    "I understand this is a synthetic demonstration, not clinically validated software, and not a medical service."
+    "I understand this check does not diagnose a condition or contact a medical service."
   );
   await activateWithKeyboard(consent, "Space");
   await expect(consent).toBeChecked();
-  await activateWithKeyboard(page.getByRole("button", { name: "Start the check" }), "Enter");
+  const startTransition = page.waitForResponse(
+    (candidate) =>
+      candidate.request().method() === "POST" &&
+      /\/api\/rounds\/[^/]+\/transition$/.test(new URL(candidate.url()).pathname)
+  );
+  await activateWithKeyboard(page.getByRole("button", { name: "Start my check-in" }), "Enter");
+  expect((await startTransition).status()).toBe(200);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Tell us what is happening now" })
+    page.getByRole("heading", { level: 1, name: "Three questions before we talk." })
   ).toBeVisible();
 
   await answerWithKeyboard(page, calmAnswers);
   const voiceButton = page.getByRole("button", { name: "Start voice" });
   await activateWithKeyboard(voiceButton, "Enter");
-  const editor = page.getByRole("textbox", { name: "Your check-in text" });
-  await expect(editor).toHaveValue("I have felt a little weak this morning.");
-  await editor.fill("Keyboard-edited identifier-free synthetic check-in.");
-  await activateWithKeyboard(page.getByRole("button", { name: "Confirm this text" }), "Enter");
-  await expect(page.getByText("Confirmed", { exact: true })).toBeVisible();
-  await activateWithKeyboard(page.getByRole("button", { name: "Confirm and continue" }), "Enter");
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Let’s make sure I understood." })
+  ).toBeVisible();
+  await page.getByLabel("Weakness", { exact: true }).selectOption("moderate");
+  await page.getByLabel("Palpitations", { exact: true }).selectOption("intermittent");
+  await page.getByLabel("Chest pain now", { exact: true }).selectOption("no");
+  await page.getByLabel("Severe breathlessness now", { exact: true }).selectOption("no");
+  await page.getByLabel("Fainted", { exact: true }).selectOption("no");
+  await page.getByLabel("Anything else", { exact: true }).selectOption("remove");
+  const proposalConfirmation = page.getByLabel(
+    /I reviewed every field and confirm these are my answers/i
+  );
+  await activateWithKeyboard(proposalConfirmation, "Space");
+  await expect(proposalConfirmation).toBeChecked();
+  await activateWithKeyboard(
+    page.getByRole("button", { name: "Confirm reviewed report" }),
+    "Enter"
+  );
 
-  await expect(page.getByRole("heading", { level: 2, name: "Round Map" })).toBeVisible();
-  const evidenceModules = page.getByRole("list", { name: "Evidence modules" });
-  await expect(evidenceModules).toBeVisible();
   await expect(
-    evidenceModules.getByRole("button", { name: /^Completed — confirmed/ })
+    page.getByRole("heading", {
+      level: 1,
+      name: "Medication label review is the most useful next step."
+    })
   ).toBeVisible();
   await expect(
-    evidenceModules.getByRole("button", { name: /^Current — in progress/ })
+    page.getByRole("heading", { level: 2, name: "Medication label review" })
   ).toBeVisible();
-  await expect(page.getByText("Eligible selection accepted", { exact: true })).toBeVisible();
-  await expect(page.getByText("AI uncertainty", { exact: true })).toBeVisible();
+  await expect(page.getByText("Current — in progress", { exact: true })).toBeVisible();
+  await expect(page.getByText("What this can clarify", { exact: true })).toBeVisible();
   await expectAxeSeriousAndCriticalClean(page);
 
-  const medicationModule = page
-    .getByRole("list", { name: "Evidence modules" })
-    .getByRole("button")
-    .filter({ hasText: "Medication label review" });
-  await expect(medicationModule).toHaveCount(1);
-  await activateWithKeyboard(medicationModule, "Enter");
-  await expect(
-    page.getByRole("heading", { level: 3, name: "Medication label review", exact: true })
-  ).toBeVisible();
-  const mapSection = page.getByRole("region", { name: "Round Map" });
-  await expect(mapSection.getByRole("status")).toContainText(
-    "Medication label review. Current — in progress."
-  );
-  await activateWithKeyboard(page.getByRole("button", { name: "Close details" }), "Enter");
-  await expect(medicationModule).toBeFocused();
-  await expect(mapSection.getByRole("status")).toContainText(
-    "Module details closed. Focus returned to the Round Map."
-  );
-
-  const moduleTransitionSeconds = await medicationModule.evaluate((element) =>
+  const continueRecommendation = page.getByRole("button", { name: "Continue to this check" });
+  const moduleTransitionSeconds = await continueRecommendation.evaluate((element) =>
     Number.parseFloat(getComputedStyle(element).transitionDuration)
   );
   expect(moduleTransitionSeconds).toBeLessThanOrEqual(0.001);
+  await activateWithKeyboard(continueRecommendation, "Enter");
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Review what a medication label shows" })
+  ).toBeVisible();
   const textConfirm = page.getByRole("button", { name: "Confirm text-entered observations" });
   const confirmTransitionSeconds = await textConfirm.evaluate((element) =>
     Number.parseFloat(getComputedStyle(element).transitionDuration)

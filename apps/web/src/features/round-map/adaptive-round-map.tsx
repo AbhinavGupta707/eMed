@@ -87,7 +87,11 @@ function focusModule(experience: RoundMapExperience): RoundMapModule | undefined
 }
 
 function canContinue(roundTask: RoundMapModule | undefined): boolean {
-  return roundTask?.status === "selected" || roundTask?.status === "next";
+  return (
+    roundTask?.status === "current" ||
+    roundTask?.status === "selected" ||
+    roundTask?.status === "next"
+  );
 }
 
 export function AdaptiveRoundMap({

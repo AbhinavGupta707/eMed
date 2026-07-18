@@ -69,11 +69,11 @@ export async function startRound(page: Page, url: string): Promise<RoundData> {
   const response = await page.goto(url);
   expect(response?.status()).toBe(200);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Your two-minute check is ready" })
+    page.getByRole("heading", { level: 1, name: "Ready when you are, Maya." })
   ).toBeVisible();
   await page
     .getByLabel(
-      "I understand this is a synthetic demonstration, not clinically validated software, and not a medical service."
+      "I understand this check does not diagnose a condition or contact a medical service."
     )
     .check();
   const transitionResponse = page.waitForResponse(
@@ -81,10 +81,10 @@ export async function startRound(page: Page, url: string): Promise<RoundData> {
       candidate.request().method() === "POST" &&
       /\/api\/rounds\/[^/]+\/transition$/.test(new URL(candidate.url()).pathname)
   );
-  await page.getByRole("button", { name: "Start the check" }).click();
+  await page.getByRole("button", { name: "Start my check-in" }).click();
   const round = await parseRoundResponse(await transitionResponse);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Tell us what is happening now" })
+    page.getByRole("heading", { level: 1, name: "Three questions before we talk." })
   ).toBeVisible();
   return round;
 }
@@ -100,6 +100,10 @@ export async function completeStructuredAnswers(
   await choose(page, "Are you having chest pain now?", answers.chestPain);
   await choose(page, "Are you severely short of breath now?", answers.severeBreathlessness);
   await choose(page, "Have you fainted?", answers.fainted);
+  await page.getByRole("button", { name: "Continue to conversation" }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Tell me what’s changed." })
+  ).toBeVisible();
   await choose(page, "How weak do you feel?", answers.weakness);
   await choose(
     page,
@@ -114,20 +118,35 @@ export async function confirmTypedNarrative(page: Page, narrative: string): Prom
   await expect(page.getByRole("button", { name: "Text confirmed" })).toBeDisabled();
 }
 
-export async function confirmSyntheticVoiceNarrative(
-  page: Page,
-  editedNarrative: string
-): Promise<void> {
+export async function submitSyntheticVoiceProposal(page: Page) {
   await page.getByRole("button", { name: "Start voice" }).click();
-  const editor = page.getByRole("textbox", { name: "Your check-in text" });
-  await expect(editor).toHaveValue("I have felt a little weak this morning.");
-  await expect(page.getByText("Ready for your confirmation", { exact: true })).toBeVisible();
-  await editor.fill(editedNarrative);
-  await page.getByRole("button", { name: "Confirm this text" }).click();
-  await expect(page.getByRole("button", { name: "Text confirmed" })).toBeDisabled();
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Let’s make sure I understood." })
+  ).toBeVisible();
+  await page.getByLabel("Weakness", { exact: true }).selectOption("moderate");
+  await page.getByLabel("Palpitations", { exact: true }).selectOption("intermittent");
+  await page.getByLabel("Chest pain now", { exact: true }).selectOption("no");
+  await page.getByLabel("Severe breathlessness now", { exact: true }).selectOption("no");
+  await page.getByLabel("Fainted", { exact: true }).selectOption("no");
+  await page.getByLabel("Anything else", { exact: true }).selectOption("remove");
+  await page.getByLabel(/I reviewed every field and confirm these are my answers/i).check();
+  const reportResponse = page.waitForResponse(
+    (candidate) =>
+      candidate.request().method() === "POST" &&
+      /\/api\/rounds\/[^/]+\/report$/.test(new URL(candidate.url()).pathname)
+  );
+  await page.getByRole("button", { name: "Confirm reviewed report" }).click();
+  const response = await reportResponse;
+  expect(response.status()).toBe(200);
+  return ApiSuccessEnvelopeSchema(SubmitReportDataSchema).parse(await response.json()).data;
 }
 
 export async function submitConfirmedReport(page: Page) {
+  await page.getByRole("button", { name: "Review my report" }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Let’s make sure I understood." })
+  ).toBeVisible();
+  await page.getByLabel("I reviewed every field and confirm these are my answers.").check();
   const reportResponse = page.waitForResponse(
     (candidate) =>
       candidate.request().method() === "POST" &&

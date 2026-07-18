@@ -29,13 +29,13 @@ test("warm patient shell and saved-state refresh stay inside local browser budge
   // rather than one-time framework compilation in this evidence environment.
   await page.goto("/round?scenario=maya-happy-text");
   await expect(
-    page.getByRole("heading", { level: 1, name: "Your two-minute check is ready" })
+    page.getByRole("heading", { level: 1, name: "Ready when you are, Maya." })
   ).toBeVisible();
 
   const renderStartedAt = Date.now();
   await page.reload({ waitUntil: "load" });
   await expect(
-    page.getByRole("heading", { level: 1, name: "Your two-minute check is ready" })
+    page.getByRole("heading", { level: 1, name: "Ready when you are, Maya." })
   ).toBeVisible();
   const patientStateRenderMs = Date.now() - renderStartedAt;
 
@@ -59,7 +59,7 @@ test("warm patient shell and saved-state refresh stay inside local browser budge
         response.request().method() === "GET" &&
         /\/api\/rounds\/[^/]+$/.test(new URL(response.url()).pathname)
     ),
-    page.getByRole("button", { name: "Refresh saved state" }).click()
+    page.getByRole("button", { name: "Resume saved progress" }).click()
   ]);
 
   const refreshStartedAt = await page.evaluate(() => performance.now());
@@ -69,10 +69,10 @@ test("warm patient shell and saved-state refresh stay inside local browser budge
         response.request().method() === "GET" &&
         /\/api\/rounds\/[^/]+$/.test(new URL(response.url()).pathname)
     ),
-    page.getByRole("button", { name: "Refresh saved state" }).click()
+    page.getByRole("button", { name: "Resume saved progress" }).click()
   ]);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Your two-minute check is ready" })
+    page.getByRole("heading", { level: 1, name: "Ready when you are, Maya." })
   ).toBeVisible();
   const savedStateRefreshMs = (await page.evaluate(() => performance.now())) - refreshStartedAt;
   expect(savedStateRefreshMs).toBeLessThanOrEqual(SAVED_STATE_REFRESH_BUDGET_MS);
@@ -81,8 +81,6 @@ test("warm patient shell and saved-state refresh stay inside local browser budge
     () => (window as Window & { __homeroundsCls?: number }).__homeroundsCls ?? 0
   );
   expect(cumulativeLayoutShift).toBeLessThanOrEqual(CUMULATIVE_LAYOUT_SHIFT_BUDGET);
-  await expect(
-    page.getByText("Synthetic demonstration — not clinically validated", { exact: true })
-  ).toBeVisible();
+  await expect(page.getByText("Sample profile · Not medical care", { exact: true })).toBeVisible();
   await expectNoBrowserFailures(failures);
 });

@@ -1,0 +1,424 @@
+{
+  "schemaVersion": "synthetic-baseline-seed.v1",
+  "dataClassification": "synthetic_demo",
+  "patientId": "synthetic-maya",
+  "series": [
+    {
+      "schemaVersion": "derived-baseline-series.v1",
+      "seriesId": "20000000-0000-4000-8000-000000000001",
+      "patientId": "synthetic-maya",
+      "dataClassification": "synthetic_demo",
+      "signal": { "kind": "pulse_bpm", "unit": "bpm" },
+      "context": {
+        "schemaVersion": "baseline-measurement-context.v1",
+        "provider": "finger_ppg",
+        "providerVersion": { "status": "not_applicable" },
+        "algorithmVersion": { "status": "known", "value": "finger_ppg_local_v1" },
+        "device": {
+          "schemaVersion": "device-context.v1",
+          "deviceClass": "phone",
+          "platform": "ios",
+          "captureSurface": "rear_camera"
+        }
+      },
+      "contextKey": "baseline-context.v1:pulse_bpm:bpm:finger_ppg:not_applicable:known-finger_ppg_local_v1:phone:ios:rear_camera",
+      "seriesVersion": 3,
+      "samples": [
+        {
+          "schemaVersion": "derived-baseline-sample.v1",
+          "sampleId": "10000000-0000-4000-8000-000000000001",
+          "patientId": "synthetic-maya",
+          "dataClassification": "synthetic_demo",
+          "signal": { "kind": "pulse_bpm", "unit": "bpm" },
+          "value": 72,
+          "observedAt": "2026-07-10T08:00:00.000Z",
+          "context": {
+            "schemaVersion": "baseline-measurement-context.v1",
+            "provider": "finger_ppg",
+            "providerVersion": { "status": "not_applicable" },
+            "algorithmVersion": { "status": "known", "value": "finger_ppg_local_v1" },
+            "device": {
+              "schemaVersion": "device-context.v1",
+              "deviceClass": "phone",
+              "platform": "ios",
+              "captureSurface": "rear_camera"
+            }
+          },
+          "quality": { "status": "pass", "score": 0.91 },
+          "provenance": {
+            "schemaVersion": "baseline-sample-provenance.v1",
+            "sourceKind": "synthetic_seed",
+            "sourceFactId": "30000000-0000-4000-8000-000000000001",
+            "roundId": "40000000-0000-4000-8000-000000000001",
+            "assessmentSessionId": "50000000-0000-4000-8000-000000000001",
+            "qualityGateVersion": "optical-quality-v1",
+            "structuredDerivedOnly": true,
+            "rawMediaStored": false,
+            "transcriptStored": false
+          }
+        },
+        {
+          "schemaVersion": "derived-baseline-sample.v1",
+          "sampleId": "10000000-0000-4000-8000-000000000002",
+          "patientId": "synthetic-maya",
+          "dataClassification": "synthetic_demo",
+          "signal": { "kind": "pulse_bpm", "unit": "bpm" },
+          "value": 74,
+          "observedAt": "2026-07-12T08:00:00.000Z",
+          "context": {
+            "schemaVersion": "baseline-measurement-context.v1",
+            "provider": "finger_ppg",
+            "providerVersion": { "status": "not_applicable" },
+            "algorithmVersion": { "status": "known", "value": "finger_ppg_local_v1" },
+            "device": {
+              "schemaVersion": "device-context.v1",
+              "deviceClass": "phone",
+              "platform": "ios",
+              "captureSurface": "rear_camera"
+            }
+          },
+          "quality": { "status": "pass", "score": 0.93 },
+          "provenance": {
+            "schemaVersion": "baseline-sample-provenance.v1",
+            "sourceKind": "synthetic_seed",
+            "sourceFactId": "30000000-0000-4000-8000-000000000002",
+            "roundId": "40000000-0000-4000-8000-000000000002",
+            "assessmentSessionId": "50000000-0000-4000-8000-000000000002",
+            "qualityGateVersion": "optical-quality-v1",
+            "structuredDerivedOnly": true,
+            "rawMediaStored": false,
+            "transcriptStored": false
+          }
+        },
+        {
+          "schemaVersion": "derived-baseline-sample.v1",
+          "sampleId": "10000000-0000-4000-8000-000000000003",
+          "patientId": "synthetic-maya",
+          "dataClassification": "synthetic_demo",
+          "signal": { "kind": "pulse_bpm", "unit": "bpm" },
+          "value": 73,
+          "observedAt": "2026-07-14T08:00:00.000Z",
+          "context": {
+            "schemaVersion": "baseline-measurement-context.v1",
+            "provider": "finger_ppg",
+            "providerVersion": { "status": "not_applicable" },
+            "algorithmVersion": { "status": "known", "value": "finger_ppg_local_v1" },
+            "device": {
+              "schemaVersion": "device-context.v1",
+              "deviceClass": "phone",
+              "platform": "ios",
+              "captureSurface": "rear_camera"
+            }
+          },
+          "quality": { "status": "pass", "score": 0.94 },
+          "provenance": {
+            "schemaVersion": "baseline-sample-provenance.v1",
+            "sourceKind": "synthetic_seed",
+            "sourceFactId": "30000000-0000-4000-8000-000000000003",
+            "roundId": "40000000-0000-4000-8000-000000000003",
+            "assessmentSessionId": "50000000-0000-4000-8000-000000000003",
+            "qualityGateVersion": "optical-quality-v1",
+            "structuredDerivedOnly": true,
+            "rawMediaStored": false,
+            "transcriptStored": false
+          }
+        }
+      ],
+      "createdAt": "2026-07-10T08:00:01.000Z",
+      "updatedAt": "2026-07-14T08:00:01.000Z"
+    },
+    {
+      "schemaVersion": "derived-baseline-series.v1",
+      "seriesId": "20000000-0000-4000-8000-000000000002",
+      "patientId": "synthetic-maya",
+      "dataClassification": "synthetic_demo",
+      "signal": { "kind": "voice_harmonic_to_noise_ratio_db", "unit": "dB" },
+      "context": {
+        "schemaVersion": "baseline-measurement-context.v1",
+        "provider": "local_voice_features",
+        "providerVersion": { "status": "not_applicable" },
+        "algorithmVersion": { "status": "known", "value": "local_voice_features_v1" },
+        "device": {
+          "schemaVersion": "device-context.v1",
+          "deviceClass": "phone",
+          "platform": "ios",
+          "captureSurface": "microphone"
+        }
+      },
+      "contextKey": "baseline-context.v1:voice_harmonic_to_noise_ratio_db:dB:local_voice_features:not_applicable:known-local_voice_features_v1:phone:ios:microphone",
+      "seriesVersion": 2,
+      "samples": [
+        {
+          "schemaVersion": "derived-baseline-sample.v1",
+          "sampleId": "10000000-0000-4000-8000-000000000004",
+          "patientId": "synthetic-maya",
+          "dataClassification": "synthetic_demo",
+          "signal": { "kind": "voice_harmonic_to_noise_ratio_db", "unit": "dB" },
+          "value": 16.8,
+          "observedAt": "2026-07-11T09:00:00.000Z",
+          "context": {
+            "schemaVersion": "baseline-measurement-context.v1",
+            "provider": "local_voice_features",
+            "providerVersion": { "status": "not_applicable" },
+            "algorithmVersion": { "status": "known", "value": "local_voice_features_v1" },
+            "device": {
+              "schemaVersion": "device-context.v1",
+              "deviceClass": "phone",
+              "platform": "ios",
+              "captureSurface": "microphone"
+            }
+          },
+          "quality": { "status": "pass", "score": 0.86 },
+          "provenance": {
+            "schemaVersion": "baseline-sample-provenance.v1",
+            "sourceKind": "synthetic_seed",
+            "sourceFactId": "30000000-0000-4000-8000-000000000004",
+            "roundId": "40000000-0000-4000-8000-000000000004",
+            "assessmentSessionId": "50000000-0000-4000-8000-000000000004",
+            "qualityGateVersion": "voice-quality-v1",
+            "structuredDerivedOnly": true,
+            "rawMediaStored": false,
+            "transcriptStored": false
+          }
+        },
+        {
+          "schemaVersion": "derived-baseline-sample.v1",
+          "sampleId": "10000000-0000-4000-8000-000000000005",
+          "patientId": "synthetic-maya",
+          "dataClassification": "synthetic_demo",
+          "signal": { "kind": "voice_harmonic_to_noise_ratio_db", "unit": "dB" },
+          "value": 17.2,
+          "observedAt": "2026-07-13T09:00:00.000Z",
+          "context": {
+            "schemaVersion": "baseline-measurement-context.v1",
+            "provider": "local_voice_features",
+            "providerVersion": { "status": "not_applicable" },
+            "algorithmVersion": { "status": "known", "value": "local_voice_features_v1" },
+            "device": {
+              "schemaVersion": "device-context.v1",
+              "deviceClass": "phone",
+              "platform": "ios",
+              "captureSurface": "microphone"
+            }
+          },
+          "quality": { "status": "pass", "score": 0.88 },
+          "provenance": {
+            "schemaVersion": "baseline-sample-provenance.v1",
+            "sourceKind": "synthetic_seed",
+            "sourceFactId": "30000000-0000-4000-8000-000000000005",
+            "roundId": "40000000-0000-4000-8000-000000000005",
+            "assessmentSessionId": "50000000-0000-4000-8000-000000000005",
+            "qualityGateVersion": "voice-quality-v1",
+            "structuredDerivedOnly": true,
+            "rawMediaStored": false,
+            "transcriptStored": false
+          }
+        }
+      ],
+      "createdAt": "2026-07-11T09:00:01.000Z",
+      "updatedAt": "2026-07-13T09:00:01.000Z"
+    },
+    {
+      "schemaVersion": "derived-baseline-series.v1",
+      "seriesId": "20000000-0000-4000-8000-000000000003",
+      "patientId": "synthetic-maya",
+      "dataClassification": "synthetic_demo",
+      "signal": { "kind": "pulse_bpm", "unit": "bpm" },
+      "context": {
+        "schemaVersion": "baseline-measurement-context.v1",
+        "provider": "vitallens",
+        "providerVersion": { "status": "known", "value": "vitallens_model_4.2" },
+        "algorithmVersion": { "status": "known", "value": "vitallens_face_rppg_v1" },
+        "device": {
+          "schemaVersion": "device-context.v1",
+          "deviceClass": "phone",
+          "platform": "ios",
+          "captureSurface": "front_camera"
+        }
+      },
+      "contextKey": "baseline-context.v1:pulse_bpm:bpm:vitallens:known-vitallens_model_4.2:known-vitallens_face_rppg_v1:phone:ios:front_camera",
+      "seriesVersion": 1,
+      "samples": [
+        {
+          "schemaVersion": "derived-baseline-sample.v1",
+          "sampleId": "10000000-0000-4000-8000-000000000006",
+          "patientId": "synthetic-maya",
+          "dataClassification": "synthetic_demo",
+          "signal": { "kind": "pulse_bpm", "unit": "bpm" },
+          "value": 75,
+          "observedAt": "2026-07-15T10:00:00.000Z",
+          "context": {
+            "schemaVersion": "baseline-measurement-context.v1",
+            "provider": "vitallens",
+            "providerVersion": { "status": "known", "value": "vitallens_model_4.2" },
+            "algorithmVersion": { "status": "known", "value": "vitallens_face_rppg_v1" },
+            "device": {
+              "schemaVersion": "device-context.v1",
+              "deviceClass": "phone",
+              "platform": "ios",
+              "captureSurface": "front_camera"
+            }
+          },
+          "quality": { "status": "pass", "score": 0.89 },
+          "provenance": {
+            "schemaVersion": "baseline-sample-provenance.v1",
+            "sourceKind": "synthetic_seed",
+            "sourceFactId": "30000000-0000-4000-8000-000000000006",
+            "roundId": "40000000-0000-4000-8000-000000000006",
+            "assessmentSessionId": "50000000-0000-4000-8000-000000000006",
+            "qualityGateVersion": "optical-quality-v1",
+            "structuredDerivedOnly": true,
+            "rawMediaStored": false,
+            "transcriptStored": false
+          }
+        }
+      ],
+      "createdAt": "2026-07-15T10:00:01.000Z",
+      "updatedAt": "2026-07-15T10:00:01.000Z"
+    }
+  ],
+  "policies": [
+    {
+      "schemaVersion": "personal-change-policy.v1",
+      "policyVersion": "pulse-within-person-v1",
+      "signal": { "kind": "pulse_bpm", "unit": "bpm" },
+      "comparisonBasis": "within_person_only",
+      "clinicalInterpretation": "none",
+      "minimumComparableSamples": 3,
+      "absoluteDeltaThreshold": 6,
+      "relativeDeltaThreshold": 0.08
+    },
+    {
+      "schemaVersion": "personal-change-policy.v1",
+      "policyVersion": "voice-hnr-within-person-v1",
+      "signal": { "kind": "voice_harmonic_to_noise_ratio_db", "unit": "dB" },
+      "comparisonBasis": "within_person_only",
+      "clinicalInterpretation": "none",
+      "minimumComparableSamples": 3,
+      "absoluteDeltaThreshold": 2,
+      "relativeDeltaThreshold": 0.12
+    }
+  ],
+  "personalization": {
+    "schemaVersion": "bounded-personalization-profile.v1",
+    "patientId": "synthetic-maya",
+    "dataClassification": "synthetic_demo",
+    "profileVersion": 1,
+    "consent": {
+      "status": "granted",
+      "policyVersion": "structured-preferences-v1",
+      "decidedAt": "2026-07-09T12:00:00.000Z"
+    },
+    "defaultDevice": {
+      "status": "set",
+      "value": "phone",
+      "provenance": {
+        "schemaVersion": "preference-provenance.v1",
+        "source": "patient_confirmation",
+        "confirmationId": "60000000-0000-4000-8000-000000000001",
+        "recordedAt": "2026-07-09T12:01:00.000Z"
+      }
+    },
+    "accessibility": {
+      "status": "set",
+      "modes": ["larger_text", "reduced_motion", "persistent_captions"],
+      "provenance": {
+        "schemaVersion": "preference-provenance.v1",
+        "source": "patient_confirmation",
+        "confirmationId": "60000000-0000-4000-8000-000000000002",
+        "recordedAt": "2026-07-09T12:02:00.000Z"
+      }
+    },
+    "language": {
+      "status": "set",
+      "languageTag": "en-GB",
+      "provenance": {
+        "schemaVersion": "preference-provenance.v1",
+        "source": "patient_confirmation",
+        "confirmationId": "60000000-0000-4000-8000-000000000003",
+        "recordedAt": "2026-07-09T12:03:00.000Z"
+      }
+    },
+    "display": {
+      "status": "set",
+      "choices": {
+        "textSize": "large",
+        "informationDensity": "comfortable",
+        "timeFormat": "24_hour"
+      },
+      "provenance": {
+        "schemaVersion": "preference-provenance.v1",
+        "source": "patient_confirmation",
+        "confirmationId": "60000000-0000-4000-8000-000000000004",
+        "recordedAt": "2026-07-09T12:04:00.000Z"
+      }
+    },
+    "completedTasks": [
+      {
+        "schemaVersion": "completed-task-history.v1",
+        "completionId": "70000000-0000-4000-8000-000000000001",
+        "taskId": "synthetic-task-medication-1",
+        "taskKind": "medication_label",
+        "completedAt": "2026-07-15T11:00:00.000Z",
+        "deviceUsed": "phone",
+        "outcome": "derived_fact_recorded",
+        "provenance": {
+          "schemaVersion": "task-history-provenance.v1",
+          "source": "deterministic_workflow",
+          "roundId": "40000000-0000-4000-8000-000000000007",
+          "rawMediaStored": false,
+          "transcriptStored": false
+        }
+      },
+      {
+        "schemaVersion": "completed-task-history.v1",
+        "completionId": "70000000-0000-4000-8000-000000000002",
+        "taskId": "synthetic-task-pulse-1",
+        "taskKind": "finger_pulse",
+        "completedAt": "2026-07-14T08:01:00.000Z",
+        "deviceUsed": "phone",
+        "outcome": "derived_fact_recorded",
+        "provenance": {
+          "schemaVersion": "task-history-provenance.v1",
+          "source": "deterministic_workflow",
+          "roundId": "40000000-0000-4000-8000-000000000003",
+          "rawMediaStored": false,
+          "transcriptStored": false
+        }
+      },
+      {
+        "schemaVersion": "completed-task-history.v1",
+        "completionId": "70000000-0000-4000-8000-000000000003",
+        "taskId": "synthetic-task-voice-1",
+        "taskKind": "voice_signal",
+        "completedAt": "2026-07-13T09:01:00.000Z",
+        "deviceUsed": "phone",
+        "outcome": "quality_rejected",
+        "provenance": {
+          "schemaVersion": "task-history-provenance.v1",
+          "source": "deterministic_workflow",
+          "roundId": "40000000-0000-4000-8000-000000000005",
+          "rawMediaStored": false,
+          "transcriptStored": false
+        }
+      },
+      {
+        "schemaVersion": "completed-task-history.v1",
+        "completionId": "70000000-0000-4000-8000-000000000004",
+        "taskId": "synthetic-task-face-1",
+        "taskKind": "face_pulse",
+        "completedAt": "2026-07-12T10:01:00.000Z",
+        "deviceUsed": "phone",
+        "outcome": "unavailable",
+        "provenance": {
+          "schemaVersion": "task-history-provenance.v1",
+          "source": "deterministic_workflow",
+          "roundId": "40000000-0000-4000-8000-000000000008",
+          "rawMediaStored": false,
+          "transcriptStored": false
+        }
+      }
+    ],
+    "updatedAt": "2026-07-15T11:00:01.000Z"
+  }
+}

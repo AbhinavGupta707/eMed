@@ -5,7 +5,7 @@ Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`
 Goal: autonomously integrate and verify Checkpoints 9–11 Human Warmth final pass  
 Integration branch: `main`
 Release-candidate tag: `homerounds-v0.1.0-demo-rc2` on the final Checkpoint 7 ledger commit
-Heartbeat: `homerounds-checkpoints-9-11-orchestration-heartbeat`, active every 15 minutes on the master task
+Heartbeat: `homerounds-checkpoints-9-11-orchestration-heartbeat`, active every 15 minutes as the fallback for an event-driven/adaptive master control loop
 
 ## Current checkpoint
 
@@ -86,6 +86,7 @@ Heartbeat: `homerounds-checkpoints-9-11-orchestration-heartbeat`, active every 1
 - At most three worker tasks active.
 - Checkpoint 8 used visible project-scoped worktree tasks. Wave A launched exactly three exclusive lanes from tested commit `08953f8`: 8A/8B used `xhigh`, 8C used `high`. Wave B launched two validation lanes only after Wave A integration; the bounded 8E-R replacement activated the missing release profiles without widening ownership. All tasks are archived.
 - Checkpoint 9 Wave A launched exactly two visible project-scoped worktree tasks from `7dd040e`: 9A uses `high` for the bounded responsive redesign; 9B uses `xhigh` for token security, concurrency, and live-sync. They have disjoint ownership. Lane 9C must not launch until both are reviewed, integrated in the declared 9B then 9A order, and the central Wave A gate passes.
+- Monitoring is hybrid: worker completion/failure, handoff, merge, and gate results are immediate review boundaries when visible; the 15-minute heartbeat recovers interrupted master turns and missed events. Unchanged state in one observation is normal, not stagnation. Recovery requires repeated unchanged evidence or an explicit capacity/error/blocker and always resumes the same worker without duplication.
 - Checkpoint 7 uses adaptive `3 + 2` waves from tested integration commits: 7A/7B/7C concurrently, then 7D/7E concurrently only after Wave A integration passes. Ownership and reasoning are frozen in `planning/09_AI_NATIVE_CHECKPOINT_7.md`.
 - Effective from Checkpoint 2, every isolated task is explicitly launched with `gpt-5.6-sol`; `high` is used for bounded lanes and `xhigh` for complex lanes according to the frozen matrix in the orchestration plan. The completed Checkpoint 1 entries remain truthfully labelled `legacy/pre-policy`; any future relaunch of 1A–1D must use `gpt-5.6-sol`/`xhigh`.
 - Checkpoint 3 ran `3A + 3B` concurrently with exclusive file allowlists; both handed off clean commits and were integrated in order. The orchestrator retained `data/demo/**`, `scripts/demo/**`, `apps/web/public/demo/**`, cross-lane server seams, and integration tests.

@@ -145,15 +145,11 @@ test("runs the persisted no-measurement clinician loop and propagates completion
   );
 
   await page.goto("/round?scenario=maya-poor-quality");
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Synthetic review completed" })
-  ).toBeVisible();
-  await expect(page.getByText("Completed in clinician cockpit")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Review finished" })).toBeVisible();
+  await expect(page.getByText("Completed in HomeRounds")).toBeVisible();
   await page.reload();
-  await expect(
-    page.getByRole("heading", { level: 1, name: "Synthetic review completed" })
-  ).toBeVisible();
-  await expect(page.getByText("Completed in clinician cockpit")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Review finished" })).toBeVisible();
+  await expect(page.getByText("Completed in HomeRounds")).toBeVisible();
 
   expect(failures.consoleErrors).toEqual([]);
   expect(failures.pageErrors).toEqual([]);

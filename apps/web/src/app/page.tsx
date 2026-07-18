@@ -4,6 +4,7 @@ import {
   SYNTHETIC_MAYA_SCENARIOS,
   type PatientScenarioId
 } from "@/features/shared-round/patient-round-config";
+import { readSyntheticBaselineSeed } from "@/server/baselines/demo-seed";
 import { deterministicUuid } from "@/server/crypto";
 
 import styles from "./home.module.css";
@@ -70,6 +71,15 @@ function BaselineIllustration() {
 
 export default function HomePage() {
   const roundHref = protectedHref("patient", `/round?scenario=${PRIMARY_SCENARIO}`);
+  const savedDevice = readSyntheticBaselineSeed().personalization.defaultDevice;
+  const savedDeviceLabel =
+    savedDevice.status === "set"
+      ? savedDevice.value === "phone"
+        ? "Phone for supported checks"
+        : savedDevice.value === "tablet"
+          ? "Tablet for supported checks"
+          : "This computer for supported checks"
+      : "Choose a device during the check-in";
 
   return (
     <main className={styles.page}>
@@ -86,64 +96,115 @@ export default function HomePage() {
       <section aria-labelledby="welcome-title" className={styles.hero}>
         <div className={styles.heroGrid}>
           <div className={styles.welcome}>
-            <p className={styles.eyebrow}>Your home round</p>
+            <p className={styles.eyebrow}>A check-in is ready</p>
             <h1 id="welcome-title">Good morning, Maya.</h1>
             <p className={styles.lede}>
-              A short check-in is ready when you are. We’ll ask what changed, review it with you,
-              then offer one useful next step.
+              A recent confirmed update in your sample profile looks a little different from your
+              usual pattern. We can check what changed, gather only what helps, and agree one next
+              step together.
             </p>
+
+            <div className={styles.invitationNote} role="note">
+              <span className={styles.invitationPulse} aria-hidden="true" />
+              <div>
+                <strong>Invited after a recent sample-profile update</strong>
+                <p>Your check-in is saved and ready. Start now or come back when it suits you.</p>
+              </div>
+            </div>
 
             <BaselineIllustration />
 
             <div className={styles.actions}>
               <Link className={styles.primaryAction} href={roundHref}>
                 <span aria-hidden="true" className={styles.actionMark} />
-                Start a check-in
+                Continue invited check-in
               </Link>
-              <a className={styles.textAction} href="#recent-context">
-                See what HomeRounds remembers
-              </a>
+              <Link className={styles.textAction} href={roundHref}>
+                Start a check-in on demand
+              </Link>
             </div>
           </div>
 
           <aside aria-labelledby="context-title" className={styles.context} id="recent-context">
             <p className={styles.contextEyebrow}>For this check-in</p>
-            <h2 id="context-title">What I already know</h2>
+            <h2 id="context-title">What you asked me to remember</h2>
             <ul>
               <li>
                 <span aria-hidden="true">01</span>
                 <div>
                   <strong>Your usual baseline</strong>
-                  <p>Used only to keep this round focused.</p>
+                  <p>Compared only with compatible, quality-passing sample readings.</p>
                 </div>
               </li>
               <li>
                 <span aria-hidden="true">02</span>
                 <div>
-                  <strong>Recent medication history</strong>
-                  <p>You will confirm anything used in this round.</p>
+                  <strong>{savedDeviceLabel}</strong>
+                  <p>Your confirmed device preference; you can choose differently today.</p>
                 </div>
               </li>
               <li>
                 <span aria-hidden="true">03</span>
                 <div>
                   <strong>Your saved progress</strong>
-                  <p>Only confirmed structured information is restored.</p>
+                  <p>Only answers and results you confirmed are restored.</p>
                 </div>
               </li>
             </ul>
             <p className={styles.limitNote}>
-              HomeRounds cannot diagnose a condition or contact a clinic. Voice and camera checks
-              stay optional, with a complete text path available.
+              Voice and camera stay optional. You can complete the conversation by typing and change
+              the device for any supported check.
             </p>
           </aside>
         </div>
       </section>
 
+      <section aria-labelledby="journey-title" className={styles.journey}>
+        <div className={styles.journeyHeading}>
+          <p className={styles.eyebrow}>A joined-up round</p>
+          <h2 id="journey-title">From invitation to a confirmed next action.</h2>
+          <p>
+            One focused screen at a time, with a safe way forward when a service, signal, or
+            connection is unavailable.
+          </p>
+        </div>
+        <ol className={styles.journeySteps}>
+          <li>
+            <span>Ready</span>
+            <strong>Start when you choose</strong>
+            <p>Continue this invitation or begin the same short check-in on demand.</p>
+          </li>
+          <li>
+            <span>Remembered</span>
+            <strong>Phone preferred</strong>
+            <p>Your saved choice is offered first, never forced.</p>
+          </li>
+          <li>
+            <span>Focused</span>
+            <strong>One useful check</strong>
+            <p>The route adapts to confirmed answers and shows only the selected task.</p>
+          </li>
+          <li>
+            <span>Connected</span>
+            <strong>Result returns here</strong>
+            <p>A phone result must pass the same checks before the laptop can continue.</p>
+          </li>
+          <li>
+            <span>Confirmed</span>
+            <strong>One next action</strong>
+            <p>You review the action and its destination before anything is saved.</p>
+          </li>
+        </ol>
+      </section>
+
       <section aria-labelledby="how-title" className={styles.how} id="how-it-works">
         <div>
           <p className={styles.eyebrow}>One thing at a time</p>
-          <h2 id="how-title">A calm path from conversation to next step.</h2>
+          <h2 id="how-title">A short path with honest recovery.</h2>
+          <p className={styles.howIntro}>
+            The main route is designed to fit comfortably inside three minutes without hiding
+            uncertainty or failure.
+          </p>
         </div>
         <ol>
           <li>
@@ -157,7 +218,7 @@ export default function HomePage() {
             <span>2</span>
             <div>
               <strong>Do one selected check</strong>
-              <p>Use your phone when available, or continue on this computer when supported.</p>
+              <p>Use your remembered phone choice, or switch device when supported.</p>
             </div>
           </li>
           <li>
@@ -170,7 +231,7 @@ export default function HomePage() {
         </ol>
       </section>
 
-      <footer className={styles.footer}>Sample profile · Not medical care</footer>
+      <footer className={styles.footer}>Synthetic sample profile · Not medical care</footer>
     </main>
   );
 }

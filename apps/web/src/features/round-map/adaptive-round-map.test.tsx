@@ -29,6 +29,10 @@ describe("adaptive recommendation", () => {
     ).toBeVisible();
     expect(screen.getByRole("heading", { name: "Quality-gated finger pulse check" })).toBeVisible();
     expect(screen.getByText("Selected — ready")).toBeVisible();
+    expect(
+      screen.getByText("A pulse estimate that appears only when the signal is clear enough.")
+    ).toBeVisible();
+    expect(screen.queryByText(/deterministic capture-quality/i)).not.toBeInTheDocument();
     expect(screen.getByText("What this can clarify")).toBeVisible();
     expect(screen.queryByText("Medication label review")).not.toBeInTheDocument();
     expect(screen.queryByText("Optional remote camera check")).not.toBeInTheDocument();

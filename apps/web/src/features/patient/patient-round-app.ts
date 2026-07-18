@@ -14,6 +14,10 @@ import {
   type VoiceSessionProvider
 } from "@homerounds/voice";
 import {
+  DefaultDevicePreferenceSchema,
+  type DefaultDevicePreference
+} from "@homerounds/personalization";
+import {
   AppShell,
   Banner,
   Button,
@@ -88,6 +92,7 @@ function createRequiredChildrenElement<
 }
 export type PatientRoundAppProps = Readonly<{
   config: PatientRoundLaunchConfig;
+  defaultDevicePreference?: DefaultDevicePreference;
   api?: PatientRoundApi;
   voiceProvider?: VoiceSessionProvider;
   voiceBiomarkerProvider?: VoiceBiomarkerProvider;
@@ -124,6 +129,26 @@ const palpitationOptions: readonly ChoiceOption[] = [
   { value: "current", label: "Happening now" },
   { value: "unknown", label: "I’m not sure" }
 ];
+
+const unknownDevicePreference: DefaultDevicePreference = { status: "unknown" };
+
+function devicePreferenceLabel(preference: DefaultDevicePreference): string {
+  switch (preference.status) {
+    case "unknown":
+      return "No device preference is saved";
+    case "no_preference":
+      return "Choose whichever supported device suits you today";
+    case "set":
+      switch (preference.value) {
+        case "phone":
+          return "Phone preferred for supported checks";
+        case "tablet":
+          return "Tablet preferred for supported checks";
+        case "desktop":
+          return "This computer preferred for supported checks";
+      }
+  }
+}
 const cancellableStates = new Set<RoundState>([
   "invited",
   "red_flag_screen",
@@ -397,24 +422,29 @@ function ErrorNotice({ state, controller }: PatientShellProps) {
   return createRequiredChildrenElement(
     Banner,
     {
-      action: error.recoverable
-        ? createRequiredChildrenElement(
-            Button,
-            {
-              onClick: () => void controller.refresh(),
-              size: "compact",
-              variant: "secondary"
-            },
-            "Reload round"
-          )
-        : undefined,
+      action:
+        error.recoverable && state.online
+          ? createRequiredChildrenElement(
+              Button,
+              {
+                onClick: () => void controller.refresh(),
+                size: "compact",
+                variant: "secondary"
+              },
+              error.code === "network" ? "Try connection again" : "Reload saved check-in"
+            )
+          : undefined,
       title: error.title,
       variant: error.code === "permission_denied" ? "warning" : "danger"
     },
     createElement("p", null, error.message)
   );
 }
-function InvitationPanel({ state, controller }: PatientShellProps) {
+function InvitationPanel({
+  state,
+  controller,
+  defaultDevicePreference
+}: PatientShellProps & { defaultDevicePreference: DefaultDevicePreference }) {
   const [consented, setConsented] = useState(false);
   return createElement(
     "section",
@@ -438,6 +468,15 @@ function InvitationPanel({ state, controller }: PatientShellProps) {
         "p",
         null,
         "A short check-in about how you have been feeling since your last saved round."
+      )
+    ),
+    createRequiredChildrenElement(
+      Banner,
+      { title: "Why this check-in is ready", variant: "information" },
+      createElement(
+        "p",
+        null,
+        "A recent confirmed update in Maya’s sample profile is a little different from her usual pattern. You decide whether to continue."
       )
     ),
     createElement(
@@ -467,6 +506,7 @@ function InvitationPanel({ state, controller }: PatientShellProps) {
             null,
             "Voice is optional, editable, and always has a complete text alternative."
           ),
+          createElement("li", null, devicePreferenceLabel(defaultDevicePreference), "."),
           createElement("li", null, "A camera reading appears only when signal quality passes."),
           createElement(
             "li",
@@ -945,8 +985,12 @@ function ReportPanel({
 function MeasurementPanel({
   state,
   controller,
-  companion
-}: PatientShellProps & { companion: DesktopCompanionController }) {
+  companion,
+  defaultDevicePreference
+}: PatientShellProps & {
+  companion: DesktopCompanionController;
+  defaultDevicePreference: DefaultDevicePreference;
+}) {
   const [consented, setConsented] = useState(false);
   const session = state.assessmentSession;
   const selectedCheckLabel =
@@ -1129,8 +1173,9 @@ function MeasurementPanel({
         "Scan the code with your phone. It expires automatically and contains no patient details.",
       connected: "Your phone is connected. Continue with the guidance shown there.",
       result:
-        "The phone result was received and checked against the normal quality and workflow rules.",
-      acknowledged: "Your computer recorded the checked phone result and refreshed the round.",
+        "The phone result arrived here and is waiting for you to acknowledge it before this check-in continues.",
+      acknowledged:
+        "The checked phone result was acknowledged and the saved check-in was refreshed.",
       expired: "This phone link expired or was closed. Create a new short-lived code to continue.",
       unavailable:
         "A secure phone connection is unavailable right now. You can continue on this computer."
@@ -1178,6 +1223,30 @@ function MeasurementPanel({
           : companion.status === "unavailable"
             ? "Try phone connection again"
             : "Use my phone";
+    const liveResult = ["result", "acknowledged"].includes(companion.status)
+      ? createElement(
+          "dl",
+          { className: styles.liveResult },
+          createElement(
+            "div",
+            null,
+            createElement("dt", null, "From"),
+            createElement("dd", null, "Your connected phone")
+          ),
+          createElement(
+            "div",
+            null,
+            createElement("dt", null, "Received"),
+            createElement("dd", null, "One result with its quality status")
+          ),
+          createElement(
+            "div",
+            null,
+            createElement("dt", null, "Next"),
+            createElement("dd", null, "Acknowledge it here before the round can continue")
+          )
+        )
+      : undefined;
     return createElement(DeviceHandoff, {
       computerSupported: true,
       onUseComputer: () => {
@@ -1185,6 +1254,8 @@ function MeasurementPanel({
       },
       ...(startPhone ? { onUsePhone: startPhone, phoneActionLabel } : {}),
       ...(pairingVisual ? { pairingVisual } : {}),
+      ...(liveResult ? { result: liveResult } : {}),
+      preferenceNote: devicePreferenceLabel(defaultDevicePreference),
       rationale:
         "A short camera check can add one quality-gated piece of information. No reading is accepted when quality is uncertain.",
       status: handoffStatus,
@@ -1288,7 +1359,7 @@ function qualityReason(reason: string): string {
     provider_unavailable: "The selected camera check was unavailable.",
     cancelled: "The camera check was cancelled."
   };
-  return descriptions[reason] ?? "The configured quality gate did not pass.";
+  return descriptions[reason] ?? "The signal quality was not clear enough.";
 }
 function FollowUpPanel({ state, controller }: PatientShellProps) {
   const decision = state.decision?.kind === "follow_up_required" ? state.decision : null;
@@ -1377,7 +1448,8 @@ function ActionConfirmationPanel({ state, controller }: PatientShellProps) {
   const [confirmed, setConfirmed] = useState(false);
   const result = state.protocolResult;
   if (!result) return null;
-  const abstained = result.outcome === "abstain_for_review";
+  const abstained =
+    result.outcome === "abstain_for_review" || state.round?.state === "abstained_for_review";
   return createElement(
     "section",
     {
@@ -1399,9 +1471,22 @@ function ActionConfirmationPanel({ state, controller }: PatientShellProps) {
       createElement(
         "p",
         null,
-        "HomeRounds has one available action. Nothing happens until you confirm it."
+        abstained
+          ? "There is not enough clear evidence for a measurement. You can still choose one review request without inventing a value."
+          : "One next action is available. Nothing is saved until you review and confirm it."
       )
     ),
+    abstained
+      ? createRequiredChildrenElement(
+          Banner,
+          { title: "Uncertainty kept intact", variant: "warning" },
+          createElement(
+            "p",
+            null,
+            "No measurement was inferred. Your confirmed answers can be sent only to the sample HomeRounds review queue."
+          )
+        )
+      : null,
     state.measurement
       ? createElement(MeasurementQuality, {
           details: createElement(
@@ -1422,7 +1507,7 @@ function ActionConfirmationPanel({ state, controller }: PatientShellProps) {
       createElement(
         CardHeader,
         null,
-        createElement(CardTitle, null, "Save a review request"),
+        createElement(CardTitle, null, "Save a sample care-team review request"),
         createElement(
           CardDescription,
           null,
@@ -1614,8 +1699,8 @@ function OutcomePanel({
           "p",
           null,
           completed
-            ? "The saved sample review was marked complete inside HomeRounds."
-            : "This sample request is waiting inside HomeRounds. Nothing was sent to a real clinic."
+            ? "The sample care-team review was marked complete inside HomeRounds."
+            : "Your confirmed sample care-team request is waiting inside HomeRounds. Nothing was sent to a real clinic."
         )
       ),
       createRequiredChildrenElement(
@@ -1637,7 +1722,7 @@ function OutcomePanel({
         createElement(
           CardHeader,
           null,
-          createElement(CardTitle, null, "What happens next"),
+          createElement(CardTitle, null, "Your confirmed next action"),
           createElement(
             CardDescription,
             null,
@@ -1798,12 +1883,6 @@ function OutcomePanel({
             null,
             createElement("dt", null, "Timing"),
             createElement("dd", null, "No real response time is promised")
-          ),
-          createElement(
-            "div",
-            null,
-            createElement("dt", null, "Round state"),
-            createElement("dd", null, state.round?.state.replaceAll("_", " "))
           )
         )
       )
@@ -1835,7 +1914,7 @@ function ResumeRecoveryPanel({ state, controller }: PatientShellProps) {
       createElement(
         "p",
         null,
-        "The persisted state was restored. Ephemeral camera, transcript, and decision data were not reused."
+        "Your confirmed answers and completed steps are still here. An unfinished camera or voice step must start fresh."
       )
     ),
     createElement(FeedbackState, {
@@ -1852,7 +1931,7 @@ function ResumeRecoveryPanel({ state, controller }: PatientShellProps) {
       description:
         "Some short-lived check information has expired, so this step cannot be resumed safely.",
       kind: "error",
-      title: "No local assumption was used"
+      title: "Nothing unfinished was guessed"
     })
   );
 }
@@ -1915,11 +1994,7 @@ function CancelledPanel() {
         },
         "This round was cancelled"
       ),
-      createElement(
-        "p",
-        null,
-        "No further answers, camera values, or actions will be submitted for this round."
-      )
+      createElement("p", null, "No further answers, camera values, or actions will be submitted.")
     ),
     createRequiredChildrenElement(
       Banner,
@@ -1927,21 +2002,27 @@ function CancelledPanel() {
         title: "Camera and microphone stopped",
         variant: "information"
       },
-      createElement("p", null, "You can close this page. No further step will run.")
+      createElement(
+        "p",
+        null,
+        "You can close this page. A new check-in starts separately when you choose."
+      )
     )
   );
 }
 function LoadingPanel({ state, controller }: PatientShellProps) {
   if (state.error) {
     return createElement(FeedbackState, {
-      action: createRequiredChildrenElement(
-        Button,
-        {
-          onClick: () => void controller.initialise(),
-          variant: "secondary"
-        },
-        "Try again"
-      ),
+      action: state.online
+        ? createRequiredChildrenElement(
+            Button,
+            {
+              onClick: () => void controller.initialise(),
+              variant: "secondary"
+            },
+            "Try connection again"
+          )
+        : undefined,
       description: state.error.message,
       kind: "error",
       title: state.error.title
@@ -2041,7 +2122,8 @@ function PatientWorkflowContent({
   now,
   medicationLabelProvider,
   voiceBiomarkerProvider,
-  companion
+  companion,
+  defaultDevicePreference
 }: PatientShellProps & {
   view: PatientWorkflowView;
   voiceProvider: VoiceSessionProvider;
@@ -2050,6 +2132,7 @@ function PatientWorkflowContent({
   medicationLabelProvider: MedicationLabelProvider;
   voiceBiomarkerProvider: VoiceBiomarkerProvider;
   companion: DesktopCompanionController;
+  defaultDevicePreference: DefaultDevicePreference;
 }): ReactNode {
   switch (view) {
     case "loading":
@@ -2060,6 +2143,7 @@ function PatientWorkflowContent({
     case "invitation":
       return createElement(InvitationPanel, {
         controller: controller,
+        defaultDevicePreference,
         state: state
       });
     case "report":
@@ -2092,6 +2176,7 @@ function PatientWorkflowContent({
       return createElement(MeasurementPanel, {
         companion,
         controller: controller,
+        defaultDevicePreference,
         state: state
       });
     case "follow_up":
@@ -2130,6 +2215,7 @@ function PatientWorkflowContent({
 }
 export function PatientRoundApp({
   config,
+  defaultDevicePreference: providedDefaultDevicePreference,
   api: providedApi,
   voiceProvider: providedVoice,
   voiceBiomarkerProvider: providedVoiceBiomarker,
@@ -2143,6 +2229,13 @@ export function PatientRoundApp({
   medicationLabelProvider: providedMedicationLabelProvider,
   timeoutMs = 180000
 }: PatientRoundAppProps) {
+  const defaultDevicePreference = useMemo(
+    () =>
+      DefaultDevicePreferenceSchema.parse(
+        providedDefaultDevicePreference ?? unknownDevicePreference
+      ),
+    [providedDefaultDevicePreference]
+  );
   const api = useMemo<PatientRoundApi>(
     () =>
       providedApi ?? new HomeRoundsApiClient({ baseUrl: apiBaseUrl(), fetcher: browserFetcher }),
@@ -2264,10 +2357,12 @@ export function PatientRoundApp({
               ...(onRetryAdaptiveSelection ? { onRetry: onRetryAdaptiveSelection } : {})
             })
           : null,
-        createElement(ErrorNotice, {
-          controller: controller,
-          state: state
-        }),
+        view === "loading"
+          ? null
+          : createElement(ErrorNotice, {
+              controller: controller,
+              state: state
+            }),
         !showRecommendation && state.recordedReplayLabel
           ? createRequiredChildrenElement(
               Banner,
@@ -2293,6 +2388,7 @@ export function PatientRoundApp({
               voiceBiomarkerProvider,
               medicationLabelProvider,
               companion,
+              defaultDevicePreference,
               now
             })
       )

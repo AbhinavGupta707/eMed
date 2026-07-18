@@ -22,6 +22,7 @@ describe("DeviceHandoff", () => {
         computerSupported
         onUseComputer={onUseComputer}
         onUsePhone={onUsePhone}
+        preferenceNote="Phone preferred for supported checks"
         rationale="A short pulse check can add one quality-gated piece of information."
         readableCode="MAYA-24"
         status="ready"
@@ -32,6 +33,7 @@ describe("DeviceHandoff", () => {
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("pulse check");
     expect(screen.getByRole("status")).toHaveTextContent("Ready to pair");
+    expect(screen.getByText("Phone preferred for supported checks")).toBeVisible();
     expect(screen.getByText(/Pairing code/)).toHaveTextContent("MAYA-24");
 
     fireEvent.click(screen.getByRole("button", { name: "Use my phone" }));

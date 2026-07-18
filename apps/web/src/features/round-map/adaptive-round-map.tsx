@@ -12,6 +12,7 @@ import {
   roundMapSelectionPresentation,
   roundMapStatusDescription,
   roundMapStatusLabel,
+  roundMapTaskDescription,
   type RoundMapExperience,
   type RoundMapModule,
   type RoundMapPresentationKind
@@ -147,7 +148,7 @@ export function AdaptiveRoundMap({
           <dl className={styles.taskFacts}>
             <div>
               <dt>What it adds</dt>
-              <dd>{roundTask.candidate.description}</dd>
+              <dd>{roundMapTaskDescription(roundTask.candidate)}</dd>
             </div>
             <div>
               <dt>About how long</dt>

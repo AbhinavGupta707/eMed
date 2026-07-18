@@ -80,7 +80,8 @@
 .footerCopy,
 .measurementValue,
 .handoffStatus p,
-.readableCode {
+.readableCode,
+.preferenceNote {
   margin: 0;
 }
 
@@ -117,6 +118,52 @@
 .handoffCard {
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-1);
+}
+
+.preferenceNote {
+  display: flex;
+  min-height: var(--touch-target);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid rgb(157 174 158 / 55%);
+  border-radius: var(--radius-lg);
+  background: rgb(232 239 229 / 70%);
+  color: var(--primary);
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.preferenceMark {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--terracotta);
+  box-shadow: 0 0 0 0.25rem rgb(181 91 65 / 18%);
+}
+
+.liveResult {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.liveResult > div {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.45fr) minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.liveResult dt {
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+  font-weight: 750;
+}
+
+.liveResult dd {
+  margin: 0;
+  font-weight: 650;
 }
 
 .plainList {
@@ -403,7 +450,8 @@
   }
 
   .definitionList > div,
-  .reportSummary > div {
+  .reportSummary > div,
+  .liveResult > div {
     grid-template-columns: 1fr;
     gap: var(--space-1);
   }
@@ -435,7 +483,8 @@
   .reviewCard,
   .handoffCard,
   .choice,
-  .checkboxChoice {
+  .checkboxChoice,
+  .preferenceNote {
     border: 1px solid CanvasText;
   }
 }

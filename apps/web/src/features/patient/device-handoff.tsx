@@ -26,6 +26,7 @@ export type DeviceHandoffProps = Readonly<{
   rationale: string;
   status: DeviceHandoffStatus;
   statusDetail: string;
+  preferenceNote?: string;
   pairingVisual?: ReactNode;
   readableCode?: string;
   result?: ReactNode;
@@ -40,6 +41,7 @@ export function DeviceHandoff({
   rationale,
   status,
   statusDetail,
+  preferenceNote,
   pairingVisual,
   readableCode,
   result,
@@ -59,6 +61,12 @@ export function DeviceHandoff({
       </div>
 
       <div className={styles.handoffCard}>
+        {preferenceNote ? (
+          <p className={styles.preferenceNote}>
+            <span aria-hidden="true" className={styles.preferenceMark} />
+            {preferenceNote}
+          </p>
+        ) : null}
         {pairingVisual ? <div className={styles.pairingVisual}>{pairingVisual}</div> : null}
         <div aria-live="polite" className={styles.handoffStatus} role="status">
           <StatusIcon kind={presentation.icon} />

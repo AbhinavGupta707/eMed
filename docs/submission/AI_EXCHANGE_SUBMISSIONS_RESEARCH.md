@@ -2,6 +2,8 @@
 
 Research captured on 18 July 2026 from the [AI Exchange submission gallery](https://www.aiengine.exchange/sessions/bc738437-ce78-41ed-a01d-975a713dad20/submissions), the submitted GitHub repositories, and the submitted demo links.
 
+The gallery was reloaded during the final pass and contained **42 submissions in total**. Sections 13–42 document the 30 entries added after the first two research passes.
+
 This document separates three evidence classes:
 
 - **Submitted** — what the team wrote in the gallery.
@@ -531,6 +533,461 @@ The code in this repository therefore supports the read-only monitoring side rat
 
 The submitted Google Drive folder was opened in the user's authenticated Chrome session. It displayed the empty-folder state—“Drop files here or use New button”—with no files or video items. Consequently, there was no demo to watch and no transcript to obtain for Loop at the time of review.
 
+## Later gallery additions: submissions 13–42
+
+The following entries were added after the initial twelve-project review. Repository findings come from the public GitHub pages and rendered READMEs; repositories were not cloned or executed. Demo observations are read-only.
+
+| #   | Project              | Repository evidence                                      | Submitted demo evidence                                      |
+| --- | -------------------- | -------------------------------------------------------- | ------------------------------------------------------------ |
+| 13  | Undertone            | Public static demo plus extensive research/rule material | Six-page Google Drive PDF; no video transcript               |
+| 14  | Cadence              | Public TypeScript monorepo with clinic/patient loop      | Live Railway landing and demo entry                          |
+| 15  | Cassandra            | Public FastAPI wearable-triage prototype                 | Live Fly.io landing and upload flow                          |
+| 16  | Scout & Sage         | Public WhatsApp/Eve/Next.js implementation               | Submitted Drive folder was empty                             |
+| 17  | OpenWait             | Public synthetic Next.js/Cloudflare waiting-room MVP     | No demo link submitted                                       |
+| 18  | Offramp              | Public React/FastAPI source export                       | Live Vercel landing; separate video mentioned in description |
+| 19  | Sukari               | Public Expo/Cloudflare adherence product                 | Live Netlify experience                                      |
+| 20  | Mind The Gap         | Submitted GitHub URL unavailable                         | YouTube video; transcript unavailable                        |
+| 21  | Ambient Intelligence | Public Next.js browser-state prototype                   | Two-video YouTube playlist and transcripts                   |
+| 22  | PenPal               | Public Next.js repo with stock chatbot README            | Live onboarding observed                                     |
+| 23  | Proxima              | Public Cloudflare proactive-care agent                   | No demo link submitted                                       |
+| 24  | EatLose              | Public iOS product/technical blueprint                   | Drive link opened Gemini project, not a demo                 |
+| 25  | Persistence Engine   | Public simulation/model/test repository                  | Live seven-chapter Vercel demo                               |
+| 26  | HARE                 | Submitted GitHub URL unavailable                         | Live simulated Wi-Fi-sensing view                            |
+| 27  | Alongside            | Submitted GitHub URL unavailable                         | Submitted Drive folder was empty                             |
+| 28  | Toba                 | Public simulated frontend prototype                      | No demo link submitted                                       |
+| 29  | ATTUNE               | Public repository is empty                               | Drive folder contained only a one-page PDF                   |
+| 30  | Amber                | Public native SwiftUI implementation                     | YouTube walkthrough and transcript                           |
+| 31  | Steady               | Public Swift patient app plus clinician portal           | Live Railway clinician queue                                 |
+| 32  | Renova               | Public model/patient/clinician repository                | Loom walkthrough and transcript                              |
+| 33  | Adher.ai             | “GitHub” field points to live Lovable app                | Live app plus Loom walkthrough/transcript                    |
+| 34  | PCOScope             | Public Next.js deterministic/AI collaboration prototype  | YouTube walkthrough and transcript                           |
+| 35  | Forma                | Public camera/posture prototype                          | Loom walkthrough and transcript                              |
+| 36  | Concord health       | Public static synthetic prototype                        | Live GitHub Pages app                                        |
+| 37  | Respirate.ai         | Public MFCC/PCA/classifier research code                 | No demo link submitted                                       |
+| 38  | Möbius / Preempt     | Public visual-cue/ontology prototype                     | Short YouTube video and partial transcript                   |
+| 39  | Solace               | Public generic health-data backbone                      | No demo link submitted                                       |
+| 40  | HomeRounds           | Public full-stack governed care-orchestration system     | No demo link in submission                                   |
+| 41  | Endo Loop            | Public React/FastAPI pattern journal                     | Live Vercel app                                              |
+| 42  | Unflared             | Public Next.js/TypeScript prototype                      | Drive MOV opened; transcript text unavailable                |
+
+## 13. Undertone
+
+**Team:** Team #32 · AImaxxers  
+**GitHub:** [mr-mustafa7/Undertone](https://github.com/mr-mustafa7/Undertone)  
+**Demo:** [Google Drive PDF](https://drive.google.com/file/d/16OGJIu6ctno54qccdx-C1NacR7-oxdMf/view?usp=sharing)
+
+**Submitted problem and product:** Long-term metabolic-programme patients often disengage between visits, while specialist capacity cannot provide frequent check-ins. Undertone proposes a daily voice conversation that doubles as an acoustic sensor for possible muscle-loss drift, with cited, explainable rules escalating contradictions or threshold crossings to a clinician rather than diagnosing automatically.
+
+**Repository-backed:** The 18-commit repository contains extensive strategy and evidence documents, a Prometheux/Vadalog ontology, and a self-contained `demo/index.html`. The README says the demo uses the browser Web Audio API for energy, zero-crossing and pitch features, with sample-audio fallback. Muscle-integrity rules, consent gates and audit derivations are represented; cardiac, glycaemic and renal signals are explicitly inactive roadmap stubs. The evidence therefore supports a static proof of concept and symbolic rule model, not validated clinical voice biomarkers.
+
+**Demo-observed:** The submitted link is a six-page pitch PDF, not a video. It describes voice/vision capture → feature extraction → Vadalog reasoning → consent → clinician escalation. No transcript exists.
+
+## 14. Cadence
+
+**Team:** Team #58 · Cadence Med  
+**GitHub:** [Emekaborisama/Cadence-hack](https://github.com/Emekaborisama/Cadence-hack)  
+**Demo:** [Cadence](https://bit.ly/emed-cad)
+
+**Submitted problem and product:** Real-world GLP-1 telehealth often ships medication without the structured plan, named support, recurring counselling and reviewed self-monitoring used in trials. Cadence attaches those support mechanics to an existing prescription through an adaptive plan, persistent coach, proactive contact cadence and exception-based human review.
+
+**Repository-backed:** This is a 23-commit TypeScript monorepo with a Vite/React patient PWA, Node/Express API, shared domain contracts and a separate design prototype. Fixture mode is the default and needs no network or model key. The README documents a real demo loop: live-looking consult transcript, plan assembly, clinician approval, patient plan delivery, nausea check-in and clinic inbox flag. OpenAI is optional and protocol retrieval remains the grounding boundary.
+
+**Demo-observed:** The Bitly preview resolved to a Railway deployment. Its landing page presents separate clinician and patient views and instructs the reviewer to start a consultation, approve the plan, observe it arrive on the patient phone and close the loop with a nausea check-in.
+
+## 15. Cassandra
+
+**Team:** Team #66 · Cassandra  
+**GitHub:** [AngelTzankov/cassandra-health](https://github.com/AngelTzankov/cassandra-health)  
+**Demo:** [Live Fly.io app](https://cassandra-health.fly.dev/)
+
+**Submitted problem and product:** Heart-failure deterioration can emerge several days before admission through converging changes in heart rate, breathing, activity, weight and oxygen. Cassandra proposes to read Apple Health exports, compare several modest shifts with the patient's baseline and classify cases as stable, review soon or act today.
+
+**Repository-backed:** The two-commit FastAPI repository contains an Apple Health streaming parser, fixture data, deterministic triage, caseload seeding and an LLM narrative layer. The README is explicit that rules own the alert and the model can only write prose from computed values and the already-decided state. The repository was not executed, so the claimed timing and clinical performance remain unvalidated.
+
+**Demo-observed:** The live landing page loaded and offered an Apple Health ZIP upload plus a clinician dashboard. It states that uploads are parsed in memory, raw files are deleted and generated brief links expire after fifteen minutes; those privacy behaviours were not independently tested.
+
+## 16. Scout & Sage
+
+**Team:** Team #46 · Sentinels  
+**GitHub:** [botirkhaltaev/steadfast](https://github.com/botirkhaltaev/steadfast)  
+**Demo:** [Submitted Drive folder](https://drive.google.com/drive/folders/1jwLZdQ29UO5alHMHLuWuebN-Za0FHy3W)
+
+**Submitted problem and product:** GLP-1 persistence is poor, app retention is low and clinicians are distracted by routine questions. Scout is a WhatsApp patient companion; Sage performs background clinical review and escalates only cases that need a person.
+
+**Repository-backed:** The 21-commit repository contains Vercel Eve agents, Wassist webhook routes, durable patient state, Sage subagent briefs, escalation state and a Next.js clinician inbox that replies into the same WhatsApp thread. The documented design pauses Scout when a human handoff is active. This is materially more than a pitch mock-up, although live WhatsApp behaviour depends on configured external services.
+
+**Demo-observed:** The submitted Drive folder loaded but was empty, so there was no video or transcript.
+
+## 17. OpenWait
+
+**Team:** Team #39 · Myrthic  
+**GitHub:** [MasteraSnackin/OpenWait](https://github.com/MasteraSnackin/OpenWait)  
+**Demo:** No demo link was submitted.
+
+**Submitted problem and product:** Digital GP waiting rooms often fail to show whether a request was received, who owns it, how long the patient may wait or what they should do next. OpenWait combines an active waiting-room status with optional bounded evidence, human-review requests and a clinician audit view without automated diagnosis.
+
+**Repository-backed:** The one-commit repository is a sizeable Next.js/Cloudflare/D1/Drizzle synthetic MVP with patient and clinician surfaces, tests, build output and documentation. Its seeded eight-week GLP-1 journey can request a small camera movement check, confirmed home-monitor reading or patient context; clinicians approve bounded messages and patients can acknowledge, decline evidence, record barriers or request follow-up. The README explicitly says it stores no real clinical outcome, performs no record write-back and does not infer live queue position.
+
+## 18. Offramp
+
+**Team:** Team #15 · Continuum Labs  
+**GitHub:** [1337Xcode/Offramp-demo](https://github.com/1337Xcode/Offramp-demo)  
+**Demo:** [Live Vercel app](https://tryofframp.vercel.app/)
+
+**Submitted problem and product:** Post-GLP-1 transition support and auditability are weak even though programmes already collect weights, medication, symptoms and check-ins. Offramp converts voice, SMS or staff-entered patient wording into evidence-linked summaries, deterministic urgent flags and a clinician-ready handover while withholding dose and diagnosis advice.
+
+**Repository-backed:** The one-commit public export contains React/Vite and FastAPI/Pydantic source, tests, PDF generation and optional OpenAI, AssemblyAI and Twilio integrations. It documents organisation scoping, Supabase authentication/storage/RLS and caregiver notifications, but deliberately omits migrations, Supabase configuration and deployment/operations files. A separately provisioned Supabase project is required for authenticated clinical workflows.
+
+**Demo-observed:** The live landing page showed check-in routes, verified-context gates, source-versioned guidance, deterministic urgent phrases and exact-patient-wording separation. The submission description also contains a YouTube URL, but the gallery's submitted Demo field points to the live app; that extra video was not transcribed in this pass.
+
+## 19. Sukari
+
+**Team:** Team #6 · thisyearnofear  
+**GitHub:** [thisyearnofear/sukari](https://github.com/thisyearnofear/sukari)  
+**Demo:** [Live Netlify app](https://glucosewars.netlify.app/)
+
+**Submitted problem and product:** Metabolic-care tools often show biomarker dashboards or generic coaching but fail to convert a signal into one achievable behaviour. Sukari creates one daily mission, rehearses the choice in a short game, records follow-through, observes the associated response and escalates only care-team exceptions.
+
+**Repository-backed:** The 105-commit Expo/React Native/Web repository contains patient missions, rehearsal/game flows, an operator surface, tests, Cloudflare integration and a repositioning from the earlier GlucoseWars/Web3 product. The README explicitly removes NFT, leaderboard and dosing claims, labels demo patterns, lets patients accept/make easier/swap/decline missions and avoids causal overclaiming when showing an associated glucose response.
+
+**Demo-observed:** The live page loaded with a ten-minute post-dinner-walk mission, framing it as a small experiment rather than treatment. It states “Habits only. Never medication, dosing, or diagnosis.”
+
+## 20. Mind The Gap
+
+**Team:** Team #25 · Mind the Gap  
+**GitHub:** [tejosaikiran/MindTheGap](https://github.com/tejosaikiran/MindTheGap)  
+**Demo:** [YouTube](https://youtu.be/fLxKD5XsWxc)
+
+**Submitted problem and product:** Calendar plans and wearable estimates of sleep, HRV and stress live in separate silos, so people learn that a schedule exceeded their capacity only after burnout or disengagement. Mind The Gap proposes a somatic timeline, an ontology linking patient context, metrics, therapies and drift, and “what if” schedule simulations with supportive reflection.
+
+**Repository-backed:** The submitted GitHub URL displayed GitHub's generic search/footer page rather than a repository. It may be private, removed or incorrectly linked, so the claimed React/ClickHouse/Prometheux/OpenAI implementation could not be verified.
+
+**Demo-observed:** A 3:13 unlisted YouTube video loaded. YouTubeToTranscript returned its random-block page twice, and YouTube itself exposed no “Show transcript” control. No transcript was obtainable during this pass.
+
+## 21. Ambient Intelligence
+
+**Team:** Team #29 · The Guardians  
+**GitHub:** [sidhiqali/Ambient-intelligence](https://github.com/sidhiqali/Ambient-intelligence)  
+**Demo:** [YouTube playlist](https://www.youtube.com/watch?v=92P8VftZWQs&list=PLNo2UBFh98UE)
+
+**Submitted problem and product:** Chronic cardiometabolic care is episodic, while device dashboards, video visits and generic chatbots do not combine symptoms, behaviour and clinician workflow. Ambient Intelligence offers configurable daily voice/video/photo/text check-ins, personal-baseline comparison, AI summarisation and a clinician-approved monitoring plan.
+
+**Repository-backed:** The one-commit Next.js repository has patient and clinician views, voice transcription and multimodal-analysis seams, but no authentication or database; state lives in the browser. With no key it uses scripted analysis. The README's golden path produces a summary and one follow-up, then shows the patient in a reasoned clinician queue where a clinician can temporarily change monitoring frequency.
+
+**Demo-observed:** The playlist contains a 57-second introduction and a separate 3:12 application demo. The app video shows patient enrolment, clinician-selected monitoring items/frequency, consent-based modality selection, a text check-in, emergency guidance, optional automated calling and a clinician metrics/summary view.
+
+### Automated YouTube transcripts
+
+> **Introduction:** Introducing Ambient Intelligence powered by AI. Adaptive care at home for people living with obesity, type 2 diabetes, and cardiovascular disease. Today, chronic illness is still managed in crowded waiting rooms and rare appointments. You wait, and most of the story happens in the silence between visits. What if care came home? What if support lived in your phone and watch instead of only in the clinic? Each day, Ambient Intelligence sends a simple 20-second voice check-in. It asks how you're feeling, listens for breathlessness and fatigue, and gently adapts questions over time. It combines all these signals and auto-triages high, medium, or low. Your clinician sees a pre-summarised list of patients who need review and always because it learns from your patterns and from clinician feedback. Care becomes truly adaptive at home. The questions, nudges, and alerts shift as your life and health—
+>
+> **Application demo:** Introducing Ambient Intelligence. So it's a healthcare monitoring app for chronic patients at home. Let's begin with adding a new patient into the program. The window is defaultly set for 14 days but can be changed to any number of days, and the regular frequency can be weekly. The clinician chooses which things will be measured daily, enrols the patient and activates the plan. On the patient end, the patient can choose voice, audio, video or summaries, and edit those choices based on consent. Check-in can be through voice, text, video, swelling or foot-swelling photos, or a meal. If I want text, I'll enter, “I'm feeling extremely dizzy.” The check-in understands this and works with it. A patient who doesn't feel comfortable can switch to quick check-in. You can enable automated daily calling and choose the frequency. Emergency guidance can navigate to the nearest service or call the clinician. On the doctor's end, daily metrics are checked, summaries are provided and monitoring frequency can be updated for each patient.
+
+> These are automated transcripts. Imperfect wording was lightly normalised only where the intended product term was clear.
+
+## 22. PenPal
+
+**Team:** Team #36 · SeeMed  
+**GitHub:** [medicalnp/penpal](https://github.com/medicalnp/penpal)  
+**Demo:** [Live Vercel app](https://penpal-eight.vercel.app/)
+
+**Submitted problem and product:** GLP-1 patients may flinch or lift a spring-loaded injection pen too early, wasting a dose and potentially disrupting therapy. PenPal proposes a camera-and-voice injection coach that confirms the pen and dose, guides the hold and writes an injection diary.
+
+**Repository-backed:** The public Next.js repository has application, components, database, tests and deployment files, but its README is still the stock Vercel AI Chatbot template and documents generic chat models rather than PenPal. That mismatch makes it difficult to independently verify the camera coaching, pen recognition, injection timing and diary implementation from the repository landing page alone.
+
+**Demo-observed:** The live app showed a polished multi-step onboarding flow explaining step-by-step injection support and automatic dose/site/side-effect diary entries. The review stopped at **Start with PenPal** to avoid requesting camera or microphone access, so real-time visual coaching was not exercised.
+
+## 23. Proxima
+
+**Team:** Team #20 · Promixa  
+**GitHub:** [HahaBill/proxima](https://github.com/HahaBill/proxima)  
+**Demo:** No demo link was submitted.
+
+**Submitted problem and product:** People with several conditions must integrate conflicting medication, symptom and behavioural guidance across teams. Proxima presents itself as a proactive cross-condition agent on WhatsApp, iMessage and phone that notices connected risks or silence, contacts the patient and routes a structured summary without diagnosing.
+
+**Repository-backed:** The 22-commit Cloudflare/Hono repository contains source, a live Worker link, patient recap/report pages, long-term memory and ElevenLabs voice configuration. The README uses a synthetic multimorbidity example involving GLP-1, sulfonylurea and blood-pressure medicines and describes cross-channel proactive contact. External messaging, voice and model behaviour depends on Cloudflare/OpenAI/ElevenLabs/SendBlue/Twilio configuration.
+
+## 24. EatLose
+
+**Team:** Team #22 · EatLose  
+**GitHub:** [EatLose/EatLose](https://github.com/EatLose/EatLose)  
+**Demo:** [Submitted Drive project](https://drive.google.com/drive/project/1NEABDMyOFbQSawgnvQgW_5RKFhmAA8lj?usp=sharing)
+
+**Submitted problem and product:** Manual calorie tracking is slow. EatLose lets a person photograph, type or speak a meal, review an AI estimate and see how much remains in the day's plan.
+
+**Repository-backed:** The two-commit repository contains iOS, Supabase, documentation and scripts. Its README calls itself a product and technical blueprint for a UK iPhone release, with editable ranges/assumptions, user confirmation and Apple Health context. The repository page did not establish that all blueprint features are implemented or running.
+
+**Demo-observed:** The submitted Drive URL opened a Gemini-in-Drive project screen with no playable video or application evidence.
+
+## 25. Persistence Engine
+
+**Team:** Team #63 · RXLab  
+**GitHub:** [rxailab/persistence-engine](https://github.com/rxailab/persistence-engine)  
+**Demo:** [Live Vercel demo](https://static-flax-theta.vercel.app/)
+
+**Submitted problem and product:** GLP-1 discontinuation is often driven by identifiable barriers such as side effects, cost, stalled progress and logistics, while ordinary risk alerts may arrive late or overwhelm teams. Persistence Engine predicts near-term risk, estimates the likely barrier and ranks the human action most likely to help under a fixed staff-time budget.
+
+**Repository-backed:** The eight-commit Python/data-science repository contains separate simulation, modelling, NLP, application, demo and test areas. It is unusually explicit about evidence boundaries: the generator encodes published discontinuation marginals and a hand-authored response surface, while the model must recover noisy structure; uplift is trained on an in-silico randomised trial and evaluated against a disjoint synthetic counterfactual set. Code-enforced tests cover marginal calibration, generator/fitter separation, missingness and uplift evaluation. Metrics are architectural demonstrations, not clinical performance estimates.
+
+**Demo-observed:** The live seven-chapter narrated demo loaded. It compared naïve and uplift targeting, showed a clinician queue, separate safety lane, evidence and data/training explanations, and repeatedly labelled the dataset synthetic. The headline patient-months-per-100-nurse-minutes figure is explicitly tied to the synthetic hand-authored response surface.
+
+## 26. HARE
+
+**Team:** Team #67 · Hare  
+**GitHub:** [rasrescodes/hare](https://github.com/rasrescodes/hare)  
+**Demo:** [Live Vercel app](https://frontend-gxp98d5hy-rasrescodes-projects.vercel.app/)
+
+**Submitted problem and product:** People at greatest risk may not charge a wearable, open an app or log symptoms. HARE proposes a low-cost wall-plug Wi-Fi channel-state sensor that learns household movement/breathing patterns, calls the patient when drift appears, alerts family through WhatsApp if unanswered and drafts a GP letter for human approval.
+
+**Repository-backed:** The submitted GitHub URL returned GitHub's generic search/footer page, so the claimed Next.js/Three.js frontend, SSE bridge, watcher, WhatsApp bridge and ESP32 sensing code could not be inspected.
+
+**Demo-observed:** The live app loaded a simulated home rhythm with wake, kitchen, rest and sleep events. It clearly labelled sensing as simulated and presented “No camera / No wearables / WiFi sensing” with Home, Insights, Family and Care tabs. No physical Wi-Fi sensor evidence was observed.
+
+## 27. Alongside
+
+**Team:** Team #55 · Alongside  
+**GitHub:** [Sahid-m/alongside](https://github.com/Sahid-m/alongside)  
+**Demo:** [Submitted Drive folder](https://drive.google.com/drive/folders/1Z-Q96wk0MrF-tE6QFKmLv_Ihvrez_9bc?usp=share_link)
+
+**Submitted problem and product:** Patient-support programmes have low uptake and high human-contact costs, while people often leave therapy during difficult early weeks. Alongside turns voice check-ins into a Neo4j patient knowledge graph, applies adverse-event/risk rules and gives nurses a one-screen brief, draft response and approval path.
+
+**Repository-backed:** The submitted GitHub URL did not resolve to an inspectable repository in the Chrome session. The claimed Next.js/Neo4j/Zod/D3 implementation could not be verified.
+
+**Demo-observed:** The submitted Drive folder was empty. No video or transcript was available.
+
+## 28. Toba
+
+**Team:** Team #40 · Toba  
+**GitHub:** [sijiachendinsky-cmd/toba-demo](https://github.com/sijiachendinsky-cmd/toba-demo)  
+**Demo:** No demo link was submitted.
+
+**Submitted problem and product:** Multiple condition-specific recommendations can turn daily life into an overwhelming medical programme. Toba uses a one-minute voice check-in to reduce the day to three achievable actions adjusted for sleep, energy, mobility and routine, with points and a playful digital world.
+
+**Repository-backed:** The four-commit frontend contains prerecorded voice clips, assets, a calling flow, patient/family/clinician views and a Vite application. Its README explicitly says voice playback, health signals, clinical summaries and reward redemption are simulated. There is no backend, persistence or live clinical integration in the submitted repository.
+
+## 29. ATTUNE
+
+**Team:** Team #57 · Alpha  
+**GitHub:** [eshagarwal1306-maker/ATTUNE](https://github.com/eshagarwal1306-maker/ATTUNE)  
+**Demo:** [Submitted Drive folder](https://drive.google.com/drive/folders/1Gs_9iq0s2gTF2AVMvbyuxd7UAOpekRXv?usp=sharing)
+
+**Submitted problem and product:** ATTUNE presents an automated n-of-1 trial engine that designs and randomises personal experiments, estimates individual effects and confidence intervals, collects voice and camera-derived vital-sign context, flags red words and prepares a human-approved SBAR handoff. The submission follows a synthetic patient with diabetes and hypertension and contrasts her personal post-meal walking effect with a population average.
+
+**Repository-backed:** GitHub displayed **“This repository is empty.”** None of the claimed React, LLM reasoning, ElevenLabs or custom browser rPPG implementation could be inspected.
+
+**Demo-observed:** Despite the folder name “AttuneDemoVideo,” the Drive folder contained only `Attune_OnePager.pdf` (7 KB). No playable demo or transcript was present.
+
+## 30. Amber
+
+**Team:** Team #49 · AmberAI  
+**GitHub:** [kpuchkov1-code/OpenAI-HealthHack](https://github.com/kpuchkov1-code/OpenAI-HealthHack)  
+**Demo:** [YouTube](https://youtu.be/xrwavbGN-Q0)
+
+**Submitted problem and product:** People on GLP-1 programmes may stop because side effects, wins and adherence changes are lost between short appointments. Amber combines daily voice check-ins, wearables and records into a structured pre-visit review, with user-controlled data-sharing permissions and human routing for out-of-scope concerns.
+
+**Repository-backed:** The two-commit repository contains a native SwiftUI iOS project plus a web version. Its README documents OpenAI Realtime voice with barge-in, Runware chat/vision, photo nutrition, durable facts, HealthKit, optional Oura/Whoop, Recall.ai meeting capture and PDF doctor reports. Services require local secrets; the repository was not built, so their end-to-end operation was not independently verified.
+
+**Demo-observed:** The video shows settings and consent controls, wearable connections, a meeting bot joining a clinician call and returning a transcript, PDF export, record import, a live voice exchange, professional redirection, editable/deletable memories and photo-based food/macronutrient logging.
+
+### Automated YouTube transcript
+
+> This is our app, Amber AI. In settings it is very customisable: the user can see programme information, connect wearables and prevent Amber from accessing private-life information. In Records, a user can share a meeting link and Amber joins the call with the doctor, listens and brings back a transcript so context can be extracted. The user can export a PDF for the doctor and import files such as an eMed lab report.
+>
+> The user can choose a voice and talk to Amber. In the demonstration, the user says their GLP-1 medication has caused side effects and asks for help; Amber redirects them to a professional. The Memory tab shows what Amber remembers, grouped for review, and the user can delete a memory. The Habits tab tracks weight and nutrition. A food photo is analysed for calories and macros before the user chooses whether to save it.
+
+> The automated transcript contained substantial filler and several product-name errors; this version preserves the demonstrated content while normalising those artefacts.
+
+## 31. Steady
+
+**Team:** Team #54 · AI-Enabled Clinician Supporting Forward Deployed Engineers Solving Healthcare  
+**GitHub:** [richwardle/reimagine-health](https://github.com/richwardle/reimagine-health)  
+**Demo:** [Live Railway app](https://steady-health.up.railway.app/)
+
+**Submitted problem and product:** GLP-1 patients may gradually log less, reduce resistance exercise or protein intake and disengage before clinicians notice, risking loss of muscle and function. Steady structures messages, biometrics and behaviour against personal baselines and lets a clinician-governed action policy choose a nudge, smaller goal, human review or deliberate silence.
+
+**Repository-backed:** The 16-commit repository has a predominantly Swift patient app, a React/Vite clinician portal and Convex backend. The patient app posts events into the clinic surface, whose README documents seeding and a hidden pitch stage. This supports a two-surface prototype, but the submitted contextual-bandit learning and population-model claims were not established from the root README.
+
+**Demo-observed:** The live clinician view loaded a synthetic 200-person programme: 190 on track and ten needing review. It ranked cases for vomiting, silent weight regain, low protein/check-ins, postmenopausal rapid loss and other patterns, showed event history and stated that nudges may run automatically while clinical actions wait for approval and silence is valid.
+
+## 32. Renova
+
+**Team:** Team #33 · Renova  
+**GitHub:** [PDochev/eMed-Hackhaton](https://github.com/PDochev/eMed-Hackhaton)  
+**Demo:** [Loom](https://www.loom.com/share/83c173a2938c4794a0955b7828a9145c)
+
+**Submitted problem and product:** Generic chronic-care plans usually ignore occupation even though physical demands, toxins, stress and working patterns change what is realistic and risky. Renova combines medical, wearable, lifestyle, environmental and occupational context into daily guidance, social support, clinician summaries and potential workforce-health products.
+
+**Repository-backed:** The 15-commit repository contains a Python concordance engine named Attune, a React/Express patient dashboard called Elevera and a standalone clinician dashboard. The model exports synthetic output into dashboard JSON so displayed metrics can be driven by engine results rather than only handwritten UI fixtures. The repository contains multiple product names and still depends on synthetic data; production employer analytics, privacy and wearable connections are not demonstrated.
+
+**Demo-observed:** The 5:10 Loom walkthrough shows occupation/location onboarding, wearable connections, an occupational-risk matrix, care-plan adjustments, a social layer, fourteen-day trajectory and clinical view. It also proposes repackaging the product for workforce allocation, using firefighters as the example.
+
+### Automated Loom transcript
+
+> **0:00** Chronic conditions are on the rise and are hard to manage: obesity, cardiovascular disease, diabetes and asthma. Once you have one chronic condition, you are more likely to develop another. People focus on sleep, nutrition and exercise, which are important.
+>
+> **0:33** However, everyone overlooks occupational health or occupational risk. In-home care is linked to out-of-home care. A firefighter or doctor may be exposed to toxins and be on their feet all day; a computer scientist sits and codes all day, which has different risks.
+>
+> **1:05** Renova is an AI health companion. You enter medical history, occupation and location, then connect wearable devices to continuously inform Renova about your physical state.
+>
+> **1:40** The key differentiator is occupational intelligence. The care plan covers exercise, medication, nutrition, hydration and sleep, then adjusts for occupation. If you are on your feet all day you may need rest; if you sit all day you may need exercise. An injury can shift the plan toward rehabilitation.
+>
+> **2:26** Renova also includes social wellbeing. A user can find people participating in local challenges or previous contacts who can support the journey.
+>
+> **3:10** This information feeds a clinical view with adherence, conditions, medication, recent risks and occupational links. An occupational-risk matrix and fourteen-day trajectory create AI-generated care adjustments.
+>
+> **4:13** Beyond subscriptions from clinicians or patients, the platform could be repackaged for workplace health and safety—for example, helping a fire brigade understand risk and allocate people and resources.
+>
+> **4:48** Renova aims to move chronic care from reactive treatment to proactive, personalised care by understanding the person's condition, life and job.
+
+## 33. Adher.ai
+
+**Team:** Team #44 · Adher.ai  
+**Submitted “GitHub”:** [Live Lovable app](https://adherai.lovable.app/)  
+**Demo:** [Loom](https://www.loom.com/share/60ad0d6696904352994d2acf521292fd)
+
+**Submitted problem and product:** A bad week of GLP-1 side effects or confusion may become silent discontinuation before the next appointment. Adher.ai collects weekly nausea, energy, appetite, adherence and mood, reasons over the history and produces short self-management suggestions plus a clinician handoff when a pattern needs review.
+
+**Repository-backed:** The gallery's GitHub field points to the deployed Lovable application rather than a source repository, so there is no independently inspectable Git history or source tree. The live app exposes a single-clinician intake form for a care pathway, medication, start date and baseline notes. The submission says Lovable Cloud and server-side edge functions provide the backend and OpenAI is accessed through Lovable's gateway.
+
+**Demo-observed:** The Loom follows synthetic patient John Reeds from a stable first week to worsening symptoms, 50% adherence, depressed mood, vomiting and fatigue. It generates a one-page clinician summary and flags the multi-week decline. No repository was available to verify how the model, thresholds or history logic are implemented.
+
+### Automated Loom transcript
+
+> **0:00** Adher.ai is a copilot for GLP-1 patients, built for the gap between appointments—not because treatment failed, but because a bad week goes unnoticed until someone quietly stops.
+>
+> **0:22** We start with a fictional patient, John Reeds. His pathway, medication, start date and current-condition notes are entered and the patient is added.
+>
+> **0:54** In week one everything is fine. A check-in is recorded and AI generates a short report for clinicians: a one-page handoff rather than a ten-page PDF.
+>
+> **1:27** By week four the condition has worsened. Adherence has dropped to 50%, symptom severity increases, energy falls and mood is recorded as depressed. Vomiting and fatigue are added and the check-in is submitted.
+>
+> **2:29** The report says things have worsened and need clinician review. The system looks over the full history rather than one entry and flags two weeks of worsening symptoms, falling adherence and language suggesting the patient is considering stopping.
+>
+> **3:13** It generates a one-paragraph handoff summary in roughly ten seconds, creating a conversation before the patient disappears from the programme. The proposed business model is B2B licensing per practitioner or patient rather than selling directly to patients.
+
+## 34. PCOScope
+
+**Team:** Team #30 · CD Loker  
+**GitHub:** [Claudiodong/PCOScope](https://github.com/Claudiodong/PCOScope)  
+**Demo:** [YouTube](https://www.youtube.com/watch?v=PQ9FFvjUGBM)
+
+**Submitted problem and product:** People with PCOS have fluctuating sleep, stress, energy and cycle context but often receive disconnected data and generic advice. PCOScope combines a morning check-in and wearable context into transparent evidence, small adjustable actions, in-the-moment suggestions and an end-of-day reflection.
+
+**Repository-backed:** The 27-commit Next.js repository includes app/components/data, documentation, unit and end-to-end tests. Deterministic TypeScript compares daily signals with a personal baseline and calculates the management score, evidence, status and focus; AI is limited to explaining verified context and proposing choices/future scenarios. The README explicitly avoids treating correlation as a medical conclusion.
+
+**Demo-observed:** The video follows synthetic user Emma through sleep/HRV/stress context, longer-than-recent cycle timing, a recovery focus, three editable actions, a contextual decaf suggestion and a summary that does not claim causation.
+
+### Automated YouTube transcript
+
+> PCOScope is an AI-supported daily companion for people living with polycystic ovary syndrome. It helps users connect everyday symptoms, cycle information and wearable data without attempting to diagnose or measure hormone levels. Each morning begins with a short check-in. The system brings together sleep, HRV, resting heart rate and activity from the user's wearable.
+>
+> Unlike a generic fitness app, PCOScope places menstrual-cycle context alongside daily signals. Emma is on day 43, longer than her recent cycle pattern. The interface communicates the change without predicting ovulation or the exact day of her next period. Emma records stress and fatigue in around thirty seconds and receives a personalised daily brief suggesting that a gentle recovery day may be worth considering.
+>
+> The management score is not a PCOS severity score; it summarises how today's behaviours and signals relate to Emma's longer-term self-management goals. The recommendation is explainable: four nights of shorter sleep, lower HRV, and higher reported stress and fatigue. PCOScope separates observation from interpretation and does not claim these signals prove a hormone change.
+>
+> The brief becomes three small actions: begin winding down earlier, choose a gentle walk and reduce caffeine later in the day. Each suggestion can be accepted, adjusted or declined. In a simulated coffee-shop scenario, the app connects Emma's recovery goal to her drink choice, offers a lower-caffeine alternative and still allows her usual order. Finally, the summary shows completed actions and later sleep/HRV movement while stating that the change does not prove causation.
+
+## 35. Forma
+
+**Team:** Team #34 · Forma  
+**GitHub:** [KidLeiS/emed_hack](https://github.com/KidLeiS/emed_hack)  
+**Demo:** [Loom](https://www.loom.com/share/fd0919eb259b4f2897e4f6ae2888e841)
+
+**Submitted problem and product:** Chronic neck/back pain and prolonged sitting are widespread, but generic “sit less” advice does not reveal personal patterns or whether an intervention helped. Forma uses short laptop-camera samples to estimate posture and sedentary patterns locally, retains derived landmarks/measurements rather than raw media and proposes timed interventions.
+
+**Repository-backed:** The seven-commit Electron/JavaScript repository contains source, tests, architecture, seeded-data reset tooling and posture-timeline/report work. Its README describes the camera as a private trend instrument rather than a posture-policing tool. The submitted stack says Runware analyses reports and “diagnosis,” but that diagnosis wording conflicts with the safer repository framing and was not validated.
+
+**Demo-observed:** The Loom shows a 30-second camera check, a posture score, head/shoulder/trunk values, desk/away/hunch time, AI interpretation and reminders. The narration says the AI analyses “all of our images,” which conflicts with the submission's stronger claim that raw images are never stored or uploaded; implementation and network behaviour were not tested.
+
+### Automated Loom transcript
+
+> **0:00** We built Forma. It is a private laptop-based scanner for people with chronic neck and back pain who spend most of the day at a desk.
+>
+> **0:16** A thirty-second check-in captures posture throughout the day and provides personalised insights and interventions. It detects shoulder lean, forward trunk position and related signals.
+>
+> **0:42** After capture, the app shows a posture score, head alignment, shoulder balance, trunk alignment, desk time, time away and hunch time. The laptop is used as the capture point because many people work there all day.
+>
+> **1:16** AI analyses the captured images and identifies possible patterns associated with discomfort, such as sustained forward-head posture. It then proposes a personalised improvement plan and notifications to stand, walk or adjust posture.
+
+## 36. Concord health
+
+**Team:** Team #56 · Concord health  
+**GitHub:** [galimovevgeniy/concord-frailty-sentinel](https://github.com/galimovevgeniy/concord-frailty-sentinel)  
+**Demo:** [Live GitHub Pages app](https://galimovevgeniy.github.io/concord-frailty-sentinel/)
+
+**Submitted problem and product:** Disease-specific plans may miss that a medication adjustment for one condition destabilised another, especially when frailty appears through function, appetite, falls or independence rather than a single vital sign. Concord links treatment timing, personal-baseline changes and function into one clinician-ready cross-condition summary.
+
+**Repository-backed:** The one-commit repository is a dependency-free HTML/CSS/JavaScript static prototype with synthetic data. It links a furosemide dose reduction to rising weight, breathlessness and swelling while explicitly avoiding diagnosis or medication advice. Every escalation requires clinician review; emergency wording directs the patient to 999.
+
+**Demo-observed:** The live app loaded a detailed synthetic Margaret Hall story with the medication timeline, three converging clinical signals, falling steps/walking speed/sit-to-stand performance, appetite/personal-care/near-fall events, a structured check-in and a patient-approved summary. It clearly labels voice/photos as browser-only demo inputs that are not clinically analysed or uploaded.
+
+## 37. Respirate.ai
+
+**Team:** Team #37 · username404  
+**GitHub:** [davidscode404/respirate-ai](https://github.com/davidscode404/respirate-ai)  
+**Demo:** No demo link was submitted.
+
+**Submitted problem and product:** Respirate.ai asks whether eight labelled cough types can be classified from WAV audio using MFCC features, PCA, logistic regression and random forest rather than subjective listening.
+
+**Repository-backed:** The six-commit Python repository contains a from-scratch MFCC pipeline, classifier script and saved confusion-matrix results. There is a material performance discrepancy: the gallery claims **62.7% test accuracy**, while the current README says **37.3% accuracy** and parenthetically reports 596 of 1,599 files misclassified, which would itself imply roughly 62.7% accuracy. The wording/calculation should be corrected before using the number. The unusual cough classes and data provenance also require scrutiny before any health interpretation.
+
+## 38. Möbius / Preempt
+
+**Team:** Team #38 · Use Less  
+**GitHub:** [pomoron/preempt](https://github.com/pomoron/preempt)  
+**Demo:** [YouTube](https://youtu.be/Im2hE0etOZc)
+
+**Submitted problem and product:** Sparse, subjective health observations are forgotten between appointments. Möbius proposes to preserve short moments, contradictions and optional environmental/sensor context, ask one or two useful follow-ups and turn bounded mitigation cycles into reusable clues rather than diagnoses.
+
+**Repository-backed:** The six-commit repository is named **Preempt** and contains a Python browser server, medical-agent logic, visual-question-answering code, web UI and tests. It supports face/lip/open-mouth, headache/pain-point and palm image pathways, typed or transcribed follow-up, JSON cause–cure ontologies, local Trello-style planning, optional one-way Trello export, EXIF date/location and historical weather. Its README repeatedly calls observations non-diagnostic, but image interpretation and ontology quality remain dependent on the configured model and content.
+
+**Demo-observed:** The 1:09 YouTube video describes a visual-cue app. The available automated transcript contained only: “Yes, I do still feel itchy, especially when I need to use my hands…” Most of the video therefore had no recoverable speech transcript.
+
+## 39. Solace
+
+**Team:** Team #48 · Syntax Labs  
+**GitHub:** [Shiam1995/Syntax-Labs](https://github.com/Shiam1995/Syntax-Labs)  
+**Demo:** No demo link was submitted.
+
+**Submitted problem and product:** People waiting for chronic-pain specialist care need lightweight support, personal-baseline tracking and a structured summary of pain, function, sleep and confidence.
+
+**Repository-backed:** The public repository does not match that pitch closely. Its README documents a dependency-free Python **Health Data Backbone** that stores food, diet, sleep, medicine and blood-test JSON records and produces simple daily summaries. The tree also contains several HTML dashboards, but the repository landing page does not substantiate the submitted chronic-pain baseline, guidance or longitudinal clinical-summary workflow. This is one of the clearest submission-to-repository mismatches in the gallery.
+
+## 40. HomeRounds
+
+**Team:** Team #53 · HomeRounds  
+**GitHub:** [abhinavgupta707/emed](https://github.com/abhinavgupta707/emed)  
+**Demo:** No demo link was submitted in the gallery.
+
+**Submitted problem and product:** Chronic-care evidence is fragmented between appointments, leaving patients to decide what matters and clinicians with noisy, uncertain alerts. HomeRounds performs an adaptive voice-led round, chooses the smallest useful evidence module, quality-gates camera/medication/voice/device inputs, attaches provenance and uncertainty, creates one owned clinician task and follows it through resolution.
+
+**Repository-backed:** This is the largest and most mature repository inspected in the gallery: 180 commits spanning web application, domain/persistence/protocol/action/audit packages, synthetic data, database migrations, deployment, tests and extensive safety/QA/submission evidence. The README and code history preserve unequal authority: models converse/extract/rank, while deterministic state machines, red-flag gates, quality checks, protocols, allowlists and idempotent persistence own decisions. It contains both patient and clinician surfaces, durable PostgreSQL workflows, browser/companion paths and explicit no-number-on-failed-capture behaviour. The repository repeatedly limits all evidence to synthetic, non-clinically-validated prototype use and records remaining physical-device and clinical-validation gates.
+
+**Demo availability:** The gallery contains no submitted demo URL. The research therefore treats the public repository as source evidence and does not convert the separately known production site into submitted-demo evidence.
+
+## 41. Endo Loop
+
+**Team:** Team #8 · NHS Hackers  
+**GitHub:** [mmvrmg9/engine_ai_hackathon](https://github.com/mmvrmg9/engine_ai_hackathon)  
+**Demo:** [Live Vercel app](https://engine-ai-hackathon-frontend.vercel.app/)
+
+**Submitted problem and product:** Endometriosis diagnosis can take years because short appointments and memory do not expose a continuous pattern. Endo Loop combines voice/manual symptom logs, cycle context, sleep and wearables into evidence-backed patterns and a care-team summary without diagnosing.
+
+**Repository-backed:** The 34-commit React/FastAPI repository has backend/frontend areas, Pydantic validation and deterministic pattern/safety rules. Four screens cover Today, Patterns, Share and Journey Stage. Voice and manual input converge on the same reviewed `DailyLog`; the parser handles natural-number phrases, asks up to two missing-context questions and requires confirmation. The README explicitly uses synthetic data and avoids measuring inflammation, diagnosis or medication changes.
+
+**Demo-observed:** The live app loaded a seeded patient story with rising pain outside the usual cycle window, HRV below personal baseline, a non-causal explanation, one follow-up question, detailed symptom logging and printable/shareable evidence. It provides emergency escalation wording but does not claim the observed pattern caused a flare.
+
+## 42. Unflared
+
+**Team:** Team #41 · Unflare  
+**GitHub:** [Hari0810/emed](https://github.com/Hari0810/emed)  
+**Demo:** [Google Drive MOV](https://drive.google.com/file/d/1t-RbNuCYuAEj9uTu54WYDsfoKpV7jH3J/view?usp=drivesdk)
+
+**Submitted problem and product:** ANCA vasculitis can have dangerous personalised “slow-burn” flares that are difficult to distinguish from steroid effects. Unflared proposes routine voice calls joined with wearables, records and medication history, then gives patient escalation guidance and eventually clinician taper/trigger insights.
+
+**Repository-backed:** The five-commit Next.js/TypeScript repository contains app/source code, voice scaffolding, check-in and WhatsApp testing flows, monitoring signals and a timeline, but no README. The submitted claim of electronic-record integration, personalised flare prediction and medication-side-effect differentiation could not be established from the repository landing page.
+
+**Demo-observed:** The Drive MOV loaded and exposed a Transcript control, but no transcript text appeared. The video could not be converted into a text transcript during this pass.
+
 ## Cross-submission observations
 
 1. **Deterministic authority is a common design choice.** CareLoad, CareBuddy, Gutsy, Ember, and Morning Rounds all explicitly keep consequential scheduling, safety, escalation, or detection logic outside the language model.
@@ -544,3 +1001,10 @@ The submitted Google Drive folder was opened in the user's authenticated Chrome 
 9. **eHome is unusually explicit about ambiguity and identity attribution.** Its synthetic trap days demonstrate rejection, guest mode, and reattribution instead of converting every sensor event into a patient measurement.
 10. **Alaga and Loop depend heavily on functionality outside the independently inspectable demo evidence.** Alaga submitted no demo, and Loop's Drive folder was empty; Loop's patient-facing OpenClaw bot is also outside the submitted repository.
 11. **Darwin has the broadest action surface among the new entries.** Its repository and video cover voice calling, research-linked alerts, test-kit checkout, documents, and calendar actions, but the evidence base count differs between the submission and README and the clinical/predictive claims remain unvalidated.
+12. **Persistence Engine has the strongest research-discipline story among submissions 13–42.** It separates data generation from fitting, tests synthetic calibration and uplift honestly, and repeatedly refuses to promote simulated response effects into clinical claims.
+13. **Cadence, PCOScope, Endo Loop, Steady and HomeRounds have the clearest repository-backed product loops in the later batch.** Each has connected patient/clinician or input/evidence/action surfaces rather than only a landing page.
+14. **Several submitted links materially limit verification.** Mind The Gap, HARE and Alongside did not resolve to inspectable repositories; ATTUNE's repository is empty; Adher.ai links to a deployed app instead of source; Scout & Sage and Alongside submitted empty Drive folders.
+15. **Some submission-to-source discrepancies are significant.** PenPal's README is still the stock chatbot template, Solace's repository is a generic health-data backbone, and Respirate.ai's stated accuracy conflicts with its current README wording/arithmetic.
+16. **The strongest live demos in the later batch are Persistence Engine, Concord, Steady, Endo Loop and Cadence.** They expose concrete states and workflows with visible synthetic/prototype boundaries. HARE also loads but clearly labels its sensing as simulated.
+17. **Camera and voice claims require careful evidence separation.** Forma's video says AI analyses images while the submission says raw images are never uploaded; Undertone's acoustic biomarkers are a browser proof of concept with roadmap stubs; PenPal's camera coaching was not exercised; ATTUNE's claimed rPPG code could not be inspected.
+18. **The refreshed gallery total is 42.** The research now contains one numbered section for every visible submission.

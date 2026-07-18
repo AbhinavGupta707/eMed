@@ -1,6 +1,6 @@
 # HomeRounds orchestration state
 
-Updated: 18 July 2026 03:41 BST  
+Updated: 18 July 2026 03:46 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
 Goal: autonomously integrate and verify Checkpoints 9–11 Human Warmth final pass  
 Integration branch: `main`
@@ -10,7 +10,7 @@ Heartbeat: `homerounds-checkpoints-9-11-orchestration-heartbeat`, active every 1
 ## Current checkpoint
 
 - Checkpoint: 9 — Human Warmth redesign and secure phone companion, verification wave
-- Status: Checkpoints 0–8 remain integrated. Checkpoint 9 lanes 9B then 9A are reviewed, merged, centrally wired, and archived. The exact integrated Wave A candidate passes the complete keyless code gate, current patient/clinician/adaptive-AI browser journeys, accessibility, performance, and a live Neon companion-schema migration. The single exclusive 9C verification lane is the next exact action; hosted two-context live sync and physical-device claims remain pending their evidence classes.
+- Status: Checkpoints 0–8 remain integrated. Checkpoint 9 lanes 9B then 9A are reviewed, merged, centrally wired, and archived. The exact integrated Wave A candidate passes the complete keyless code gate, current patient/clinician/adaptive-AI browser journeys, accessibility, performance, and a live Neon companion-schema migration. The single exclusive 9C verification lane is active from exact documented base `112c614`; hosted two-context live sync and physical-device claims remain pending their evidence classes.
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
 - Rehearsed application/package candidate: `99acb5b` before Checkpoint 6 evidence-led documentation updates
@@ -41,7 +41,8 @@ Heartbeat: `homerounds-checkpoints-9-11-orchestration-heartbeat`, active every 1
 - Checkpoint 9 Wave A launch base: `7dd040e81e52cadb2959e88f0c0aec42d55335e0`
 - Checkpoint 9 Wave A worker commits: 9B `2d6c6d9f507325ad0660e3aa8319850adc00579b`; 9A `7c7e057`
 - Checkpoint 9 Wave A integration commits: 9B `ae5e530`; 9A `3fb720f`; central secure/durable wiring `ae3bd53`; final browser-gated candidate `19d36ceb0213ab4fa8c774835880da2fecb49d14`
-- Next gate: launch exactly one visible project-scoped 9C verification worktree from the clean documented Wave A commit, integrate its exclusive companion tests, then run the complete Checkpoint 9 hosted cross-device exit gate
+- Checkpoint 9 9C launch base: `112c6144645bff23f8884028f1e1f9cb5d56e38e`
+- Next gate: review and integrate the single active 9C companion-verification handoff, run narrow gates, then run the complete Checkpoint 9 hosted cross-device exit gate
 - Physical iPhone gate: `pending-physical` (Xcode lists the Mac and simulators only; no physical iPhone was connected)
 - Live ElevenLabs gate: `installed-chrome-webrtc-proposal-confirmation-pass` (private authenticated agent matches the versioned prompt, 120-second bound, bounded dynamic variables, and exact two typed client tools; real microphone conversation produced a visible structured proposal that remained inert until all six fields and final confirmation were explicitly reviewed)
 - Live VitalLens gate: `local-server-key-authentication-accepted; live-capture-pending-checkpoint-10` (server-only ignored configuration exists; no hosted/physical accuracy or capture claim)
@@ -82,12 +83,13 @@ Heartbeat: `homerounds-checkpoints-9-11-orchestration-heartbeat`, active every 1
 | 8          | 8E-R active browser gates   | `tests/e2e/voice-agent/**`, `tests/accessibility/voice-agent/**`, `tests/performance/voice-agent/**`                                                                                                                                                                                                   | `019f7204-a23e-7d83-9b3c-641c48a28aeb` | post-8D   | `gpt-5.6-sol`/`high`  | integrated; worker `a87ee0c`, active fixture/fallback/a11y/perf gates; archived  | `169e55d`         |
 | 9          | 9A Human Warmth surface     | `packages/ui/**`, `apps/web/src/app/globals.css`, `apps/web/src/app/styleguide/**`, `apps/web/src/app/page.tsx`, `apps/web/src/app/home.module.css`, `apps/web/src/app/(patient)/**`, `apps/web/src/features/patient/**`, `apps/web/src/features/voice-round/**`, `apps/web/src/features/round-map/**` | `019f7291-4dbe-7421-b7d6-5644829083c5` | `7dd040e` | `gpt-5.6-sol`/`high`  | completed clean worker `7c7e057`; integrated and archived                        | `3fb720f`         |
 | 9          | 9B secure companion         | `packages/companion/**`, `apps/web/src/server/companion/**`, `apps/web/src/app/api/companion/**`, `apps/web/src/app/(companion)/**`, `apps/web/src/features/companion/**`                                                                                                                              | `019f7291-4dbd-7093-81c7-8ab67f08a161` | `7dd040e` | `gpt-5.6-sol`/`xhigh` | completed clean worker `2d6c6d9`; integrated and archived                        | `ae5e530`         |
+| 9          | 9C companion verification   | `tests/contract/companion/**`, `tests/integration/companion/**`, `tests/e2e/companion/**`, `tests/accessibility/companion/**`, `tests/performance/companion/**`                                                                                                                                      | `019f731d-5a6d-7b20-b266-b16d55233c64` | `112c614` | `gpt-5.6-sol`/`xhigh` | active in project worktree `/Users/abhinavgupta/.codex/worktrees/3149/eMed`       | pending           |
 
 ## Integration invariants
 
 - At most three worker tasks active.
 - Checkpoint 8 used visible project-scoped worktree tasks. Wave A launched exactly three exclusive lanes from tested commit `08953f8`: 8A/8B used `xhigh`, 8C used `high`. Wave B launched two validation lanes only after Wave A integration; the bounded 8E-R replacement activated the missing release profiles without widening ownership. All tasks are archived.
-- Checkpoint 9 Wave A launched exactly two visible project-scoped worktree tasks from `7dd040e`: 9A used `high` for the bounded responsive redesign; 9B used `xhigh` for token security, concurrency, and live-sync. They remained disjoint, integrated in the declared 9B then 9A order, passed the central Wave A gate, and are archived. Lane 9C is now authorized to launch exactly once from the documented tested main commit.
+- Checkpoint 9 Wave A launched exactly two visible project-scoped worktree tasks from `7dd040e`: 9A used `high` for the bounded responsive redesign; 9B used `xhigh` for token security, concurrency, and live-sync. They remained disjoint, integrated in the declared 9B then 9A order, passed the central Wave A gate, and are archived. Lane 9C launched exactly once from tested commit `112c614` as visible project-scoped task `019f731d-5a6d-7b20-b266-b16d55233c64`, using `gpt-5.6-sol`/`xhigh` and exclusive companion-test ownership.
 - Monitoring is hybrid: worker completion/failure, handoff, merge, and gate results are immediate review boundaries when visible; the 15-minute heartbeat recovers interrupted master turns and missed events. Unchanged state in one observation is normal, not stagnation. Recovery requires repeated unchanged evidence or an explicit capacity/error/blocker and always resumes the same worker without duplication.
 - After Checkpoint 11 and 11D integration, the master must run the separate post-Checkpoint-11 release-closure acceptance on the exact final commit and Preview deployment. The heartbeat remains active through full end-to-end journeys, hosted persistence, live-provider opt-ins, accessibility/performance/soak, secret/raw-media/claim scans, and three consecutive hero plus resilience rehearsals.
 - Checkpoint 7 uses adaptive `3 + 2` waves from tested integration commits: 7A/7B/7C concurrently, then 7D/7E concurrently only after Wave A integration passes. Ownership and reasoning are frozen in `planning/09_AI_NATIVE_CHECKPOINT_7.md`.

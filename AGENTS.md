@@ -11,7 +11,7 @@ These instructions apply to every Codex task and managed worktree in this reposi
 
 ## Worktree ownership
 
-- Every managed worker must be launched with model `gpt-5.6-sol`. Use reasoning effort `high` for bounded/straightforward lanes and `xhigh` (extra-high) for complex integration, provider, concurrency, security, persistence, or clinical-safety lanes. Do not silently inherit another model or use lower reasoning.
+- Every managed worker must be launched with model `gpt-5.6-sol` in Fast mode. Use reasoning effort `high` for bounded/straightforward lanes and `xhigh` (extra-high) for complex integration, provider, concurrency, security, persistence, or clinical-safety lanes. The orchestrator must record Fast mode in the launch prompt and ledger; do not silently inherit another model, Standard mode, or lower reasoning.
 - Read `docs/orchestration/STATE.md` and your task prompt before editing.
 - Edit only the paths explicitly assigned to the task. One path has one owner per checkpoint, including tests, fixtures, barrels, migrations, manifests, and generated files.
 - Workers must not edit root manifests/configuration, `pnpm-lock.yaml`, `packages/contracts/**`, or `docs/orchestration/STATE.md` unless their prompt explicitly assigns them to integration work.

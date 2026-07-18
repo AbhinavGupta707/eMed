@@ -57,7 +57,7 @@ The final pass does not turn HomeRounds into a diagnostic agent. Models may conv
 
 ## 4. Checkpoint structure
 
-Three sequential checkpoints remain. They create **11 project-scoped worktree sessions** in total, with at most three active workers at once. Every worker uses `gpt-5.6-sol`; `high` is used for bounded visual/black-box lanes and `xhigh` for provider, persistence, concurrency, security, personalisation, or clinical-safety lanes.
+Three sequential checkpoints remain. They create **11 project-scoped worktree sessions** in total, with at most three active workers at once. Every new worker uses `gpt-5.6-sol` in Fast mode; `high` is used for bounded visual/black-box lanes and `xhigh` for provider, persistence, concurrency, security, personalisation, or clinical-safety lanes.
 
 | Checkpoint | Outcome                                                                         | Worktrees | Wave shape                                      |
 | ---------- | ------------------------------------------------------------------------------- | --------: | ----------------------------------------------- |
@@ -374,7 +374,7 @@ Required cases: trigger idempotency, stale memory, consent/correction/deletion, 
 - ElevenLabs agent configuration is live and unchanged with the exact two typed client tools. The restricted key cannot read the subscription endpoint, so wallet balance remains an account-dashboard-only observation rather than a guessed pass.
 - Fireworks live text-selection and medication-vision exact-contract tests pass.
 - VitalLens authentication is accepted; an empty zero-cost request is correctly rejected as malformed.
-- A 15-minute continuation heartbeat is active on the master orchestration task to resume transient capacity pauses and monitor existing workers without duplicates.
+- A 10-minute continuation heartbeat is active on the master orchestration task to resume transient capacity pauses and monitor existing workers without duplicates.
 - Physical iPhone and Windows checks remain honestly `pending-physical`; unattended browser/device emulation may not relabel them as passing evidence.
 
 ## 10. Required release commands

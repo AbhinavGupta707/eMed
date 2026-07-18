@@ -41,7 +41,7 @@ Do not substitute hidden sub-agents or manually improvised `git worktree` direct
 
 ### Worker model and reasoning policy
 
-Every managed worktree is created with an explicit `model: "gpt-5.6-sol"`; workers must not silently inherit a different configured default. Use `thinking: "high"` for bounded, straightforward implementation, visual-system, test-execution, documentation, and evidence-assembly lanes. Use `thinking: "xhigh"` (extra-high reasoning) for complex provider, API/orchestration, state-machine, persistence/concurrency, security, or clinical-safety lanes.
+Every managed worktree is created with explicit `model: "gpt-5.6-sol"` and Fast mode; workers must not silently inherit a different model or Standard service tier. Repository-local `.codex/config.toml` pins `service_tier = "fast"`, and every launch prompt/ledger entry repeats that requirement. Use `thinking: "high"` for bounded, straightforward implementation, visual-system, test-execution, documentation, and evidence-assembly lanes. Use `thinking: "xhigh"` (extra-high reasoning) for complex provider, API/orchestration, state-machine, persistence/concurrency, security, or clinical-safety lanes.
 
 | Checkpoint | Lane                              | Model         | Reasoning | Rationale                                                                                   |
 | ---------- | --------------------------------- | ------------- | --------- | ------------------------------------------------------------------------------------------- |
@@ -570,6 +570,7 @@ You own <lane> for HomeRounds at base commit <hash>.
 
 Launch contract (recorded by the orchestrator):
 - model: gpt-5.6-sol
+- speed: Fast mode
 - reasoning: <high|xhigh>
 
 Goal:

@@ -12,7 +12,7 @@ The durable execution design is specified in `planning/02_WORKTREE_ORCHESTRATION
 ## Hybrid monitoring
 
 - Treat worker completion, failure, blocked handoff, scope drift, merge results, and gate results as immediate review boundaries whenever the app surfaces them.
-- Keep the master heartbeat at 15 minutes as a recovery mechanism for interrupted turns, transient model-capacity pauses, and missed events. It is not a one-minute polling loop.
+- Keep the master heartbeat at 10 minutes as a recovery mechanism for interrupted turns, transient model-capacity pauses, and missed events. It is not a one-minute polling loop.
 - Normal quiet reasoning, code editing, builds, and tests are not stagnation. Do not message a healthy active worker merely because its Git state has not changed during one observation.
 - Suspect stagnation only when the same status and Git evidence remain unchanged across multiple observations, or when the task reports a capacity error, failed command, blocked decision, or mis-scoped work.
 - Recover the existing task with the same model, reasoning effort, base, and ownership. Never create a duplicate to make a slow task look active.
@@ -21,10 +21,10 @@ The durable execution design is specified in `planning/02_WORKTREE_ORCHESTRATION
 
 ## Worker model policy
 
-- Launch every new worktree with explicit model `gpt-5.6-sol`.
+- Launch every new worktree with explicit model `gpt-5.6-sol` in Fast mode. Repository-local `.codex/config.toml` pins `service_tier = "fast"` with the stable Fast-mode feature enabled.
 - Use `thinking: "high"` for bounded, straightforward implementation or evidence lanes.
 - Use `thinking: "xhigh"` for complex integration, provider, state-machine, concurrency, persistence, security, or clinical-safety lanes.
-- Record model and reasoning effort in `STATE.md`; do not rely on an inherited default.
+- Record model, reasoning effort, and Fast mode in `STATE.md`; do not rely on an inherited default.
 - Allocation: 1A–1D `xhigh` if relaunched (their completed historical runs predate the policy); 2A `xhigh`, 2B `xhigh`, 2C `high`; 3A `xhigh`, 3B `xhigh`; 4A `high`, 4B `high`, 4C `xhigh`, 4D `xhigh`; 5A `high`, 5B `high`.
 - Checkpoint 7 allocation: Wave A 7A inference foundation `xhigh`, 7B medication multimodal `xhigh`, 7C adaptive patient experience `high`; after integration, Wave B 7D adversarial AI evaluation `xhigh` and 7E UX/accessibility/performance `high`. See `planning/09_AI_NATIVE_CHECKPOINT_7.md` for exclusive paths and gates.
 - Checkpoint 8 allocation: Wave A 8A ElevenLabs runtime `xhigh`, 8B local voice signal `xhigh`, 8C patient voice UI `high`; Wave B 8D adversarial contracts `xhigh`, 8E browser/accessibility/performance `high`.

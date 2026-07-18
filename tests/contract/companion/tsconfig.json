@@ -1,0 +1,13 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": [
+    "./**/*.ts",
+    "../../integration/companion/**/*.ts",
+    "../../e2e/companion/**/*.ts",
+    "../../accessibility/companion/**/*.ts",
+    "../../performance/companion/**/*.ts"
+  ]
+}

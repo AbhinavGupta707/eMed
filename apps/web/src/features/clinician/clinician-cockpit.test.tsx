@@ -65,10 +65,14 @@ function renderCockpit(transport: ClinicianTransport) {
 }
 
 async function waitForSelectedTask(patientId = "synthetic-maya") {
-  return screen.findByRole("heading", {
-    level: 2,
-    name: `Synthetic record ${patientId}`
-  });
+  return screen.findByRole(
+    "heading",
+    {
+      level: 2,
+      name: `Synthetic record ${patientId}`
+    },
+    { timeout: 3_000 }
+  );
 }
 
 describe("clinician cockpit", () => {

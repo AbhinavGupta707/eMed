@@ -162,6 +162,19 @@ export function roundMapStatusDescription(module: RoundMapModule): string {
   }
 }
 
+export function roundMapTaskDescription(candidate: EvidenceModuleCandidate): string {
+  switch (candidate.kind) {
+    case "pulse_capture":
+      return "A pulse estimate that appears only when the signal is clear enough.";
+    case "structured_follow_up":
+      return "One answer you review and confirm yourself.";
+    case "medication_label":
+      return "Visible label details that you review before they can be used.";
+    case "voice_biomarker":
+      return "A short research signal saved only when its quality is clear enough.";
+  }
+}
+
 function availabilityReason(candidate: EvidenceModuleCandidate): string {
   if (candidate.availability.status === "available") return candidate.description;
   switch (candidate.availability.reason) {

@@ -40,6 +40,16 @@ const FACT_ID = "cbb31bb5-f5a1-464c-9954-c54a771ed47d";
 const REPORT_ID = "19df6892-ed28-4ef2-8d36-5a2133cad9a4";
 const TASK_ID = "39fc4367-c569-4565-9899-c94d4b9cced7";
 const NOW = "2026-07-17T11:00:00.000Z";
+const PHONE_PREFERENCE = {
+  status: "set" as const,
+  value: "phone" as const,
+  provenance: {
+    schemaVersion: "preference-provenance.v1" as const,
+    source: "patient_confirmation" as const,
+    confirmationId: "60000000-0000-4000-8000-000000000001",
+    recordedAt: NOW
+  }
+};
 
 type AssessmentSessionResult = Awaited<ReturnType<PatientRoundApi["startAssessment"]>>;
 type AssessmentSubmissionResult = Awaited<ReturnType<PatientRoundApi["submitAssessment"]>>;
@@ -449,6 +459,7 @@ function renderRound(
     createElement(PatientRoundApp, {
       api,
       config: SYNTHETIC_MAYA_ROUND,
+      defaultDevicePreference: PHONE_PREFERENCE,
       createId: () => REPORT_ID,
       createOpticalProvider: () => provider,
       isOnline: () => true,
@@ -541,7 +552,7 @@ describe("patient round app", () => {
 
     expect(await screen.findByRole("heading", { name: "Review finished" })).toBeVisible();
     expect(
-      screen.getByText("The saved sample review was marked complete inside HomeRounds.")
+      screen.getByText("The sample care-team review was marked complete inside HomeRounds.")
     ).toBeVisible();
     expect(screen.getByText("Completed in HomeRounds")).toBeVisible();
     expect(
@@ -556,6 +567,7 @@ describe("patient round app", () => {
     await continueRecommendationWhenOffered();
 
     await screen.findByRole("heading", { name: "A pulse check is the most useful next step." });
+    expect(screen.getByText("Phone preferred for supported checks")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Continue on this computer" }));
     await screen.findByRole("heading", {
       name: /Your device is ready/i
@@ -628,5 +640,61 @@ describe("patient round app", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Continue without a measurement" }));
     await screen.findByRole("heading", { name: "Choose what happens next." });
+    expect(screen.getByText("Uncertainty kept intact")).toBeVisible();
+  });
+
+  it("keeps a provider outage visible and never invents a reading", async () => {
+    const provider = new UiProvider();
+    provider.availability = { available: false, reason: "provider_unavailable" };
+    renderRound(new UiApi(), provider);
+    await acceptInvitation();
+    await completeTextReport();
+    await continueRecommendationWhenOffered();
+    await screen.findByRole("heading", { name: "A pulse check is the most useful next step." });
+    fireEvent.click(screen.getByRole("button", { name: "Continue on this computer" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "The selected camera check is unavailable" })
+    ).toBeVisible();
+    expect(screen.getByText("The selected measurement service is unavailable")).toBeVisible();
+    expect(screen.queryByText(/103 bpm/)).not.toBeInTheDocument();
+  });
+
+  it("shows an offline pause without a retry that cannot run", async () => {
+    render(
+      createElement(PatientRoundApp, {
+        api: new UiApi(),
+        config: SYNTHETIC_MAYA_ROUND,
+        createOpticalProvider: () => new UiProvider(),
+        isOnline: () => false,
+        timeoutMs: 60_000,
+        voiceProvider: new DisabledVoiceSessionProvider("missing_configuration")
+      })
+    );
+
+    expect(await screen.findByText("You appear to be offline")).toBeVisible();
+    expect(screen.getByText(/Nothing new has been submitted/i)).toBeVisible();
+    expect(screen.queryByRole("button", { name: /try connection again/i })).not.toBeInTheDocument();
+  });
+
+  it("restores confirmed progress but requires a fresh unfinished capture", async () => {
+    const api = new UiApi();
+    api.round = makeRound("capturing", 6);
+    renderRound(api);
+
+    expect(
+      await screen.findByRole("heading", { name: "Your saved round needs a safe recovery step" })
+    ).toBeVisible();
+    expect(screen.getByText("Nothing unfinished was guessed")).toBeVisible();
+  });
+
+  it("shows a final cancellation state with no follow-on action", async () => {
+    const api = new UiApi();
+    api.round = makeRound("patient_declined", 4);
+    renderRound(api);
+
+    expect(await screen.findByRole("heading", { name: "This round was cancelled" })).toBeVisible();
+    expect(screen.getByText("Camera and microphone stopped")).toBeVisible();
+    expect(screen.queryByRole("button", { name: /continue/i })).not.toBeInTheDocument();
   });
 });

@@ -475,9 +475,7 @@ describe("medication label panel", () => {
   it("retains persistent safety copy and named keyboard/touch controls", async () => {
     render(createElement(MedicationLabelPanel, baseProps()));
 
-    expect(
-      screen.getByText(/use only a synthetic demo label with no person’s name/i)
-    ).toBeVisible();
+    expect(screen.getByText(/use only a synthetic label with no person’s name/i)).toBeVisible();
     expect(
       screen.getByText(/cannot diagnose, give dosing advice, or change a medication/i)
     ).toBeVisible();

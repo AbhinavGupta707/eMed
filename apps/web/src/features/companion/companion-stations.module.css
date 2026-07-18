@@ -1,0 +1,289 @@
+.station {
+  display: grid;
+  width: 100%;
+  gap: 1rem;
+  color: #26312d;
+}
+
+.station h1,
+.station p,
+.station figure,
+.station dl {
+  margin: 0;
+}
+
+.station h1 {
+  color: #173c32;
+  font-family: Newsreader, Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 10vw, 3rem);
+  font-weight: 500;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.eyebrow {
+  color: #a94129;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.lede,
+.alternative,
+.feedback,
+.photoPanel,
+.progressGroup,
+.form {
+  line-height: 1.6;
+}
+
+.feedback,
+.alternative,
+.photoPanel {
+  padding: 1rem;
+  border-radius: 1rem;
+}
+
+.feedback {
+  background: #f1e8dc;
+  border-left: 4px solid #b94f31;
+}
+
+.alternative {
+  background: #eef4f1;
+  color: #264c40;
+}
+
+.actions {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.primary,
+.secondary,
+.linkButton {
+  min-height: 3rem;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.primary {
+  color: #fffdf8;
+  background: #173c32;
+  border: 2px solid #173c32;
+}
+
+.secondary {
+  color: #173c32;
+  background: #fffdf8;
+  border: 2px solid #577168;
+}
+
+.linkButton {
+  min-height: 2.75rem;
+  color: #714136;
+  background: transparent;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.primary:disabled,
+.secondary:disabled,
+.linkButton:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.primary:focus-visible,
+.secondary:focus-visible,
+.linkButton:focus-visible,
+.field input:focus-visible,
+.confirmation input:focus-visible,
+.unknown input:focus-visible {
+  outline: 4px solid #e99a42;
+  outline-offset: 3px;
+}
+
+.progressGroup {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.capturePulse {
+  height: 0.8rem;
+  overflow: hidden;
+  background: #e5ddd1;
+  border-radius: 999px;
+}
+
+.capturePulse span {
+  display: block;
+  width: 45%;
+  height: 100%;
+  background: #b94f31;
+  border-radius: inherit;
+  animation: capture-position 1.8s ease-in-out infinite alternate;
+}
+
+.provenance {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.provenance div {
+  min-width: 0;
+  padding: 0.75rem;
+  background: #fffaf2;
+  border: 1px solid #d8cfc2;
+  border-radius: 0.75rem;
+}
+
+.provenance dt {
+  color: #52615c;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.provenance dd {
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.embeddedStation {
+  width: 100%;
+}
+
+.photoPanel {
+  display: grid;
+  gap: 0.75rem;
+  background: #f4eadf;
+  border: 1px solid #d8cfc2;
+}
+
+.preview {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.preview img {
+  display: block;
+  width: 100%;
+  max-height: 16rem;
+  object-fit: contain;
+  background: #efe8dc;
+  border-radius: 0.75rem;
+}
+
+.preview figcaption {
+  color: #5f6863;
+  font-size: 0.8125rem;
+}
+
+.form,
+.form fieldset {
+  display: grid;
+  gap: 1rem;
+}
+
+.form fieldset {
+  padding: 0;
+  border: 0;
+}
+
+.form legend {
+  padding: 0;
+  color: #173c32;
+  font-family: Newsreader, Georgia, "Times New Roman", serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.field {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.field > label:first-child {
+  font-weight: 750;
+}
+
+.field > input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.625rem 0.75rem;
+  color: #26312d;
+  background: #fffdf8;
+  border: 1px solid #8b9a94;
+  border-radius: 0.65rem;
+  font: inherit;
+}
+
+.unknown,
+.confirmation {
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  line-height: 1.5;
+}
+
+.unknown input,
+.confirmation input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0.15rem 0 0;
+}
+
+.confirmation {
+  padding: 1rem;
+  background: #eef4f1;
+  border-radius: 0.75rem;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@keyframes capture-position {
+  from {
+    transform: translateX(-45%);
+  }
+
+  to {
+    transform: translateX(165%);
+  }
+}
+
+@media (min-width: 36rem) {
+  .actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .linkButton:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .capturePulse span {
+    width: 55%;
+    animation: none;
+  }
+}

@@ -34,10 +34,14 @@
 
 .content {
   display: grid;
-  width: min(100%, 34rem);
+  width: min(100%, 60rem);
   padding: 1rem clamp(1rem, 6vw, 2rem) 2rem;
   margin: 0 auto;
   place-items: center;
+}
+
+.stationCard {
+  max-width: 56rem;
 }
 
 .card {
@@ -78,13 +82,11 @@
   text-transform: uppercase;
 }
 
-.primary {
+.primary,
+.secondary {
   min-height: 3.25rem;
   padding: 0.75rem 1.25rem;
-  color: #fffdf8;
   font-weight: 700;
-  background: var(--companion-forest);
-  border: 0;
   border-radius: 999px;
   cursor: pointer;
   transition:
@@ -92,14 +94,38 @@
     background 180ms ease;
 }
 
+.primary {
+  color: #fffdf8;
+  background: var(--companion-forest);
+  border: 2px solid var(--companion-forest);
+}
+
+.secondary {
+  color: var(--companion-forest);
+  background: var(--companion-surface);
+  border: 2px solid #577168;
+}
+
 .primary:hover:not(:disabled) {
   background: #235345;
   transform: translateY(-1px);
 }
 
-.primary:disabled {
+.secondary:hover:not(:disabled) {
+  background: #eef4f1;
+  transform: translateY(-1px);
+}
+
+.primary:disabled,
+.secondary:disabled {
   cursor: wait;
   opacity: 0.65;
+}
+
+.primary:focus-visible,
+.secondary:focus-visible {
+  outline: 4px solid #e99a42;
+  outline-offset: 3px;
 }
 
 .status {
@@ -158,7 +184,12 @@
     transition: none;
   }
 
-  .primary:hover:not(:disabled) {
+  .secondary {
+    transition: none;
+  }
+
+  .primary:hover:not(:disabled),
+  .secondary:hover:not(:disabled) {
     transform: none;
   }
 

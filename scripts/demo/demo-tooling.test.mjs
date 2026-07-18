@@ -63,7 +63,7 @@ test("reset SQL is exact-scope, transactional, and dependency ordered", async ()
   assert.match(sql, /alter table audit_events enable trigger audit_events_reject_update_or_delete/);
   assert.match(
     sql,
-    /delete from action_attempts[\s\S]*delete from action_executions[\s\S]*delete from clinical_tasks[\s\S]*delete from voice_biomarker_facts[\s\S]*delete from measurement_facts[\s\S]*delete from audit_events[\s\S]*delete from rounds/
+    /delete from companion_operations[\s\S]*delete from companion_results[\s\S]*update companion_pairings[\s\S]*delete from companion_sessions[\s\S]*delete from companion_pairings[\s\S]*delete from action_attempts[\s\S]*delete from action_executions[\s\S]*delete from clinical_tasks[\s\S]*delete from voice_biomarker_facts[\s\S]*delete from measurement_facts[\s\S]*delete from audit_events[\s\S]*delete from rounds/
   );
   assert.match(sql, /commit;\n$/);
   assert.doesNotMatch(sql, /truncate/i);

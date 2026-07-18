@@ -17,6 +17,28 @@ import {
 } from "./support";
 import { expectNoBrowserFailures, observeBrowserFailures } from "../patient/support";
 
+const hostedBaseUrl = process.env.HOMEROUNDS_HOSTED_BASE_URL;
+const hostedAccessSecret = process.env.HOMEROUNDS_HOSTED_DEMO_ACCESS_SECRET;
+
+test.beforeEach(async ({ page }) => {
+  if (!hostedBaseUrl && !hostedAccessSecret) return;
+  expect(hostedBaseUrl, "Hosted companion checks require HOMEROUNDS_HOSTED_BASE_URL").toBeTruthy();
+  expect(
+    hostedAccessSecret,
+    "Hosted companion checks require HOMEROUNDS_HOSTED_DEMO_ACCESS_SECRET"
+  ).toBeTruthy();
+  const origin = new URL(hostedBaseUrl!).origin;
+  const response = await page.request.post(`${origin}/api/demo/access`, {
+    headers: { origin },
+    data: {
+      accessCode: hostedAccessSecret,
+      role: "patient",
+      destination: "/round?scenario=maya-happy-text"
+    }
+  });
+  expect(response.status(), "Hosted patient session should be issued").toBe(200);
+});
+
 test("real QR handoff safely reissues, resumes, synchronizes, and acknowledges a non-measurement", async ({
   browser,
   page
@@ -25,7 +47,9 @@ test("real QR handoff safely reissues, resumes, synchronizes, and acknowledges a
   const desktopTraffic: CompanionTraffic = [];
   collectCompanionTraffic(page, desktopTraffic);
 
-  const original = await launchDesktopPairing(page);
+  const original = await launchDesktopPairing(page, {
+    proveNoKeyVoiceFallback: hostedBaseUrl ? false : true
+  });
   const replacement = await revokeAndReissueDesktopPairing(page, original);
 
   const oldPhone = await openPhone(browser, original.pairingLink);

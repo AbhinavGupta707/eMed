@@ -328,6 +328,17 @@ join homerounds_demo_reset_scope s
  and s.patient_id = r.patient_id;
 
 alter table audit_events disable trigger audit_events_reject_update_or_delete;
+delete from companion_operations
+where session_id in (
+  select session_id from companion_sessions
+  where round_id in (select id from homerounds_demo_reset_rounds)
+);
+delete from companion_results where round_id in (select id from homerounds_demo_reset_rounds);
+update companion_pairings
+set session_id = null
+where round_id in (select id from homerounds_demo_reset_rounds);
+delete from companion_sessions where round_id in (select id from homerounds_demo_reset_rounds);
+delete from companion_pairings where round_id in (select id from homerounds_demo_reset_rounds);
 delete from action_attempts where round_id in (select id from homerounds_demo_reset_rounds);
 delete from action_executions where round_id in (select id from homerounds_demo_reset_rounds);
 delete from clinical_tasks where round_id in (select id from homerounds_demo_reset_rounds);

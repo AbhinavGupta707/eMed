@@ -25,6 +25,8 @@
     "test:e2e": "playwright test",
     "test:e2e:patient": "playwright test --config tests/e2e/patient/playwright.config.ts",
     "test:e2e:clinician": "playwright test --config tests/e2e/clinician/playwright.config.ts",
+    "test:e2e:companion": "playwright test --config tests/e2e/companion/playwright.config.ts",
+    "test:e2e:companion:hosted": "playwright test --config tests/e2e/companion/hosted.playwright.config.ts",
     "test:e2e:ai": "playwright test --config tests/e2e/ai/playwright.config.ts && playwright test --config tests/e2e/ai/medication.playwright.config.ts && playwright test --config tests/e2e/ai/abstain.playwright.config.ts && playwright test --config tests/e2e/ai/failure.playwright.config.ts && playwright test --config tests/e2e/ai/slow.playwright.config.ts",
     "test:a11y": "playwright test --config tests/accessibility/patient/playwright.config.ts && playwright test --config tests/accessibility/clinician/playwright.config.ts && playwright test --config tests/accessibility/ai/playwright.config.ts",
     "test:performance": "playwright test --config tests/performance/patient/playwright.config.ts && playwright test --config tests/performance/clinician/playwright.config.ts && playwright test --config tests/performance/ai/playwright.config.ts && playwright test --config tests/performance/ai/failure.playwright.config.ts",

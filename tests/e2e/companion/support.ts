@@ -95,11 +95,16 @@ export function collectCompanionTraffic(page: Page, traffic: CompanionTraffic): 
   });
 }
 
-export async function launchDesktopPairing(page: Page): Promise<CompanionPairingIssue> {
+export async function launchDesktopPairing(
+  page: Page,
+  options: Readonly<{ proveNoKeyVoiceFallback?: boolean }> = {
+    proveNoKeyVoiceFallback: true
+  }
+): Promise<CompanionPairingIssue> {
   const response = await page.goto("/round?scenario=maya-happy-text");
   expect(response?.status()).toBe(200);
   await startRound(page);
-  await submitTextReport(page, calmReport, { proveNoKeyVoiceFallback: true });
+  await submitTextReport(page, calmReport, options);
   await expect(
     page.getByRole("heading", { level: 2, name: "Quality-gated finger pulse check" })
   ).toBeVisible();

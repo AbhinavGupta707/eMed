@@ -27,7 +27,6 @@ const PATIENT_DESTINATIONS = new Set([
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_BODY_BYTES = 2_048;
 const SESSION_SECONDS = 3_600;
-const PUBLIC_SESSION_LIMIT = 30;
 
 function response(status: number, body: Record<string, unknown>, correlationId: string): Response {
   return Response.json(body, {
@@ -140,18 +139,6 @@ export async function handlePublicDemoAccess(
   const parsedRole = z.enum(["patient", "clinician"]).safeParse(roles[0]);
   if (!parsedRole.success || roles.length !== 1 || destinations.length > 1) {
     return response(400, { error: "invalid_request" }, correlationId);
-  }
-
-  const rateLimit = await runtime.hooks.rateLimiter.consume({
-    key: requestKey(request),
-    bucket: "public_demo_session_issue",
-    limit: PUBLIC_SESSION_LIMIT,
-    windowMs: 5 * 60_000
-  });
-  if (!rateLimit.allowed) {
-    const limited = response(429, { error: "access_denied" }, correlationId);
-    limited.headers.set("retry-after", String(rateLimit.retryAfterSeconds));
-    return limited;
   }
 
   const issued = issueSession(parsedRole.data, destinations[0], runtime);

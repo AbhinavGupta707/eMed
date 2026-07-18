@@ -58,6 +58,23 @@ describe("hosted demo access boundary", () => {
     expect(JSON.stringify([...response.headers.entries()])).not.toContain(SECRET);
   });
 
+  it("keeps repeated judge entry frictionless", async () => {
+    const server = runtime();
+    const responses = await Promise.all(
+      Array.from({ length: 40 }, () =>
+        handlePublicDemoAccess(
+          new Request(
+            "https://demo.example/api/demo/session?role=patient&next=%2Fshowcase%2Fheart",
+            { headers: { "x-forwarded-for": "192.0.2.10" } }
+          ),
+          server
+        )
+      )
+    );
+
+    expect(responses.every((response) => response.status === 303)).toBe(true);
+  });
+
   it("rejects malformed public-session roles and keeps destinations role-scoped", async () => {
     const server = runtime();
     const malformed = await handlePublicDemoAccess(

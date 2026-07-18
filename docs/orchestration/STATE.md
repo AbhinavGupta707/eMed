@@ -1,6 +1,6 @@
 # HomeRounds orchestration state
 
-Updated: 18 July 2026 11:34 BST  
+Updated: 18 July 2026 11:37 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
 Goal: autonomously integrate and verify Checkpoints 9–11 Human Warmth final pass  
 Integration branch: `main`
@@ -10,7 +10,7 @@ Heartbeat: `homerounds-checkpoints-9-11-orchestration-heartbeat`, active every 1
 ## Current checkpoint
 
 - Checkpoint: 11 — proactive, remembered, closed-loop release, Wave A integrated and fully gated
-- Status: Checkpoints 0–10 and Checkpoint 11 Wave A are integrated and green to the available unattended evidence class. The three visible project-scoped Wave A workers completed exclusive clean handoffs, were reviewed in the required 11A → 11B → 11C order, and are archived. Central commit `95003fd` adds durable trigger/memory/action wiring, migration `0006`, API/client integration, polished user copy, and the HMR-stable companion runtime. Exactly one Fast/xhigh release-evidence lane 11D remains to launch from the clean ledger commit. Physical iPhone 12 Safari and Windows Chrome/Edge remain honestly `pending-physical`; they do not block software verification or become implied claims.
+- Status: Checkpoints 0–10 and Checkpoint 11 Wave A are integrated and green to the available unattended evidence class. The three visible project-scoped Wave A workers completed exclusive clean handoffs, were reviewed in the required 11A → 11B → 11C order, and are archived. Central commit `95003fd` adds durable trigger/memory/action wiring, migration `0006`, API/client integration, polished user copy, and the HMR-stable companion runtime. Exactly one visible project-scoped lane 11D is active from clean launch base `d8dd86d`, using `gpt-5.6-sol`/`xhigh` Fast mode and owning only the seven final-pass test/evidence roots. Physical iPhone 12 Safari and Windows Chrome/Edge remain honestly `pending-physical`; they do not block software verification or become implied claims.
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
 - Rehearsed application/package candidate: `99acb5b` before Checkpoint 6 evidence-led documentation updates
@@ -56,7 +56,8 @@ Heartbeat: `homerounds-checkpoints-9-11-orchestration-heartbeat`, active every 1
 - Checkpoint 11 Wave A worker launch base: `d891e3d78786e1f76fd9107dfcfe04f76489fed7`
 - Checkpoint 11 Wave A worker commits: 11A `65403d7`; 11B `172222f`; 11C `7055b15`
 - Checkpoint 11 Wave A integration commits: 11A `d99c943`; trigger package registration `c5428c0`; 11B `b00099a`; 11C `984a818`; browser stabilization `7509fd6`; tested central integration `95003fd`
-- Next gate: commit this exact evidence ledger, then launch lane 11D exactly once as a visible project-scoped `gpt-5.6-sol`/`xhigh` Fast-mode worktree from that clean commit
+- Checkpoint 11 11D launch base: `d8dd86d4d93c8e0103ce29684ab13890b3366628`
+- Next gate: monitor the single healthy 11D worker with restraint, verify exact ownership/clean commit/evidence, integrate it, then run the separate exact-commit release-closure acceptance and Preview deployment
 - Physical iPhone gate: `pending-physical` (Xcode lists the Mac and simulators only; no physical iPhone was connected)
 - Live ElevenLabs gate: `installed-chrome-webrtc-proposal-confirmation-pass` (private authenticated agent matches the versioned prompt, 120-second bound, bounded dynamic variables, and exact two typed client tools; real microphone conversation produced a visible structured proposal that remained inert until all six fields and final confirmation were explicitly reviewed)
 - Live VitalLens gate: `server-key-present-and-live-synthetic-no-face-boundary-pass; physical-capture-pending` (the opt-in request used identifier-free, in-memory synthetic RGB24 frames and returned a typed non-measurement with buffer zeroisation; no hosted/physical accuracy, face capture, or clinical-validity claim)
@@ -105,6 +106,7 @@ Heartbeat: `homerounds-checkpoints-9-11-orchestration-heartbeat`, active every 1
 | 11         | 11A proactive trigger/memory  | `packages/triggers/**`, `packages/personalization/**`, `apps/web/src/server/triggers/**`, `data/demo/triggers/**`                                                                                                                                                                                      | `019f7414-7124-7ce1-bc29-345a7597cd40` | `d891e3d` | `gpt-5.6-sol`/`xhigh` Fast | clean worker `65403d7`; integrated, registered, gated, and archived              | `d99c943`         |
 | 11         | 11B synthetic care actions    | `packages/actions/**`, `apps/web/src/server/actions/**`, `apps/web/src/app/api/rounds/**/actions/**`, `apps/web/src/app/(clinician)/**`, `apps/web/src/features/clinician/**`                                                                                                                          | `019f7414-70d4-7a60-bb25-ce6a107accb6` | `d891e3d` | `gpt-5.6-sol`/`xhigh` Fast | clean worker `172222f`; integrated, gated, and archived                          | `b00099a`         |
 | 11         | 11C final patient story       | `apps/web/src/app/page.tsx`, `apps/web/src/app/home.module.css`, `apps/web/src/app/(patient)/**`, `apps/web/src/features/patient/**`, `apps/web/src/features/voice-round/**`, `apps/web/src/features/round-map/**`                                                                                     | `019f7414-73c4-7f63-b03f-a0f8266d3eb8` | `d891e3d` | `gpt-5.6-sol`/`high` Fast  | clean worker `7055b15`; integrated, browser-gated, and archived                  | `984a818`         |
+| 11         | 11D final release evidence    | `tests/contract/final-pass/**`, `tests/integration/final-pass/**`, `tests/e2e/final-pass/**`, `tests/accessibility/final-pass/**`, `tests/performance/final-pass/**`, `docs/qa/final-pass/**`, `docs/submission/final-pass/**`                                                                         | `019f74cd-5c97-76d3-84d8-cf69ec03167b` | `d8dd86d` | `gpt-5.6-sol`/`xhigh` Fast | active in `/Users/abhinavgupta/.codex/worktrees/6325/eMed`; no duplicate exists  | pending           |
 
 ## Checkpoint 11 Wave A integration evidence
 

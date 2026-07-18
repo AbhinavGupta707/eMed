@@ -16,6 +16,7 @@
     "@homerounds/assessments": "workspace:*",
     "@homerounds/audit": "workspace:*",
     "@homerounds/clinical-records": "workspace:*",
+    "@homerounds/companion": "workspace:*",
     "@homerounds/contracts": "workspace:*",
     "@homerounds/domain": "workspace:*",
     "@homerounds/inference": "workspace:*",

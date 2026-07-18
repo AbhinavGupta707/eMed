@@ -3,7 +3,7 @@ import type {
   CompanionPhoneSnapshot,
   CompanionTaskKind,
   CompanionTaskPhase
-} from "../../../../../packages/companion/src/schemas";
+} from "@homerounds/companion/schemas";
 
 export const COMPANION_POLL_INTERVAL_MS = 1_500;
 

@@ -1,6 +1,6 @@
 import { createHash, createHmac, randomBytes } from "node:crypto";
 
-import type { CompanionCryptoPort } from "../../../../../packages/companion/src/index";
+import type { CompanionCryptoPort } from "@homerounds/companion";
 
 function hmac(secret: string, purpose: string, value: string): string {
   return createHmac("sha256", secret).update(`${purpose}\u001f${value}`).digest("base64url");

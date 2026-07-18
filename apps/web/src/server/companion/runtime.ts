@@ -5,7 +5,7 @@ import {
   InMemoryCompanionPairingRepository,
   type CompanionPairingRepository,
   type CompanionRoundAuthorityPort
-} from "../../../../../packages/companion/src/index";
+} from "@homerounds/companion";
 import type { DemoSessionAuthenticator } from "../identity";
 import type { RateLimiter } from "../rate-limit";
 import { getServerRuntime } from "../runtime";

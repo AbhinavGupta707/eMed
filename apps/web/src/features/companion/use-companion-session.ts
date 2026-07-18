@@ -6,7 +6,7 @@ import {
   CompanionPairingTokenSchema,
   type CompanionPhoneSnapshot,
   type CompanionTaskPhase
-} from "../../../../../packages/companion/src/schemas";
+} from "@homerounds/companion/schemas";
 import {
   CompanionClientError,
   exchangeCompanion,

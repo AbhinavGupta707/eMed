@@ -1,4 +1,4 @@
-import { InMemoryCompanionPairingRepository } from "../../../../../packages/companion/src/index";
+import { InMemoryCompanionPairingRepository } from "@homerounds/companion";
 import { describe, expect, it } from "vitest";
 
 import { createDemoSessionAuthenticator } from "../identity";

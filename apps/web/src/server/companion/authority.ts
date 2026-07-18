@@ -3,7 +3,7 @@ import type {
   CompanionRoundAuthorityPort,
   CompanionRoundAuthoritySnapshot,
   CompanionTaskKind
-} from "../../../../../packages/companion/src/index";
+} from "@homerounds/companion";
 import type { ServerRuntime } from "../runtime";
 
 const taskKindByModuleId: Readonly<Record<string, CompanionTaskKind>> = {

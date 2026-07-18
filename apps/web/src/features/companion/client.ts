@@ -6,7 +6,7 @@ import {
   CompanionStatusUpdateRequestSchema,
   type CompanionPhoneSnapshot,
   type CompanionStatusUpdateRequest
-} from "../../../../../packages/companion/src/schemas";
+} from "@homerounds/companion/schemas";
 
 const SnapshotEnvelopeSchema = z
   .object({

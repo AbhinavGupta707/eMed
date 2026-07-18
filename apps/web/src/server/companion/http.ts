@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { CompanionServiceError } from "../../../../../packages/companion/src/index";
+import { CompanionServiceError } from "@homerounds/companion";
 import type { DemoSession } from "../identity";
 import type { CompanionRouteRuntime } from "./runtime";
 

@@ -8,7 +8,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { CompanionPhoneSnapshot } from "../../../../../packages/companion/src/index";
+import type { CompanionPhoneSnapshot } from "@homerounds/companion";
 import { CompanionShell } from "./companion-shell";
 import {
   COMPANION_POLL_INTERVAL_MS,

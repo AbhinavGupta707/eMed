@@ -7,7 +7,7 @@ import {
   CompanionPairingMutationRequestSchema,
   CompanionStatusUpdateRequestSchema,
   CompanionTaskResultRequestSchema
-} from "../../../../../packages/companion/src/index";
+} from "@homerounds/companion";
 import {
   assertMethod,
   assertMutationOrigin,

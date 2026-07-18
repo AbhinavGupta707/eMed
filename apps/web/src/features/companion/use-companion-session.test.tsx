@@ -8,7 +8,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { CompanionPhoneSnapshot } from "../../../../../packages/companion/src/index";
+import type { CompanionPhoneSnapshot } from "@homerounds/companion";
 import { useCompanionSession } from "./use-companion-session";
 
 const token = `cpt1_${Buffer.alloc(32, 7).toString("base64url")}`;

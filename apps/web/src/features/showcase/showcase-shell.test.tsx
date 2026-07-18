@@ -44,6 +44,8 @@ describe("heart-failure showcase", () => {
       target: { value: "The stairs feel harder and I am more tired than usual." }
     });
     fireEvent.click(screen.getByRole("button", { name: "Use this summary" }));
+    expect(screen.getByRole("heading", { name: "Is this an accurate summary?" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Confirm and build my Round Map" }));
 
     expect(
       screen.getByRole("heading", { name: "HomeRounds makes the next decision visible." })

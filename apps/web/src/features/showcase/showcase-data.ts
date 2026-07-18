@@ -136,11 +136,11 @@ export const HEART_EVIDENCE: readonly EvidencePassport[] = [
   {
     id: "medication",
     label: "Medication package",
-    value: "20 mg pack confirmed",
-    source: "Guided package scan",
-    comparison: "Current daily instruction remains open",
+    value: "Not available during round",
+    source: "Patient-confirmed availability",
+    comparison: "Current product and daily instruction remain open",
     status: "uncertain",
-    explanation: "The pack identity is known; the clinician must reconcile the active dose."
+    explanation: "No package fact is invented; the clinician must reconcile the active medication."
   }
 ];
 

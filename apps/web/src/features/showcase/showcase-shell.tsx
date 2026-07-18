@@ -6,7 +6,7 @@
 import type { VoiceSessionContext } from "@homerounds/contracts/voice";
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { createPatientVoiceProvider } from "../patient/provider-factories";
 import { useVoiceInteraction } from "../voice";
@@ -63,6 +63,19 @@ const heartSceneLabels: Record<HeartScene, string> = {
   clinician: "Care team",
   resolution: "Resolved"
 };
+
+const CONSTELLATION_STARS = [
+  [8, 42],
+  [19, 9],
+  [28, 84],
+  [39, 27],
+  [46, 91],
+  [58, 12],
+  [65, 77],
+  [73, 42],
+  [91, 34],
+  [94, 87]
+] as const;
 
 const COPD_SCENES: readonly CopdScene[] = [
   "context",
@@ -215,16 +228,39 @@ function ContextConstellation({
         viewBox="0 0 100 100"
         preserveAspectRatio="none"
       >
+        <defs>
+          <filter id="constellation-glow">
+            <feGaussianBlur stdDeviation="1.3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          <radialGradient id="constellation-core">
+            <stop offset="0" stopColor="#f2a077" />
+            <stop offset="1" stopColor="#b34a2d" />
+          </radialGradient>
+        </defs>
+        <g className={styles.constellationStars}>
+          {CONSTELLATION_STARS.map(([x, y], index) => (
+            <circle cx={x} cy={y} key={`${x}-${y}`} r={index % 3 === 0 ? 0.55 : 0.32} />
+          ))}
+        </g>
         {events.map((event, index) => (
-          <line
+          <path
+            d={`M 50 50 Q ${50 + (event.x - 50) * 0.38 + (index % 2 === 0 ? -9 : 9)} ${50 + (event.y - 50) * 0.38} ${event.x} ${event.y}`}
+            filter="url(#constellation-glow)"
             key={event.id}
-            x1="50"
-            y1="50"
-            x2={event.x}
-            y2={event.y}
             style={{ animationDelay: `${index * 180}ms` }}
           />
         ))}
+        <circle
+          className={styles.constellationCore}
+          cx="50"
+          cy="50"
+          r="3.2"
+          fill="url(#constellation-core)"
+        />
       </svg>
       <div className={styles.patientNode}>
         <span>{patient.slice(0, 1)}</span>
@@ -278,11 +314,13 @@ function ShowcaseVoiceOrb({
     context
   });
   const [fallbackText, setFallbackText] = useState("");
+  const [reviewing, setReviewing] = useState(false);
   const [showType, setShowType] = useState(false);
   const proposal = controller.transcript.proposal;
   const sessionStatus = controller.session.status;
-  const status: OrbStatus =
-    sessionStatus === "connecting" || sessionStatus === "permission_required"
+  const status: OrbStatus = reviewing
+    ? "ready"
+    : sessionStatus === "connecting" || sessionStatus === "permission_required"
       ? "connecting"
       : sessionStatus === "listening" || sessionStatus === "connected"
         ? "listening"
@@ -301,13 +339,69 @@ function ShowcaseVoiceOrb({
     ready: "Your summary is ready",
     fallback: "Voice paused · typing is ready"
   };
-  const displayText = proposal?.text ?? fallbackText;
+  const displayText = fallbackText || proposal?.text || readyPrompt;
 
   function acceptTypedText() {
     if (!fallbackText.trim()) return;
     controller.replaceTranscript(fallbackText);
+    setReviewing(true);
+  }
+
+  function beginReview() {
+    void controller.endVoice();
+    setReviewing(true);
+  }
+
+  function confirmReview() {
+    controller.replaceTranscript(displayText);
     controller.confirmTranscript();
     onComplete();
+  }
+
+  if (reviewing || status === "ready") {
+    return (
+      <div className={styles.voiceStage}>
+        <div className={styles.memoryWhisper}>
+          <span>Conversation complete</span>
+          <strong>Review before anything becomes part of the round</strong>
+        </div>
+        <section className={styles.voiceFactReview} aria-labelledby="voice-review-title">
+          <p className={styles.eyebrow}>What HomeRounds understood</p>
+          <h2 id="voice-review-title">Is this an accurate summary?</h2>
+          <div className={styles.proposedFacts}>
+            <span>
+              <small>Breathing</small>
+              <strong>Stairs feel harder than usual</strong>
+            </span>
+            <span>
+              <small>Energy</small>
+              <strong>Lower than Maya’s usual pattern</strong>
+            </span>
+            <span>
+              <small>Timing</small>
+              <strong>Changed recently</strong>
+            </span>
+            <span>
+              <small>Safety</small>
+              <strong>No chest pain or fainting reported</strong>
+            </span>
+          </div>
+          <label htmlFor="showcase-review-summary">Conversation summary</label>
+          <textarea
+            id="showcase-review-summary"
+            value={displayText}
+            onChange={(event) => setFallbackText(event.currentTarget.value)}
+          />
+          <div className={styles.voiceActions}>
+            <PrimaryButton onClick={confirmReview}>Confirm and build my Round Map</PrimaryButton>
+            <button className={styles.textToggle} onClick={() => setReviewing(false)} type="button">
+              Keep talking
+            </button>
+          </div>
+        </section>
+        <p className={styles.voiceBoundary}>Proposed facts only · Maya confirms the record</p>
+      </div>
+    );
   }
 
   return (
@@ -328,16 +422,14 @@ function ShowcaseVoiceOrb({
       <h2 className={styles.agentPrompt}>
         {status === "idle"
           ? "Tell me what feels different today."
-          : status === "ready"
-            ? readyPrompt
-            : status === "fallback"
-              ? "You can continue without voice."
-              : "I’m listening for what changed and what needs checking next."}
+          : status === "fallback"
+            ? "You can continue without voice."
+            : "I’m listening for what changed and what needs checking next."}
       </h2>
-      {displayText ? (
+      {proposal?.text ? (
         <details className={styles.transcriptReview}>
           <summary>Review what I heard</summary>
-          <p>{displayText}</p>
+          <p>{proposal.text}</p>
         </details>
       ) : null}
       <div className={styles.voiceActions}>
@@ -354,19 +446,15 @@ function ShowcaseVoiceOrb({
           <button
             className={styles.ghostButton}
             onClick={() => {
-              void controller.endVoice();
-              onComplete();
+              beginReview();
             }}
             type="button"
           >
-            Continue with this conversation
+            Review what HomeRounds understood
           </button>
         ) : null}
-        {status === "ready" ? (
-          <PrimaryButton onClick={onComplete}>Confirm conversation summary</PrimaryButton>
-        ) : null}
         {status === "fallback" ? (
-          <PrimaryButton onClick={onComplete}>Continue with guided summary</PrimaryButton>
+          <PrimaryButton onClick={() => setReviewing(true)}>Review guided summary</PrimaryButton>
         ) : null}
         <button
           className={styles.textToggle}
@@ -542,9 +630,9 @@ function SensorSequence({
   useEffect(() => {
     if (phase === "pair") return;
     const next: Partial<Record<SensorPhase, readonly [SensorPhase, number]>> = {
-      face: ["quality", 2_600],
-      quality: ["finger", 2_500],
-      finger: ["complete", 2_600]
+      face: ["quality", 10_000],
+      quality: ["finger", 3_500],
+      finger: ["complete", 10_000]
     };
     const target = next[phase];
     if (!target) return;
@@ -649,7 +737,57 @@ function FaceScanVisual() {
         <span />
         <i />
       </div>
-      <p>Hold still · 18 seconds</p>
+      <p>Hold still · about 10 seconds</p>
+    </div>
+  );
+}
+
+function CameraPreview({
+  facingMode,
+  label
+}: {
+  facingMode: "environment" | "user";
+  label: string;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [state, setState] = useState<"connecting" | "live" | "unavailable">("connecting");
+  useEffect(() => {
+    let active = true;
+    let stream: MediaStream | undefined;
+    const videoElement = videoRef.current;
+    void navigator.mediaDevices
+      ?.getUserMedia({ audio: false, video: { facingMode } })
+      .then((nextStream) => {
+        if (!active) {
+          nextStream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+        stream = nextStream;
+        if (videoElement) videoElement.srcObject = nextStream;
+        setState("live");
+      })
+      .catch(() => {
+        if (active) setState("unavailable");
+      });
+    return () => {
+      active = false;
+      stream?.getTracks().forEach((track) => track.stop());
+      if (videoElement) videoElement.srcObject = null;
+    };
+  }, [facingMode]);
+  return (
+    <div className={styles.cameraPreview} data-state={state}>
+      <video aria-label={label} autoPlay muted playsInline ref={videoRef} />
+      <div className={styles.cameraGuide} aria-hidden="true">
+        <span />
+      </div>
+      <p role="status">
+        {state === "live"
+          ? "Camera live · no frames retained"
+          : state === "unavailable"
+            ? "Camera unavailable · the result remains unmeasured"
+            : "Starting camera…"}
+      </p>
     </div>
   );
 }
@@ -778,7 +916,7 @@ function InhalerTechnique({ onComplete }: { onComplete: () => void }) {
 }
 
 function MedicationPackageReview({ onComplete }: { onComplete: () => void }) {
-  const [phase, setPhase] = useState<"ready" | "reading" | "complete">("ready");
+  const [phase, setPhase] = useState<"ready" | "reading" | "complete" | "unavailable">("ready");
   useEffect(() => {
     if (phase !== "reading") return;
     const timer = window.setTimeout(() => setPhase("complete"), 2_600);
@@ -786,59 +924,88 @@ function MedicationPackageReview({ onComplete }: { onComplete: () => void }) {
   }, [phase]);
   return (
     <div className={styles.techniqueLayout}>
-      <ScreenIntro
-        eyebrow="Medication reconciliation"
-        title="The package answers one question—not all of them."
-      >
+      <ScreenIntro eyebrow="Medication reconciliation" title="Missing evidence remains visible.">
         <p>
-          HomeRounds can confirm the product and strength visible at home while preserving the
-          unresolved daily instruction for clinician review.
+          HomeRounds asks whether the package is actually available. If it is not, no label or dose
+          fact is created.
         </p>
       </ScreenIntro>
       <div className={styles.techniqueStage}>
         <div className={styles.medicationStage} data-phase={phase}>
-          <div className={styles.medicationPack}>
-            <span>Water tablet</span>
-            <strong>20 mg</strong>
-            <small>28 tablets · sample pack</small>
-            <i aria-hidden="true" />
-          </div>
+          {phase === "reading" || phase === "complete" ? (
+            <div className={styles.medicationPack}>
+              <span>Package camera</span>
+              <strong>Label</strong>
+              <small>Visible fields only</small>
+              <i aria-hidden="true" />
+            </div>
+          ) : (
+            <div className={styles.missingPackage} aria-hidden="true">
+              <span>?</span>
+            </div>
+          )}
           <p>
             {phase === "ready"
-              ? "Position the front of the package"
+              ? "Waiting for Maya’s availability response"
               : phase === "reading"
-                ? "Reading product and strength…"
-                : "Package identity confirmed"}
+                ? "Opening the guided package camera…"
+                : phase === "unavailable"
+                  ? "Package not available during this round"
+                  : "Visible package fields captured"}
           </p>
         </div>
         <div className={styles.medicationResult}>
           <span>Reconciliation status</span>
           <h2>
-            {phase === "complete"
-              ? "One fact confirmed. One uncertainty preserved."
-              : "Waiting for the package view."}
+            {phase === "unavailable"
+              ? "Nothing assumed. The uncertainty travels forward."
+              : phase === "complete"
+                ? "Visible fields captured. The active instruction stays open."
+                : "Is the current package available?"}
           </h2>
           <div className={styles.signalRail}>
             <SignalRow
-              label="Product strength"
-              value={phase === "complete" ? "20 mg · confirmed" : "Waiting"}
+              label="Package identity"
+              value={
+                phase === "unavailable"
+                  ? "Not observed"
+                  : phase === "complete"
+                    ? "Visible fields captured"
+                    : "Waiting"
+              }
               status={phase === "complete" ? "accepted" : "waiting"}
             />
             <SignalRow
               label="Current daily instruction"
-              value={phase === "complete" ? "Needs reconciliation" : "Waiting"}
-              status={phase === "complete" ? "rejected" : "waiting"}
+              value={
+                phase === "complete" || phase === "unavailable" ? "Needs reconciliation" : "Waiting"
+              }
+              status={phase === "complete" || phase === "unavailable" ? "rejected" : "waiting"}
             />
           </div>
           <p>
-            The scan never changes Maya’s medication. The open instruction is carried into the owned
-            review.
+            Availability is evidence. The workflow never changes medication or fills a missing
+            field.
           </p>
           {phase === "ready" ? (
-            <PrimaryButton onClick={() => setPhase("reading")}>Scan the package</PrimaryButton>
+            <div className={styles.medicationChoices}>
+              <PrimaryButton onClick={() => setPhase("reading")}>
+                Use the phone package camera
+              </PrimaryButton>
+              <button
+                className={styles.ghostButton}
+                onClick={() => setPhase("unavailable")}
+                type="button"
+              >
+                The package isn’t available
+              </button>
+            </div>
           ) : null}
           {phase === "complete" ? (
             <PrimaryButton onClick={onComplete}>Keep the uncertainty visible</PrimaryButton>
+          ) : null}
+          {phase === "unavailable" ? (
+            <PrimaryButton onClick={onComplete}>Continue with package unavailable</PrimaryButton>
           ) : null}
         </div>
       </div>
@@ -1079,8 +1246,8 @@ function HeartClinicianScene({ onComplete }: { onComplete: () => void }) {
             </article>
             <article>
               <span>Unresolved</span>
-              <strong>Daily dose instruction</strong>
-              <p>20 mg package confirmed</p>
+              <strong>Medication and daily instruction</strong>
+              <p>Package not available during the round</p>
             </article>
           </div>
           <div className={styles.auditTrail}>
@@ -1311,15 +1478,23 @@ export function CopdShowcase() {
   );
 }
 
-type PhonePhase = "ready" | "face" | "quality" | "finger" | "complete";
+type PhonePhase =
+  | "ready"
+  | "face"
+  | "quality"
+  | "finger"
+  | "complete"
+  | "medication"
+  | "package_available"
+  | "package_unavailable";
 
 export function CopdPhoneShowcase() {
   const [phase, setPhase] = useState<PhonePhase>("ready");
   useEffect(() => {
     const next: Partial<Record<PhonePhase, readonly [PhonePhase, number]>> = {
-      face: ["quality", 2_400],
-      quality: ["finger", 2_200],
-      finger: ["complete", 2_500]
+      face: ["quality", 10_000],
+      quality: ["finger", 3_500],
+      finger: ["complete", 10_000]
     };
     const target = next[phase];
     if (!target) return;
@@ -1352,8 +1527,8 @@ export function CopdPhoneShowcase() {
           <>
             <p className={styles.eyebrow}>Facial vital scan</p>
             <h1>Keep your face centred.</h1>
-            <FaceScanVisual />
-            <p className={styles.phoneStatus}>Reading respiratory and pulse signals separately…</p>
+            <CameraPreview facingMode="user" label="Live front-camera preview" />
+            <p className={styles.phoneStatus}>Reading separate signals · about 10 seconds</p>
           </>
         ) : null}
         {phase === "quality" ? (
@@ -1369,9 +1544,9 @@ export function CopdPhoneShowcase() {
         {phase === "finger" ? (
           <>
             <p className={styles.eyebrow}>Finger pulse</p>
-            <h1>Cover the rear camera gently.</h1>
-            <FingerScanVisual />
-            <p className={styles.phoneStatus}>Checking signal quality before returning a value…</p>
+            <h1>Cover the rear camera lens gently.</h1>
+            <CameraPreview facingMode="environment" label="Live rear-camera preview" />
+            <p className={styles.phoneStatus}>Checking signal quality · about 10 seconds</p>
           </>
         ) : null}
         {phase === "complete" ? (
@@ -1382,6 +1557,50 @@ export function CopdPhoneShowcase() {
             <p className={styles.phoneStatus}>
               Respiratory rate accepted · finger pulse accepted · facial pulse rejected
             </p>
+            <PrimaryButton onClick={() => setPhase("medication")}>
+              Continue to medication availability
+            </PrimaryButton>
+          </>
+        ) : null}
+        {phase === "medication" ? (
+          <>
+            <p className={styles.eyebrow}>Medication context</p>
+            <h1>Is the current package with you?</h1>
+            <p>
+              HomeRounds will never invent label or dose information when the package is
+              unavailable.
+            </p>
+            <div className={styles.phoneChoiceGrid}>
+              <PrimaryButton onClick={() => setPhase("package_available")}>
+                I have the package
+              </PrimaryButton>
+              <button
+                className={styles.ghostButton}
+                onClick={() => setPhase("package_unavailable")}
+                type="button"
+              >
+                I don’t have it with me
+              </button>
+            </div>
+          </>
+        ) : null}
+        {phase === "package_available" ? (
+          <>
+            <p className={styles.eyebrow}>Package available</p>
+            <h1>Keep it ready for the guided label step.</h1>
+            <p className={styles.phoneStatus}>
+              Availability returned · no medication fact inferred yet
+            </p>
+          </>
+        ) : null}
+        {phase === "package_unavailable" ? (
+          <>
+            <p className={styles.eyebrow}>Package unavailable</p>
+            <h1>That’s useful information too.</h1>
+            <p>
+              The product and current dose remain explicitly unresolved for the clinician review.
+            </p>
+            <p className={styles.phoneStatus}>Missing evidence returned · nothing assumed</p>
           </>
         ) : null}
       </section>

@@ -29,19 +29,26 @@ test("text path uses no-key fallback and recorded evidence only after explicit f
   await submitTextReport(page, calmReport, { proveNoKeyVoiceFallback: true });
 
   await expect(
-    page.getByRole("heading", { level: 1, name: "Next, prepare a short camera pulse check" })
+    page.getByRole("heading", { level: 2, name: "Quality-gated finger pulse check" })
   ).toBeVisible();
+  await page.getByRole("button", { name: "Continue to this check" }).click();
   await expect(
-    page.getByRole("button", { name: "Use labelled recorded demo capture" })
-  ).toHaveCount(0);
+    page.getByRole("heading", {
+      level: 1,
+      name: "A pulse check is the most useful next step."
+    })
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Use the labelled sample reading" })).toHaveCount(
+    0
+  );
 
-  await page.getByRole("button", { name: "Check this device" }).click();
+  await page.getByRole("button", { name: "Continue on this computer" }).click();
   await expect(
     page.getByRole("heading", { level: 1, name: /Your device is ready for the/i })
   ).toBeVisible();
   await page
     .getByLabel(
-      "I consent to this synthetic-demo camera check and understand that no result is guaranteed."
+      "I agree to use the camera for this check and understand that a reading is not guaranteed."
     )
     .check();
 
@@ -60,20 +67,16 @@ test("text path uses no-key fallback and recorded evidence only after explicit f
   });
 
   await expect(numericMeasurement(page)).toHaveCount(0);
-  await expect(
-    page.getByRole("button", { name: "Use labelled recorded demo capture" })
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Use the labelled sample reading" })).toBeVisible();
   expect(networkPayloads.join("\n")).not.toMatch(/raw(?:_|-)?frame|audio|transcript/i);
 
-  await page.getByRole("button", { name: "Use labelled recorded demo capture" }).click();
-  await expect(
-    page.getByText("Recorded synthetic valid capture — demo recovery only", { exact: true })
-  ).toBeVisible();
-  await expect(page.getByText(/not physical-device or medical-validation evidence/i)).toBeVisible();
+  await page.getByRole("button", { name: "Use the labelled sample reading" }).click();
+  await expect(page.getByText("Labelled sample reading used", { exact: true })).toBeVisible();
+  await expect(page.getByText(/not a live or medically validated reading/i)).toBeVisible();
 
   const followUp = page.getByRole("heading", {
     level: 1,
-    name: "One more structured question"
+    name: "One more question."
   });
   if (await followUp.isVisible()) {
     await page.getByRole("group", { name: "Your answer" }).getByLabel("No").check();
@@ -81,22 +84,20 @@ test("text path uses no-key fallback and recorded evidence only after explicit f
   }
 
   await expect(
-    page.getByRole("heading", { level: 1, name: "Confirm the next demo step" })
+    page.getByRole("heading", { level: 1, name: "Choose what happens next." })
   ).toBeVisible();
   await page.reload();
   await expect(
-    page.getByRole("heading", { level: 1, name: "Confirm the next demo step" })
+    page.getByRole("heading", { level: 1, name: "Choose what happens next." })
   ).toBeVisible();
   await confirmProgrammeTask(page);
 
   await page.reload();
   await expect(
-    page.getByRole("heading", { level: 1, name: "Programme review requested" })
+    page.getByRole("heading", { level: 1, name: "Your review request is saved" })
   ).toBeVisible();
-  await expect(page.getByText("Saved synthetic task restored", { exact: true })).toBeVisible();
-  await expect(
-    page.getByText("Synthetic demonstration — not clinically validated", { exact: true })
-  ).toBeVisible();
+  await expect(page.getByText("Saved request restored", { exact: true })).toBeVisible();
+  await expect(page.getByText("Sample profile · Not medical care", { exact: true })).toBeVisible();
   await expectNoBrowserFailures(failures);
 });
 
@@ -111,7 +112,11 @@ test("unsupported camera creates no number and cancellation persists safely", as
     weakness: "Moderate",
     palpitations: "I’m not sure"
   });
-  await page.getByRole("button", { name: "Check this device" }).click();
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Quality-gated finger pulse check" })
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Continue to this check" }).click();
+  await page.getByRole("button", { name: "Continue on this computer" }).click();
 
   await expect(
     page.getByRole("heading", { level: 1, name: "The selected camera check is unavailable" })
@@ -121,7 +126,7 @@ test("unsupported camera creates no number and cancellation persists safely", as
   ).toBeVisible();
   await expect(numericMeasurement(page)).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Cancel round" }).click();
+  await page.getByRole("button", { name: "End check-in" }).click();
   await expect(
     page.getByRole("heading", { level: 1, name: "This round was cancelled" })
   ).toBeVisible();
@@ -154,18 +159,20 @@ test("patient-confirmed red flag hard-stops before assessment", async ({ page })
     palpitations: "Happening now"
   });
 
-  await expect(page.getByRole("heading", { level: 1, name: "Stop this demo round" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Stop this check-in." })).toBeVisible();
   await expect(
-    page.getByText("The deterministic safety gate ended the ordinary flow before any camera check.")
+    page.getByText("Your required safety answers ended the ordinary flow before any camera check.")
   ).toBeVisible();
   await expect(
-    page.getByText("This prototype cannot assess an emergency", { exact: true })
+    page.getByText("HomeRounds cannot assess an emergency", { exact: true })
   ).toBeVisible();
   expect(assessmentRequests).toEqual([]);
-  await expect(page.getByRole("button", { name: "Check this device" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Continue on this computer" })).toHaveCount(0);
   await expect(numericMeasurement(page)).toHaveCount(0);
 
-  await page.getByLabel("I understand this is generic synthetic-demo guidance.").check();
+  await page
+    .getByLabel("I understand this is general guidance and no emergency service is connected.")
+    .check();
   await page.getByRole("button", { name: "Confirm guidance shown" }).click();
   await expect(
     page.getByText(/No diagnosis was made and no real clinical service was contacted/i)

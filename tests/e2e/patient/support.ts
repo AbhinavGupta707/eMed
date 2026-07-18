@@ -131,16 +131,16 @@ export async function installCameraState(
 
 export async function startRound(page: Page): Promise<void> {
   await expect(
-    page.getByRole("heading", { level: 1, name: "Your two-minute check is ready" })
+    page.getByRole("heading", { level: 1, name: "Ready when you are, Maya." })
   ).toBeVisible();
   await page
     .getByLabel(
-      "I understand this is a synthetic demonstration, not clinically validated software, and not a medical service."
+      "I understand this check does not diagnose a condition or contact a medical service."
     )
     .check();
-  await page.getByRole("button", { name: "Start the check" }).click();
+  await page.getByRole("button", { name: "Start my check-in" }).click();
   await expect(
-    page.getByRole("heading", { level: 1, name: "Tell us what is happening now" })
+    page.getByRole("heading", { level: 1, name: "Three questions before we talk." })
   ).toBeVisible();
 }
 
@@ -156,6 +156,10 @@ export async function submitTextReport(
   await choose(page, "Are you having chest pain now?", answers.chestPain);
   await choose(page, "Are you severely short of breath now?", answers.severeBreathlessness);
   await choose(page, "Have you fainted?", answers.fainted);
+  await page.getByRole("button", { name: "Continue to conversation" }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Tell me what’s changed." })
+  ).toBeVisible();
   await choose(page, "How weak do you feel?", answers.weakness);
   await choose(
     page,
@@ -177,17 +181,22 @@ export async function submitTextReport(
     .fill("I feel steady during this fictional check-in.");
   await page.getByRole("button", { name: "Confirm this text" }).click();
   await expect(page.getByRole("button", { name: "Text confirmed" })).toBeDisabled();
+  await page.getByRole("button", { name: "Review my report" }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Let’s make sure I understood." })
+  ).toBeVisible();
+  await page.getByLabel("I reviewed every field and confirm these are my answers.").check();
   await page.getByRole("button", { name: "Confirm and continue" }).click();
 }
 
 export async function confirmProgrammeTask(page: Page): Promise<void> {
   await expect(
-    page.getByRole("heading", { level: 1, name: "Confirm the next demo step" })
+    page.getByRole("heading", { level: 1, name: "Choose what happens next." })
   ).toBeVisible();
-  await page.getByLabel("I confirm creation of one synthetic programme-review task.").check();
-  await page.getByRole("button", { name: "Create synthetic review task" }).click();
+  await page.getByLabel("I want to save one sample review request.").check();
+  await page.getByRole("button", { name: "Save review request" }).click();
   await expect(
-    page.getByRole("heading", { level: 1, name: "Programme review requested" })
+    page.getByRole("heading", { level: 1, name: "Your review request is saved" })
   ).toBeVisible();
 }
 

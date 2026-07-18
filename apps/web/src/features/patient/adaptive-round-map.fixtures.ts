@@ -127,8 +127,7 @@ function makeAishaExperience(selection: RoundMapSelectionState) {
 const deterministicFallback = {
   status: "fallback" as const,
   selectedModuleId: "pulse.local",
-  patientRationale:
-    "The quality-gated finger pulse check is the most useful available next step."
+  patientRationale: "The quality-gated finger pulse check is the most useful available next step."
 };
 
 export const AISHA_RESILIENCE_ROUND_MAPS = {

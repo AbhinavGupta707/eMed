@@ -195,11 +195,12 @@ function VoiceAgentProposalReviewSession(props: VoiceAgentProposalReviewProps) {
                 {definition.safetyAnswer ? (
                   <span className={styles.safetyLabel}>Required safety answer</span>
                 ) : null}
-                {isUnresolved ? <span className={styles.unresolvedLabel}>Not yet clear</span> : null}
+                {isUnresolved ? (
+                  <span className={styles.unresolvedLabel}>Not yet clear</span>
+                ) : null}
               </div>
               <p>
-                Heard as:{" "}
-                <strong>{proposedValue(snapshot.proposal, definition.field)}</strong>
+                Heard as: <strong>{proposedValue(snapshot.proposal, definition.field)}</strong>
               </p>
               <select
                 disabled={snapshot.status === "confirming" || snapshot.status === "confirmed"}

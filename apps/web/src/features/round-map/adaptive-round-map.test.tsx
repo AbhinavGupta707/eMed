@@ -77,11 +77,7 @@ describe("adaptive recommendation", () => {
       AISHA_RESILIENCE_ROUND_MAPS.unavailable,
       "A personalised recommendation is unavailable"
     ],
-    [
-      "abstained",
-      AISHA_RESILIENCE_ROUND_MAPS.abstained,
-      "Your usual next step is still available"
-    ],
+    ["abstained", AISHA_RESILIENCE_ROUND_MAPS.abstained, "Your usual next step is still available"],
     ["rejected", AISHA_RESILIENCE_ROUND_MAPS.rejected, "That suggestion did not fit this round"],
     ["stale", AISHA_RESILIENCE_ROUND_MAPS.stale, "The selection result is out of date"]
   ])("renders the %s state without losing saved progress", (_label, experience, title) => {

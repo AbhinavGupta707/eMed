@@ -7,13 +7,7 @@ import type { ReactNode } from "react";
 import styles from "./patient-round.module.css";
 
 export type DeviceHandoffStatus =
-  | "ready"
-  | "connecting"
-  | "connected"
-  | "waiting"
-  | "result"
-  | "no_result"
-  | "unavailable";
+  "ready" | "connecting" | "connected" | "waiting" | "result" | "no_result" | "unavailable";
 
 const statusPresentation: Readonly<
   Record<DeviceHandoffStatus, { label: string; icon: "success" | "information" | "warning" }>

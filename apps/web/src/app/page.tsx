@@ -60,7 +60,7 @@ function BaselineIllustration() {
         ))}
       </svg>
       <ol aria-hidden="true" className={styles.days}>
-        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
           <li key={day}>{day}</li>
         ))}
       </ol>

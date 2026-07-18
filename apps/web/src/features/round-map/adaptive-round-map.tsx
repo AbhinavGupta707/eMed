@@ -90,7 +90,11 @@ function canContinue(roundTask: RoundMapModule | undefined): boolean {
   return roundTask?.status === "selected" || roundTask?.status === "next";
 }
 
-export function AdaptiveRoundMap({ experience: input, onRetry, onContinue }: AdaptiveRoundMapProps) {
+export function AdaptiveRoundMap({
+  experience: input,
+  onRetry,
+  onContinue
+}: AdaptiveRoundMapProps) {
   const experience = useMemo(() => RoundMapExperienceSchema.parse(input), [input]);
   const presentation = useMemo(() => roundMapSelectionPresentation(experience), [experience]);
   const roundTask = focusModule(experience);
@@ -115,7 +119,9 @@ export function AdaptiveRoundMap({ experience: input, onRetry, onContinue }: Ada
 
       {experience.resumedConfirmedProgress ? (
         <Banner title="Your confirmed progress is still here" variant="success">
-          <p>Completed answers remain saved. Unfinished voice or camera activity was not restored.</p>
+          <p>
+            Completed answers remain saved. Unfinished voice or camera activity was not restored.
+          </p>
         </Banner>
       ) : null}
 

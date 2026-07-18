@@ -463,9 +463,7 @@ function renderRound(
 
 async function acceptInvitation(): Promise<void> {
   expect(await screen.findByText("Sample profile · Not medical care")).toBeVisible();
-  fireEvent.click(
-    screen.getByLabelText(/I understand this check does not diagnose a condition/i)
-  );
+  fireEvent.click(screen.getByLabelText(/I understand this check does not diagnose a condition/i));
   fireEvent.click(screen.getByRole("button", { name: "Start my check-in" }));
   await screen.findByRole("heading", { name: "Three questions before we talk." });
 }
@@ -541,14 +539,14 @@ describe("patient round app", () => {
     api.task = completedTask;
     renderRound(api);
 
-    expect(
-      await screen.findByRole("heading", { name: "Review finished" })
-    ).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Review finished" })).toBeVisible();
     expect(
       screen.getByText("The saved sample review was marked complete inside HomeRounds.")
     ).toBeVisible();
     expect(screen.getByText("Completed in HomeRounds")).toBeVisible();
-    expect(screen.getByText(/saved status belongs only to the sample HomeRounds profile/i)).toBeVisible();
+    expect(
+      screen.getByText(/saved status belongs only to the sample HomeRounds profile/i)
+    ).toBeVisible();
   });
 
   it("completes the no-key text path through passing capture and explicit action confirmation", async () => {

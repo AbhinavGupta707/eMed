@@ -1,0 +1,1859 @@
+.page {
+  min-height: 100dvh;
+  color: var(--foreground);
+  background:
+    radial-gradient(circle at 78% 12%, rgb(241 215 199 / 42%), transparent 30rem),
+    radial-gradient(circle at 12% 78%, rgb(157 174 158 / 20%), transparent 28rem), var(--background);
+}
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  gap: var(--space-6);
+  align-items: center;
+  min-height: 4.75rem;
+  padding: var(--space-3) clamp(1rem, 4vw, 4rem);
+  background: rgb(248 243 234 / 88%);
+  border-bottom: 1px solid rgb(216 207 194 / 70%);
+  backdrop-filter: blur(18px);
+}
+.brand {
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.packLabel {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.packLabel span {
+  width: 0.55rem;
+  height: 0.55rem;
+  background: var(--terracotta);
+  border-radius: 999px;
+  box-shadow: 0 0 0 0.3rem rgb(179 74 45 / 10%);
+}
+.progress {
+  display: flex;
+  gap: 0.45rem;
+  justify-content: center;
+}
+.progress span {
+  width: clamp(1.2rem, 3vw, 3.7rem);
+  height: 0.2rem;
+  background: var(--border);
+  border-radius: 1rem;
+  transition:
+    background 280ms ease,
+    transform 280ms ease;
+}
+.progress span.progressActive {
+  background: var(--terracotta);
+  transform: scaleY(1.5);
+}
+.secondaryLink {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 1rem;
+  color: var(--primary);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgb(255 253 248 / 72%);
+}
+.packLinks {
+  display: flex;
+  gap: 0.45rem;
+}
+.packLinks a {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: 0.85rem;
+  color: var(--primary);
+  font-size: 0.76rem;
+  font-weight: 750;
+  text-decoration: none;
+  background: rgb(255 253 248 / 72%);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.packLinks a:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+.main {
+  width: min(100% - 2rem, 92rem);
+  min-height: calc(100dvh - 4.75rem);
+  margin-inline: auto;
+  padding-block: clamp(2.5rem, 6vw, 6rem);
+}
+.screenIntro {
+  display: grid;
+  align-content: center;
+}
+.screenIntro > p,
+.eyebrow {
+  margin: 0 0 var(--space-3);
+  color: var(--terracotta-strong);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.screenIntro h1 {
+  max-width: 13ch;
+  margin: 0;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: clamp(2.75rem, 6vw, 5.7rem);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+}
+.screenIntro > div > p {
+  max-width: 39rem;
+  margin: var(--space-6) 0 0;
+  color: var(--surface-foreground);
+  font-size: clamp(1rem, 1.7vw, 1.22rem);
+  line-height: 1.7;
+}
+.primaryButton,
+.ghostButton,
+.voiceStart,
+.phoneLink {
+  min-height: 3.25rem;
+  display: inline-flex;
+  gap: var(--space-4);
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 1.15rem;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  border-radius: 0.8rem;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease;
+}
+.primaryButton {
+  color: white;
+  text-decoration: none;
+  background: var(--terracotta);
+  border: 1px solid var(--terracotta);
+  box-shadow: 0 12px 26px rgb(150 59 36 / 18%);
+}
+.primaryButton:hover,
+.primaryButton:focus-visible {
+  background: var(--terracotta-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgb(150 59 36 / 24%);
+}
+.primaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+}
+.ghostButton {
+  color: var(--primary);
+  text-decoration: none;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.primaryButton:focus-visible,
+.ghostButton:focus-visible,
+.voiceStart:focus-visible,
+.textToggle:focus-visible,
+.secondaryLink:focus-visible,
+.phoneLink:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+.contextLayout,
+.conversationLayout {
+  display: grid;
+  grid-template-columns: minmax(18rem, 0.82fr) minmax(36rem, 1.18fr);
+  gap: clamp(2rem, 6vw, 7rem);
+  align-items: center;
+  min-height: calc(100dvh - 13rem);
+}
+.contextActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: center;
+  margin-top: var(--space-8);
+}
+.contextActions > span {
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+}
+.constellation {
+  position: relative;
+  min-height: min(38rem, 68vh);
+  overflow: hidden;
+  background: linear-gradient(145deg, rgb(255 253 248 / 94%), rgb(246 232 222 / 56%));
+  border: 1px solid rgb(179 74 45 / 14%);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-2);
+  isolation: isolate;
+}
+.constellation::before {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  content: "";
+  opacity: 0.65;
+  background-image: radial-gradient(circle, rgb(23 60 50 / 16%) 1px, transparent 1.4px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(circle at 50% 48%, black, transparent 72%);
+}
+.constellation::after {
+  position: absolute;
+  inset: 18%;
+  z-index: -1;
+  content: "";
+  background: radial-gradient(circle, rgb(179 74 45 / 16%), transparent 68%);
+  filter: blur(14px);
+  animation: constellation-breathe 4s ease-in-out infinite;
+}
+.constellationLines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.constellationLines line {
+  stroke: rgb(179 74 45 / 46%);
+  stroke-width: 0.32;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+  animation: line-reveal 900ms ease both;
+}
+.patientNode {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 9rem;
+  height: 9rem;
+  padding: 1rem;
+  text-align: center;
+  background: var(--primary);
+  color: white;
+  border: 10px solid rgb(255 253 248 / 86%);
+  border-radius: 50%;
+  box-shadow:
+    0 22px 60px rgb(23 60 50 / 24%),
+    0 0 0 1px rgb(23 60 50 / 12%);
+  transform: translate(-50%, -50%);
+}
+.patientNode span {
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  color: var(--primary);
+  background: var(--peach);
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+}
+.patientNode strong {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 500;
+}
+.patientNode small {
+  color: rgb(255 255 255 / 65%);
+  font-size: 0.68rem;
+}
+.contextNode {
+  position: absolute;
+  width: clamp(9rem, 15vw, 13rem);
+  padding: 1rem 1.05rem;
+  background: rgb(255 253 248 / 88%);
+  border: 1px solid rgb(216 207 194 / 82%);
+  border-radius: 1rem;
+  box-shadow: 0 12px 32px rgb(86 65 48 / 8%);
+  backdrop-filter: blur(10px);
+  transform: translate(-50%, -50%);
+  animation: node-arrive 650ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.contextNode::before {
+  position: absolute;
+  left: -0.35rem;
+  top: 50%;
+  width: 0.7rem;
+  height: 0.7rem;
+  content: "";
+  background: var(--terracotta);
+  border: 3px solid var(--card);
+  border-radius: 50%;
+  box-shadow: 0 0 0 0.3rem rgb(179 74 45 / 12%);
+}
+.contextNode span,
+.contextNode small {
+  display: block;
+  color: var(--muted-foreground);
+  font-size: 0.66rem;
+}
+.contextNode strong {
+  display: block;
+  margin-block: 0.25rem;
+  color: var(--primary);
+  font-size: 0.85rem;
+  line-height: 1.25;
+}
+.contextFallback {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+.conversationLayout {
+  grid-template-columns: minmax(18rem, 0.68fr) minmax(38rem, 1.32fr);
+}
+.voiceStage {
+  display: grid;
+  justify-items: center;
+  min-height: 39rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  text-align: center;
+  background: rgb(255 253 248 / 78%);
+  border: 1px solid rgb(216 207 194 / 80%);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-2);
+  backdrop-filter: blur(16px);
+}
+.memoryWhisper {
+  justify-self: stretch;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  color: var(--muted-foreground);
+  font-size: 0.74rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+}
+.memoryWhisper strong {
+  color: var(--primary);
+  font-weight: 650;
+}
+.orb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(10rem, 20vw, 14rem);
+  aspect-ratio: 1;
+  margin-top: 1.6rem;
+  filter: drop-shadow(0 26px 32px rgb(179 74 45 / 16%));
+}
+.orb span {
+  position: absolute;
+  border-radius: 50%;
+}
+.orbCore {
+  width: 40%;
+  height: 40%;
+  background: radial-gradient(circle at 35% 30%, #fff2df, #e88050 42%, #a94327 76%);
+  box-shadow:
+    inset 0 0 24px rgb(255 255 255 / 42%),
+    0 0 32px rgb(179 74 45 / 30%);
+}
+.orbRingOne {
+  width: 60%;
+  height: 60%;
+  border: 1px solid rgb(179 74 45 / 44%);
+}
+.orbRingTwo {
+  width: 78%;
+  height: 78%;
+  border: 1px solid rgb(179 74 45 / 26%);
+}
+.orbRingThree {
+  width: 96%;
+  height: 96%;
+  border: 1px solid rgb(23 60 50 / 14%);
+}
+.orb_listening .orbCore,
+.orb_speaking .orbCore {
+  animation: orb-pulse 1.25s ease-in-out infinite;
+}
+.orb_listening .orbRingOne,
+.orb_speaking .orbRingOne {
+  animation: orb-wave 1.8s ease-out infinite;
+}
+.orb_listening .orbRingTwo,
+.orb_speaking .orbRingTwo {
+  animation: orb-wave 1.8s 0.4s ease-out infinite;
+}
+.orb_connecting {
+  animation: orb-turn 6s linear infinite;
+}
+.orb_ready .orbCore {
+  background: radial-gradient(circle at 35% 30%, #f6f2dd, #9dae9e 48%, #315d56 82%);
+}
+.orb_fallback {
+  opacity: 0.65;
+}
+.orbStatus {
+  margin: 0.7rem 0 0;
+  color: var(--terracotta-strong);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.agentPrompt {
+  max-width: 24ch;
+  margin: 0.75rem 0;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 3vw, 2.55rem);
+  font-weight: 500;
+  line-height: 1.1;
+}
+.transcriptReview {
+  width: min(100%, 34rem);
+  padding: 0.7rem 1rem;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+}
+.transcriptReview summary {
+  cursor: pointer;
+  color: var(--primary);
+  font-weight: 750;
+}
+.transcriptReview p {
+  color: var(--muted-foreground);
+  line-height: 1.55;
+}
+.voiceActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1rem;
+}
+.voiceStart {
+  color: white;
+  background: var(--primary);
+  border: 1px solid var(--primary);
+}
+.voiceStart > span {
+  width: 0.7rem;
+  height: 0.7rem;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0.35rem rgb(255 255 255 / 16%);
+}
+.textToggle {
+  min-height: 2.75rem;
+  padding-inline: 0.9rem;
+  color: var(--primary);
+  font: inherit;
+  font-size: 0.83rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  text-decoration: underline;
+  text-underline-offset: 0.25rem;
+}
+.typeFallback {
+  width: min(100%, 34rem);
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  text-align: left;
+  background: var(--surface);
+  border-radius: 1rem;
+}
+.typeFallback label {
+  color: var(--primary);
+  font-weight: 750;
+}
+.typeFallback textarea {
+  min-height: 6rem;
+  padding: 0.8rem;
+  color: var(--foreground);
+  font: inherit;
+  resize: vertical;
+  background: var(--card);
+  border: 1px solid var(--input);
+  border-radius: 0.6rem;
+}
+.typeFallback button {
+  min-height: 2.75rem;
+  color: white;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--primary);
+  border: 0;
+  border-radius: 0.6rem;
+}
+.typeFallback button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.voiceBoundary {
+  align-self: end;
+  margin: 1rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+.planLayout,
+.evidenceLayout {
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 3rem);
+}
+.planLayout .screenIntro {
+  grid-template-columns: 1fr 1fr;
+  align-items: end;
+}
+.planLayout .screenIntro h1,
+.evidenceLayout .screenIntro h1 {
+  font-size: clamp(2.6rem, 5vw, 4.8rem);
+}
+.planQuestion {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  justify-content: space-between;
+  padding: 1.2rem 1.4rem;
+  background: var(--primary);
+  color: white;
+  border-radius: 1rem;
+}
+.planQuestion span {
+  color: rgb(255 255 255 / 62%);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.planQuestion strong {
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 500;
+}
+.planRail {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  position: relative;
+}
+.planRail::before {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 2.15rem;
+  z-index: 0;
+  height: 1px;
+  content: "";
+  background: linear-gradient(90deg, var(--sage), var(--terracotta), var(--border));
+}
+.planNode {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 0.85rem;
+  min-height: 9rem;
+  padding: 1.1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-1);
+}
+.planNode > span {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border-radius: 50%;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.planNode strong {
+  color: var(--primary);
+}
+.planNode p {
+  margin: 0.5rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+.planNode[data-status="selected"] {
+  border-color: rgb(179 74 45 / 45%);
+  box-shadow: 0 18px 44px rgb(179 74 45 / 12%);
+  transform: translateY(-0.45rem);
+}
+.planNode[data-status="selected"] > span {
+  color: white;
+  background: var(--terracotta);
+  animation: orb-pulse 1.4s infinite;
+}
+.planNode[data-status="complete"] > span {
+  color: white;
+  background: var(--success);
+}
+.planNode[data-status="fallback"] {
+  border-style: dashed;
+}
+.planNode[data-status="fallback"] > span {
+  color: var(--terracotta-strong);
+  background: var(--peach);
+}
+.planFooter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.planFooter div {
+  display: grid;
+  gap: 0.3rem;
+}
+.planFooter span {
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.planFooter strong {
+  color: var(--primary);
+}
+.sensorLayout {
+  display: grid;
+  gap: 2rem;
+}
+.sensorLayout .screenIntro {
+  grid-template-columns: 1fr 1fr;
+  align-items: end;
+}
+.sensorLayout .screenIntro h1 {
+  font-size: clamp(2.6rem, 5vw, 4.7rem);
+}
+.pairingCard {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: clamp(2rem, 6vw, 6rem);
+  align-items: center;
+  width: min(100%, 66rem);
+  margin: 1rem auto;
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 2rem;
+  box-shadow: var(--shadow-2);
+}
+.qrWrap {
+  padding: 1rem;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 1.2rem;
+}
+.pairingCard h2 {
+  max-width: 16ch;
+  margin: 1rem 0;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  font-weight: 500;
+}
+.pairingCard p {
+  max-width: 38rem;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+}
+.livePill {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.45rem 0.7rem;
+  color: var(--success);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--success-surface);
+  border: 1px solid var(--success-border);
+  border-radius: 999px;
+}
+.livePill i {
+  width: 0.45rem;
+  height: 0.45rem;
+  background: currentColor;
+  border-radius: 50%;
+  animation: orb-pulse 1.4s infinite;
+}
+.phoneLink {
+  margin-top: 1rem;
+  color: white;
+  background: var(--primary);
+  border: 1px solid var(--primary);
+}
+.sensorStage {
+  display: grid;
+  grid-template-columns: minmax(18rem, 28rem) 1fr;
+  gap: clamp(2rem, 8vw, 8rem);
+  align-items: center;
+  justify-content: center;
+  width: min(100%, 72rem);
+  margin-inline: auto;
+}
+.phoneFrame {
+  position: relative;
+  min-height: 34rem;
+  display: grid;
+  place-items: center;
+  padding: 3.4rem 1.6rem 1.6rem;
+  overflow: hidden;
+  background: linear-gradient(160deg, #fffdf8, #f4e7dc);
+  border: 0.65rem solid var(--primary);
+  border-radius: 3rem;
+  box-shadow: 0 30px 70px rgb(23 60 50 / 20%);
+}
+.phoneTop {
+  position: absolute;
+  top: 0.65rem;
+  width: 5.5rem;
+  height: 1.3rem;
+  background: var(--primary);
+  border-radius: 999px;
+}
+.sensorNarrative h2 {
+  max-width: 15ch;
+  margin: 1rem 0;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 4vw, 3.8rem);
+  font-weight: 500;
+  line-height: 1;
+}
+.sensorNarrative > p {
+  max-width: 42rem;
+  color: var(--muted-foreground);
+  line-height: 1.65;
+}
+.signalRail {
+  display: grid;
+  gap: 0.65rem;
+  margin-block: 1.5rem;
+}
+.signalRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+}
+.signalRow span {
+  color: var(--muted-foreground);
+}
+.signalRow strong {
+  color: var(--primary);
+}
+.signalRow[data-status="accepted"] {
+  background: var(--success-surface);
+  border-color: var(--success-border);
+}
+.signalRow[data-status="accepted"] strong {
+  color: var(--success);
+}
+.signalRow[data-status="rejected"] {
+  background: var(--danger-surface);
+  border-color: var(--danger-border);
+}
+.signalRow[data-status="rejected"] strong {
+  color: var(--danger);
+}
+.signalRow[data-status="running"] strong {
+  color: var(--terracotta);
+  animation: soft-blink 1s ease-in-out infinite;
+}
+.faceVisual,
+.fingerVisual,
+.qualityVisual,
+.phoneComplete {
+  display: grid;
+  justify-items: center;
+  gap: 1rem;
+  text-align: center;
+  color: var(--primary);
+}
+.faceOval {
+  position: relative;
+  width: 12rem;
+  height: 16rem;
+  border: 2px solid var(--terracotta);
+  border-radius: 48% 48% 42% 42%;
+  box-shadow:
+    0 0 0 0.7rem rgb(179 74 45 / 8%),
+    0 0 0 1.4rem rgb(179 74 45 / 4%);
+}
+.faceOval::before,
+.faceOval::after {
+  position: absolute;
+  top: 42%;
+  width: 0.7rem;
+  height: 0.32rem;
+  content: "";
+  background: var(--primary);
+  border-radius: 50%;
+}
+.faceOval::before {
+  left: 3.4rem;
+}
+.faceOval::after {
+  right: 3.4rem;
+}
+.faceOval span {
+  position: absolute;
+  left: 4.4rem;
+  bottom: 3rem;
+  width: 3.1rem;
+  height: 1.2rem;
+  border-bottom: 2px solid var(--primary);
+  border-radius: 50%;
+}
+.faceOval i {
+  position: absolute;
+  left: -1rem;
+  right: -1rem;
+  top: 12%;
+  height: 0.12rem;
+  background: var(--terracotta);
+  box-shadow: 0 0 1rem var(--terracotta);
+  animation: scan-line 2s ease-in-out infinite;
+}
+.faceVisual p,
+.fingerVisual p,
+.qualityVisual p,
+.phoneComplete p {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+.qualityVisual > span {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.qualityVisual strong {
+  width: 100%;
+  padding: 0.8rem;
+  color: var(--success);
+  background: var(--success-surface);
+  border: 1px solid var(--success-border);
+  border-radius: 0.8rem;
+}
+.qualityVisual strong.rejectedText {
+  color: var(--danger);
+  background: var(--danger-surface);
+  border-color: var(--danger-border);
+}
+.fingerprint {
+  width: 8.5rem;
+  height: 8.5rem;
+  border: 2px solid var(--terracotta);
+  border-radius: 50%;
+  background: repeating-radial-gradient(
+    ellipse at 50% 65%,
+    transparent 0 6px,
+    rgb(179 74 45 / 55%) 7px 8px
+  );
+  animation: orb-pulse 1.4s infinite;
+}
+.fingerVisual strong,
+.phoneComplete strong {
+  font-family: var(--font-display);
+  font-size: 2rem;
+}
+.phoneComplete > span {
+  display: grid;
+  place-items: center;
+  width: 5rem;
+  height: 5rem;
+  color: white;
+  background: var(--success);
+  border-radius: 50%;
+  font-size: 2.2rem;
+  box-shadow: 0 0 0 0.8rem rgb(37 96 68 / 10%);
+}
+.techniqueLayout {
+  display: grid;
+  gap: 2rem;
+}
+.techniqueLayout .screenIntro {
+  grid-template-columns: 1fr 1fr;
+  align-items: end;
+}
+.techniqueLayout .screenIntro h1 {
+  font-size: clamp(2.5rem, 5vw, 4.7rem);
+}
+.techniqueStage {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 2rem;
+}
+.medicationStage,
+.medicationResult {
+  min-height: 28rem;
+  display: grid;
+  align-content: center;
+  gap: 1.5rem;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1.6rem;
+  box-shadow: var(--shadow-1);
+}
+.medicationStage {
+  justify-items: center;
+  overflow: hidden;
+  background: linear-gradient(150deg, var(--card), var(--accent));
+}
+.medicationPack {
+  position: relative;
+  width: min(100%, 19rem);
+  min-height: 12rem;
+  display: grid;
+  align-content: center;
+  padding: 2rem;
+  color: var(--primary);
+  background: #fffdf8;
+  border: 1px solid rgb(23 60 50 / 20%);
+  border-radius: 0.7rem;
+  box-shadow: 0 22px 55px rgb(23 60 50 / 12%);
+  transform: rotate(-2deg);
+}
+.medicationPack span,
+.medicationPack small {
+  color: var(--muted-foreground);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.medicationPack span {
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.medicationPack strong {
+  margin-block: 0.8rem;
+  font-family: var(--font-display);
+  font-size: 3.4rem;
+  font-weight: 500;
+}
+.medicationPack small {
+  font-size: 0.6rem;
+}
+.medicationPack i {
+  position: absolute;
+  inset-inline: -10%;
+  top: 12%;
+  height: 0.12rem;
+  background: var(--terracotta);
+  box-shadow: 0 0 1rem var(--terracotta);
+  opacity: 0;
+}
+.medicationStage[data-phase="reading"] .medicationPack i {
+  opacity: 1;
+  animation: scan-line 1.8s ease-in-out infinite;
+}
+.medicationStage > p,
+.medicationResult > p {
+  margin: 0;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+}
+.medicationResult > span {
+  color: var(--terracotta-strong);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.medicationResult h2 {
+  max-width: 16ch;
+  margin: 0;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 500;
+  line-height: 1.05;
+}
+.techniqueSilhouette {
+  min-height: 28rem;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2rem;
+  background: linear-gradient(150deg, var(--card), var(--accent));
+  border: 1px solid var(--border);
+  border-radius: 1.6rem;
+  box-shadow: var(--shadow-1);
+}
+.personGlyph {
+  position: relative;
+  width: 8rem;
+  height: 12rem;
+}
+.personGlyph::before {
+  position: absolute;
+  left: 2.5rem;
+  top: 0;
+  width: 3rem;
+  height: 3rem;
+  content: "";
+  background: var(--peach);
+  border: 2px solid var(--terracotta);
+  border-radius: 50%;
+}
+.personGlyph::after {
+  position: absolute;
+  left: 1rem;
+  top: 3.3rem;
+  width: 6rem;
+  height: 8rem;
+  content: "";
+  background: rgb(157 174 158 / 24%);
+  border: 2px solid var(--primary);
+  border-radius: 3rem 3rem 1.5rem 1.5rem;
+}
+.personGlyph span {
+  position: absolute;
+  z-index: 2;
+  left: 4.1rem;
+  top: 4.1rem;
+  width: 4.5rem;
+  height: 0.8rem;
+  background: var(--terracotta);
+  border-radius: 0.2rem;
+  transform: rotate(-12deg);
+}
+.personGlyph i {
+  position: absolute;
+  z-index: 3;
+  left: 3.8rem;
+  top: 4.1rem;
+  width: 1rem;
+  height: 1rem;
+  background: var(--primary);
+  border-radius: 50%;
+}
+.breathArc {
+  width: 8rem;
+  height: 2.5rem;
+  border-top: 2px dashed var(--terracotta);
+  border-radius: 50%;
+  opacity: 0;
+}
+.techniqueRunning .breathArc {
+  opacity: 1;
+  animation: breath-move 1.6s ease-in-out infinite;
+}
+.techniqueSilhouette > p {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+.techniqueSteps {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.techniqueSteps li {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  min-height: 6rem;
+  padding: 1rem 1.2rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  transition:
+    transform 220ms ease,
+    border 220ms ease;
+}
+.techniqueSteps li > span {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  color: var(--muted-foreground);
+  background: var(--muted);
+  border-radius: 50%;
+  font-weight: 800;
+}
+.techniqueSteps strong,
+.techniqueSteps small {
+  display: block;
+}
+.techniqueSteps strong {
+  color: var(--primary);
+}
+.techniqueSteps small {
+  margin-top: 0.3rem;
+  color: var(--muted-foreground);
+}
+.techniqueSteps li[data-status="accepted"] {
+  border-color: var(--success-border);
+  transform: translateX(0.35rem);
+}
+.techniqueSteps li[data-status="accepted"] > span {
+  color: white;
+  background: var(--success);
+}
+.techniqueSteps li[data-status="uncertain"] {
+  border-color: var(--warning-border);
+  background: var(--warning-surface);
+}
+.techniqueSteps li[data-status="uncertain"] > span {
+  color: white;
+  background: var(--warning);
+}
+.actionRow {
+  display: flex;
+  justify-content: flex-end;
+}
+.evidenceLayout .screenIntro {
+  grid-template-columns: 1fr 1fr;
+  align-items: end;
+}
+.evidenceSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.evidenceSummary > span {
+  display: flex;
+  gap: 0.45rem;
+  align-items: baseline;
+  padding: 0.65rem 0.85rem;
+  color: var(--muted-foreground);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.78rem;
+}
+.evidenceSummary strong {
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+}
+.evidenceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+.evidenceCard {
+  min-height: 18rem;
+  padding: 1.25rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1.2rem;
+  box-shadow: var(--shadow-1);
+}
+.evidenceCard[data-status="accepted"] {
+  border-top: 4px solid var(--success);
+}
+.evidenceCard[data-status="rejected"] {
+  border-top: 4px solid var(--danger);
+}
+.evidenceCard[data-status="supporting"] {
+  border-top: 4px solid var(--information);
+}
+.evidenceCard[data-status="uncertain"] {
+  border-top: 4px solid var(--warning);
+}
+.evidenceTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.evidenceTop span {
+  font-weight: 850;
+}
+.evidenceCard[data-status="accepted"] .evidenceTop span {
+  color: var(--success);
+}
+.evidenceCard[data-status="rejected"] .evidenceTop span {
+  color: var(--danger);
+}
+.evidenceCard[data-status="supporting"] .evidenceTop span {
+  color: var(--information);
+}
+.evidenceCard[data-status="uncertain"] .evidenceTop span {
+  color: var(--warning);
+}
+.evidenceCard h2 {
+  margin: 1.4rem 0 0.4rem;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 500;
+}
+.evidenceCard > strong {
+  color: var(--foreground);
+  font-size: 1.15rem;
+}
+.evidenceCard dl {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1.3rem;
+}
+.evidenceCard dl div {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: 0.6rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border);
+}
+.evidenceCard dt {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+.evidenceCard dd {
+  margin: 0;
+  color: var(--surface-foreground);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+.governanceStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1.5rem;
+  padding: 1rem 1.2rem;
+  color: var(--success);
+  background: var(--success-surface);
+  border: 1px solid var(--success-border);
+  border-radius: 1rem;
+  font-size: 0.75rem;
+}
+.governanceStrip span {
+  margin-right: auto;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.clinicianLayout {
+  display: grid;
+  gap: 2rem;
+}
+.clinicianHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+}
+.clinicianHeader span:first-child {
+  color: var(--terracotta-strong);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.clinicianHeader h1 {
+  margin: 0.5rem 0 0;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: clamp(2.8rem, 5vw, 5rem);
+  font-weight: 500;
+}
+.clinicianGrid {
+  display: grid;
+  grid-template-columns: 21rem 1fr;
+  gap: 1rem;
+  min-height: 38rem;
+}
+.queuePanel,
+.clinicianEvidence {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1.3rem;
+  box-shadow: var(--shadow-1);
+}
+.queuePanel {
+  padding: 1rem;
+}
+.queuePanel > span {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.queuePanel article {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--accent);
+  border: 1px solid rgb(179 74 45 / 25%);
+  border-radius: 0.9rem;
+}
+.queuePanel strong {
+  color: var(--primary);
+}
+.queuePanel p {
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.queuePanel small {
+  color: var(--terracotta-strong);
+  font-weight: 750;
+}
+.clinicianEvidence {
+  display: grid;
+  gap: 1.2rem;
+  align-content: start;
+  padding: 1.4rem;
+}
+.clinicianTitle {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+.clinicianTitle span {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.clinicianTitle > span {
+  padding: 0.45rem 0.7rem;
+  color: var(--terracotta-strong);
+  background: var(--accent);
+  border-radius: 999px;
+}
+.clinicianTitle h2 {
+  max-width: 24ch;
+  margin: 0.4rem 0 0;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 500;
+}
+.clinicianFacts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+.clinicianFacts article {
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+}
+.clinicianFacts span {
+  color: var(--muted-foreground);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.clinicianFacts strong {
+  display: block;
+  margin-top: 0.4rem;
+  color: var(--primary);
+}
+.clinicianFacts p {
+  margin: 0.35rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+.auditTrail,
+.resolutionTimeline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.9rem;
+  color: var(--muted-foreground);
+  background: var(--surface);
+  border-radius: 0.8rem;
+  font-size: 0.72rem;
+}
+.auditTrail i,
+.resolutionTimeline i {
+  width: 1.6rem;
+  height: 1px;
+  background: var(--border);
+}
+.auditTrail strong,
+.resolutionTimeline strong {
+  color: var(--success);
+}
+.resolutionLayout,
+.glpOutcome {
+  min-height: calc(100dvh - 14rem);
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  max-width: 58rem;
+  margin-inline: auto;
+  text-align: center;
+}
+.resolutionMark {
+  display: grid;
+  place-items: center;
+  width: 6rem;
+  height: 6rem;
+  margin-bottom: 1.5rem;
+  color: white;
+  background: var(--success);
+  border-radius: 50%;
+  font-size: 2.4rem;
+  box-shadow:
+    0 0 0 1rem rgb(37 96 68 / 9%),
+    0 22px 60px rgb(37 96 68 / 18%);
+}
+.resolutionLayout h1,
+.glpOutcome h1 {
+  margin: 0;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 7vw, 6rem);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 0.98;
+}
+.resolutionLayout > p:not(.eyebrow):not(.boundary),
+.glpOutcome > p:not(.eyebrow):not(.boundary) {
+  max-width: 42rem;
+  color: var(--muted-foreground);
+  font-size: 1.15rem;
+  line-height: 1.65;
+}
+.resolutionTimeline {
+  margin-block: 1.3rem;
+}
+.finalActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.boundary {
+  margin-top: 2rem;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+.phonePage {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  color: var(--foreground);
+  background:
+    radial-gradient(circle at 50% 25%, var(--accent), transparent 24rem), var(--background);
+}
+.phonePage header {
+  display: flex;
+  justify-content: space-between;
+  padding: 1.2rem;
+  border-bottom: 1px solid var(--border);
+}
+.phonePage header span {
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+.phonePage header small {
+  color: var(--muted-foreground);
+}
+.phonePage section {
+  width: min(100% - 2rem, 32rem);
+  display: grid;
+  justify-items: stretch;
+  align-content: center;
+  margin-inline: auto;
+  padding-block: 3rem;
+  text-align: center;
+}
+.phonePage h1 {
+  margin: 0.6rem 0 1rem;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 12vw, 4.2rem);
+  font-weight: 500;
+  line-height: 1;
+}
+.phonePage section > p:not(.eyebrow):not(.phoneStatus) {
+  color: var(--muted-foreground);
+  line-height: 1.6;
+}
+.phonePrivacy {
+  display: grid;
+  gap: 0.35rem;
+  margin-block: 1.5rem;
+  padding: 1rem;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+}
+.phonePrivacy strong {
+  color: var(--primary);
+}
+.phonePrivacy span {
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+}
+.phonePage .faceVisual,
+.phonePage .fingerVisual,
+.phonePage .qualityVisual,
+.phonePage .phoneComplete {
+  margin-block: 2rem;
+}
+.phoneStatus {
+  padding: 0.8rem;
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: var(--card);
+  border-radius: 0.8rem;
+}
+.phonePage footer {
+  padding: 1rem;
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  text-align: center;
+  border-top: 1px solid var(--border);
+}
+.glpMain {
+  width: min(100% - 2rem, 92rem);
+  min-height: calc(100dvh - 4.75rem);
+  margin-inline: auto;
+  padding-block: clamp(2.5rem, 6vw, 6rem);
+}
+.glpFocus,
+.glpOutcome {
+  min-height: calc(100dvh - 13rem);
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  text-align: center;
+}
+.glpFocus h1 {
+  max-width: 21ch;
+  margin: 1rem 0;
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: clamp(2.7rem, 6vw, 5.4rem);
+  font-weight: 500;
+  line-height: 1;
+}
+.glpSignals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+}
+.glpSignals span {
+  padding: 0.55rem 0.75rem;
+  color: var(--primary);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+.glpSelection {
+  display: grid;
+  gap: 3rem;
+}
+.glpSelection .screenIntro {
+  grid-template-columns: 1fr 1fr;
+  align-items: end;
+}
+.glpSelection .screenIntro h1 {
+  font-size: clamp(2.7rem, 5vw, 5rem);
+}
+@keyframes constellation-breathe {
+  50% {
+    transform: scale(1.12);
+    opacity: 0.65;
+  }
+}
+@keyframes line-reveal {
+  from {
+    stroke-dashoffset: 30;
+    opacity: 0;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+@keyframes node-arrive {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -45%) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+@keyframes orb-pulse {
+  50% {
+    transform: scale(1.08);
+    filter: brightness(1.08);
+  }
+}
+@keyframes orb-wave {
+  from {
+    opacity: 0.8;
+    transform: scale(0.76);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+@keyframes orb-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes soft-blink {
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes scan-line {
+  50% {
+    top: 82%;
+  }
+}
+@keyframes breath-move {
+  50% {
+    transform: translateX(1rem) scaleX(1.12);
+    opacity: 0.4;
+  }
+}
+@media (max-width: 64rem) {
+  .header {
+    grid-template-columns: auto 1fr auto;
+  }
+  .packLinks {
+    display: none;
+  }
+  .progress {
+    display: none;
+  }
+  .contextLayout,
+  .conversationLayout,
+  .sensorStage,
+  .techniqueStage {
+    grid-template-columns: 1fr;
+  }
+  .constellation {
+    min-height: 34rem;
+  }
+  .screenIntro h1 {
+    max-width: 18ch;
+  }
+  .conversationLayout {
+    gap: 2rem;
+  }
+  .planRail,
+  .evidenceGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .clinicianGrid {
+    grid-template-columns: 1fr;
+  }
+  .queuePanel {
+    display: none;
+  }
+  .sensorStage {
+    width: min(100%, 48rem);
+  }
+  .phoneFrame {
+    min-height: 30rem;
+    width: min(100%, 26rem);
+    margin-inline: auto;
+  }
+}
+@media (max-width: 42rem) {
+  .header {
+    grid-template-columns: 1fr auto;
+    min-height: 4rem;
+    padding: 0.6rem 1rem;
+  }
+  .packLabel {
+    order: 3;
+    grid-column: 1 / -1;
+    padding-bottom: 0.4rem;
+  }
+  .secondaryLink {
+    font-size: 0;
+    padding-inline: 0.8rem;
+  }
+  .secondaryLink::after {
+    content: "GLP-1 ↗";
+    font-size: 0.72rem;
+  }
+  .main,
+  .glpMain {
+    width: min(100% - 1.25rem, 92rem);
+    padding-block: 2rem;
+  }
+  .contextLayout,
+  .conversationLayout {
+    min-height: auto;
+  }
+  .screenIntro h1,
+  .planLayout .screenIntro h1,
+  .sensorLayout .screenIntro h1,
+  .techniqueLayout .screenIntro h1,
+  .evidenceLayout .screenIntro h1 {
+    font-size: clamp(2.45rem, 12vw, 3.7rem);
+  }
+  .constellation {
+    min-height: 36rem;
+  }
+  .contextNode {
+    width: 8.2rem;
+    padding: 0.7rem;
+  }
+  .contextNode strong {
+    font-size: 0.72rem;
+  }
+  .contextNode small {
+    display: none;
+  }
+  .patientNode {
+    width: 7rem;
+    height: 7rem;
+  }
+  .voiceStage {
+    min-height: 34rem;
+    padding: 1rem;
+  }
+  .memoryWhisper {
+    display: grid;
+    text-align: left;
+  }
+  .planLayout .screenIntro,
+  .sensorLayout .screenIntro,
+  .techniqueLayout .screenIntro,
+  .evidenceLayout .screenIntro,
+  .glpSelection .screenIntro {
+    grid-template-columns: 1fr;
+  }
+  .planRail,
+  .evidenceGrid,
+  .clinicianFacts {
+    grid-template-columns: 1fr;
+  }
+  .planRail::before {
+    display: none;
+  }
+  .planNode[data-status="selected"] {
+    transform: none;
+  }
+  .pairingCard {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+  .qrWrap svg {
+    width: min(58vw, 230px);
+    height: auto;
+  }
+  .sensorStage {
+    gap: 2rem;
+  }
+  .techniqueSilhouette {
+    min-height: 22rem;
+  }
+  .evidenceCard {
+    min-height: auto;
+  }
+  .evidenceCard dl div {
+    grid-template-columns: 1fr;
+  }
+  .clinicianHeader {
+    align-items: start;
+  }
+  .clinicianHeader h1 {
+    font-size: 2.7rem;
+  }
+  .auditTrail,
+  .resolutionTimeline {
+    justify-content: center;
+  }
+  .auditTrail i,
+  .resolutionTimeline i {
+    display: none;
+  }
+  .glpOutcome .evidenceSummary {
+    justify-content: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .constellation::after,
+  .constellationLines line,
+  .contextNode,
+  .orb,
+  .orb span,
+  .livePill i,
+  .signalRow strong,
+  .faceOval i,
+  .fingerprint,
+  .breathArc {
+    animation: none !important;
+  }
+  .primaryButton,
+  .ghostButton,
+  .planNode {
+    transition: none;
+  }
+}
+@media (forced-colors: active) {
+  .orbCore,
+  .patientNode,
+  .resolutionMark,
+  .phoneComplete > span {
+    forced-color-adjust: none;
+    border: 2px solid CanvasText;
+  }
+  .constellationLines line {
+    stroke: CanvasText;
+  }
+}

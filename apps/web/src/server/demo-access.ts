@@ -19,7 +19,10 @@ const DemoAccessRequestSchema = z
 const PATIENT_DESTINATIONS = new Set([
   "/round?scenario=maya-happy-text",
   "/round?scenario=maya-poor-quality",
-  "/round?scenario=maya-red-flag"
+  "/round?scenario=maya-red-flag",
+  "/showcase/heart",
+  "/showcase/copd",
+  "/showcase/glp1"
 ]);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_BODY_BYTES = 2_048;

@@ -140,6 +140,12 @@ describe("hosted demo access boundary", () => {
       "/round?scenario=maya-happy-text"
     );
     expect(safeDemoDestination("patient", "/clinician")).toBe("/round?scenario=maya-happy-text");
+    expect(safeDemoDestination("patient", "/showcase/copd")).toBe("/showcase/copd");
+    expect(safeDemoDestination("patient", "/showcase/heart")).toBe("/showcase/heart");
+    expect(safeDemoDestination("patient", "/showcase/glp1")).toBe("/showcase/glp1");
+    expect(safeDemoDestination("patient", "/showcase/copd/phone")).toBe(
+      "/round?scenario=maya-happy-text"
+    );
     expect(
       safeDemoDestination("clinician", "/clinician?roundId=14df34c4-8204-4810-8113-37b63c963a91")
     ).toBe("/clinician?roundId=14df34c4-8204-4810-8113-37b63c963a91");

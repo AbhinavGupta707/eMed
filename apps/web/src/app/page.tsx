@@ -85,6 +85,7 @@ export default async function HomePage() {
   const roundQuery = new URLSearchParams({ scenario: PRIMARY_SCENARIO });
   if (proactiveInvitation) roundQuery.set("triggerId", proactiveInvitation.triggerId);
   const roundHref = protectedHref("patient", `/round?${roundQuery.toString()}`);
+  const showcaseHref = protectedHref("patient", "/showcase/heart");
   const savedDevice =
     personalization?.defaultDevice ?? readSyntheticBaselineSeed().personalization.defaultDevice;
   const savedDeviceLabel =
@@ -140,12 +141,12 @@ export default async function HomePage() {
             <BaselineIllustration />
 
             <div className={styles.actions}>
-              <Link className={styles.primaryAction} href={roundHref}>
+              <Link className={styles.primaryAction} href={showcaseHref}>
                 <span aria-hidden="true" className={styles.actionMark} />
-                {proactiveInvitation ? "Continue invited check-in" : "Start my check-in"}
+                Begin the Heart-Failure Change Round
               </Link>
               <Link className={styles.textAction} href={roundHref}>
-                Start a check-in on demand
+                Open the standard check-in
               </Link>
               <p className={styles.safetyNote}>
                 HomeRounds cannot diagnose a condition or contact a medical service.

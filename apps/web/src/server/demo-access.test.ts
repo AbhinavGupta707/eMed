@@ -2,7 +2,12 @@ import { InMemoryHomeRoundsRepository } from "@homerounds/persistence";
 import { describe, expect, it } from "vitest";
 
 import { parseServerEnvironment } from "../env";
-import { handleDemoAccess, safeDemoDestination } from "./demo-access";
+import {
+  handleDemoAccess,
+  handlePublicDemoAccess,
+  publicDemoSessionHref,
+  safeDemoDestination
+} from "./demo-access";
 import { createServerRuntime } from "./runtime";
 
 const NOW = "2026-07-17T12:00:00.000Z";
@@ -33,6 +38,48 @@ function request(body: unknown, origin = "https://demo.example"): Request {
 }
 
 describe("hosted demo access boundary", () => {
+  it("starts a frictionless role-scoped guest session without exposing the signing secret", async () => {
+    const server = runtime();
+    const response = await handlePublicDemoAccess(
+      new Request(
+        "https://demo.example/api/demo/session?role=patient&next=%2Fround%3Fscenario%3Dmaya-happy-text",
+        { headers: { "x-forwarded-for": "192.0.2.1" } }
+      ),
+      server
+    );
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe(
+      "https://demo.example/round?scenario=maya-happy-text"
+    );
+    expect(response.headers.get("set-cookie")).toMatch(
+      /HttpOnly; Secure; SameSite=Strict; Max-Age=3600/
+    );
+    expect(JSON.stringify([...response.headers.entries()])).not.toContain(SECRET);
+  });
+
+  it("rejects malformed public-session roles and keeps destinations role-scoped", async () => {
+    const server = runtime();
+    const malformed = await handlePublicDemoAccess(
+      new Request("https://demo.example/api/demo/session?role=admin"),
+      server
+    );
+    expect(malformed.status).toBe(400);
+    expect(malformed.headers.get("set-cookie")).toBeNull();
+
+    const crossRole = await handlePublicDemoAccess(
+      new Request(
+        "https://demo.example/api/demo/session?role=patient&next=https%3A%2F%2Fattacker.example",
+        { headers: { "x-forwarded-for": "192.0.2.2" } }
+      ),
+      server
+    );
+    expect(crossRole.status).toBe(303);
+    expect(crossRole.headers.get("location")).toBe(
+      "https://demo.example/round?scenario=maya-happy-text"
+    );
+  });
+
   it("issues a bounded signed patient cookie and a safe relative destination", async () => {
     const server = runtime();
     const response = await handleDemoAccess(
@@ -86,6 +133,9 @@ describe("hosted demo access boundary", () => {
   });
 
   it("never turns a supplied destination into an open or cross-role redirect", () => {
+    expect(publicDemoSessionHref("patient", "https://attacker.example")).toBe(
+      "/api/demo/session?role=patient&next=%2Fround%3Fscenario%3Dmaya-happy-text"
+    );
     expect(safeDemoDestination("patient", "https://attacker.example")).toBe(
       "/round?scenario=maya-happy-text"
     );

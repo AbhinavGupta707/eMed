@@ -110,16 +110,16 @@ Pass: zero measurement facts/numbers for the failure, one task, quality reason/p
 
 Pass: no assessment request, no measurement, deterministic stop, generic limitation, no claim of real escalation.
 
-## Access denial and session recovery
+## Guest-session recovery
 
-For a protected demo deployment, `/access` must issue patient and clinician sessions only after the exact-origin shared-code exchange. A wrong code must receive generic denial; cookies must be `Secure`, `HttpOnly`, and `SameSite=Strict`.
+The public synthetic demo uses frictionless role-scoped guest entry. Patient and clinician links pass only an allowlisted relative destination to `/api/demo/session`; the server creates a one-hour signed cookie and redirects without asking the user for a code. Cookies remain `Secure`, `HttpOnly`, and `SameSite=Strict`, and provider credentials remain server-only.
 
-- Wrong code: do not reveal whether the code, role, patient, or destination was wrong.
-- Expired/invalid role cookie: return to `/access`; never edit cookies or add a development role header to a hosted environment.
-- Repeated denial/rate limit: stop retries and wait for the bounded limiter window; inspect only safe status/correlation metadata.
-- Protected environment unavailable: do not weaken access. Switch openly to the rehearsed local PostgreSQL profile and label it local recovery.
+- Invalid role or malformed destination: restart from the public overview; never edit the URL into a broader role or destination.
+- Expired/invalid role cookie: return to the overview and select the role again; never edit cookies or add a development role header to a hosted environment.
+- Repeated entry/rate limit: stop retries and wait for the bounded limiter window; inspect only safe status/correlation metadata.
+- Hosted environment unavailable: switch openly to the rehearsed local PostgreSQL profile and label it local recovery.
 
-Hosted access remains unobserved (`W-01`); the prior protected-local inspection is not a hosted pass.
+The frictionless boundary is appropriate only for the all-synthetic hackathon deployment. Reintroduce real authentication before accepting non-synthetic data or exposing a non-demo service.
 
 ## Database/readiness failure
 

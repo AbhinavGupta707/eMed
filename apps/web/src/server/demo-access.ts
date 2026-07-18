@@ -24,6 +24,7 @@ const PATIENT_DESTINATIONS = new Set([
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_BODY_BYTES = 2_048;
 const SESSION_SECONDS = 3_600;
+const PUBLIC_SESSION_LIMIT = 30;
 
 function response(status: number, body: Record<string, unknown>, correlationId: string): Response {
   return Response.json(body, {
@@ -70,6 +71,14 @@ export function safeDemoDestination(
   return safeClinicianDestination(candidate) ?? fallback;
 }
 
+export function publicDemoSessionHref(role: "patient" | "clinician", destination: string): string {
+  const query = new URLSearchParams({
+    role,
+    next: safeDemoDestination(role, destination)
+  });
+  return `/api/demo/session?${query.toString()}`;
+}
+
 async function readRequest(request: Request): Promise<z.infer<typeof DemoAccessRequestSchema>> {
   if (request.headers.get("content-type")?.split(";")[0]?.trim() !== "application/json") {
     throw new Error("unsupported_media_type");
@@ -87,6 +96,73 @@ function requestKey(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   const candidate = forwarded || request.headers.get("x-real-ip") || "unknown";
   return `demo-access:${candidate.replaceAll(/[^A-Za-z0-9.:_-]/g, "_").slice(0, 120)}`;
+}
+
+function issueSession(
+  role: "patient" | "clinician",
+  destination: string | undefined,
+  runtime: ServerRuntime
+): Readonly<{ expiresAt: string; redirectTo: string; signed: string }> {
+  const signingSecret = runtime.environment.DEMO_ACCESS_SECRET;
+  if (!signingSecret) throw new Error("demo_session_signing_unavailable");
+  const issuedAt = Date.parse(runtime.hooks.now?.() ?? new Date().toISOString());
+  const expiresAt = new Date(issuedAt + SESSION_SECONDS * 1_000).toISOString();
+  const session: DemoSession = {
+    sessionId: `browser-${role}-${runtime.hooks.createId?.() ?? globalThis.crypto.randomUUID()}`,
+    role,
+    patientId: role === "patient" ? "synthetic-maya" : null,
+    expiresAt,
+    dataClassification: "synthetic_demo"
+  };
+  return {
+    expiresAt,
+    redirectTo: safeDemoDestination(role, destination),
+    signed: createSignedDemoSession(session, signingSecret)
+  };
+}
+
+export async function handlePublicDemoAccess(
+  request: Request,
+  runtime: ServerRuntime
+): Promise<Response> {
+  const correlationId = runtime.hooks.createId?.() ?? globalThis.crypto.randomUUID();
+  const environment = runtime.environment;
+  if (environment.APP_ENV !== "demo" || !environment.DEMO_ACCESS_SECRET) {
+    return response(404, { error: "not_found" }, correlationId);
+  }
+
+  const url = new URL(request.url);
+  const roles = url.searchParams.getAll("role");
+  const destinations = url.searchParams.getAll("next");
+  const parsedRole = z.enum(["patient", "clinician"]).safeParse(roles[0]);
+  if (!parsedRole.success || roles.length !== 1 || destinations.length > 1) {
+    return response(400, { error: "invalid_request" }, correlationId);
+  }
+
+  const rateLimit = await runtime.hooks.rateLimiter.consume({
+    key: requestKey(request),
+    bucket: "public_demo_session_issue",
+    limit: PUBLIC_SESSION_LIMIT,
+    windowMs: 5 * 60_000
+  });
+  if (!rateLimit.allowed) {
+    const limited = response(429, { error: "access_denied" }, correlationId);
+    limited.headers.set("retry-after", String(rateLimit.retryAfterSeconds));
+    return limited;
+  }
+
+  const issued = issueSession(parsedRole.data, destinations[0], runtime);
+  const success = new Response(null, {
+    status: 303,
+    headers: {
+      "cache-control": "no-store",
+      location: new URL(issued.redirectTo, environment.APP_BASE_URL).toString(),
+      "x-content-type-options": "nosniff",
+      "x-correlation-id": correlationId
+    }
+  });
+  success.headers.set("set-cookie", demoSessionCookieHeader(issued.signed, SESSION_SECONDS));
+  return success;
 }
 
 export async function handleDemoAccess(
@@ -124,27 +200,18 @@ export async function handleDemoAccess(
     return response(401, { error: "access_denied" }, correlationId);
   }
 
-  const issuedAt = Date.parse(runtime.hooks.now?.() ?? new Date().toISOString());
-  const expiresAt = new Date(issuedAt + SESSION_SECONDS * 1_000).toISOString();
-  const session: DemoSession = {
-    sessionId: `browser-${input.role}-${runtime.hooks.createId?.() ?? globalThis.crypto.randomUUID()}`,
-    role: input.role,
-    patientId: input.role === "patient" ? "synthetic-maya" : null,
-    expiresAt,
-    dataClassification: "synthetic_demo"
-  };
-  const signed = createSignedDemoSession(session, environment.DEMO_ACCESS_SECRET);
+  const issued = issueSession(input.role, input.destination, runtime);
   const success = response(
     200,
     {
       data: {
         role: input.role,
-        redirectTo: safeDemoDestination(input.role, input.destination),
-        expiresAt
+        redirectTo: issued.redirectTo,
+        expiresAt: issued.expiresAt
       }
     },
     correlationId
   );
-  success.headers.set("set-cookie", demoSessionCookieHeader(signed, SESSION_SECONDS));
+  success.headers.set("set-cookie", demoSessionCookieHeader(issued.signed, SESSION_SECONDS));
   return success;
 }

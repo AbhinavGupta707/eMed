@@ -8,6 +8,7 @@ import { readSyntheticBaselineSeed } from "@/server/baselines/demo-seed";
 import { deterministicUuid } from "@/server/crypto";
 import { getServerRuntime } from "@/server/runtime";
 import { ensureSyntheticProactiveRound } from "@/server/triggers/proactive-round";
+import { publicDemoSessionHref } from "@/server/demo-access";
 
 import styles from "./home.module.css";
 
@@ -25,8 +26,7 @@ function clinicianHref(): string {
 
 function protectedHref(role: "patient" | "clinician", destination: string): string {
   if (process.env.APP_ENV !== "demo") return destination;
-  const query = new URLSearchParams({ role, next: destination });
-  return `/access?${query.toString()}`;
+  return publicDemoSessionHref(role, destination);
 }
 
 function BaselineIllustration() {

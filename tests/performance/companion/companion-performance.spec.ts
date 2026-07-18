@@ -81,7 +81,7 @@ test("polling remains bounded through soak and synchronizes phone result to desk
   const submitted = await submitUnavailablePhoneResult(phone.page, unavailable);
   await expect(
     page.getByText(
-      "The phone result was received and is waiting for the normal quality and workflow checks.",
+      "The phone result was received and checked against the normal quality and workflow rules.",
       { exact: true }
     )
   ).toBeVisible({ timeout: MAX_SYNC_LATENCY_MS });

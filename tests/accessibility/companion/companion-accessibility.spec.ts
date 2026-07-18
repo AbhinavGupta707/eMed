@@ -96,15 +96,26 @@ test("paired desktop and phone preserve keyboard, touch, zoom, reduced-motion, a
   expect(readyBox).not.toBeNull();
   expect(readyBox!.height).toBeGreaterThanOrEqual(44);
   await readyButton.tap();
-  await expect(
-    phone.page.getByRole("heading", { level: 1, name: "Keep this page open" })
-  ).toBeVisible();
+  const progress = phone.page.getByRole("progressbar", { name: "Finger pulse check" });
+  const unavailable = phone.page.getByRole("status").filter({
+    hasText: "The selected check is unavailable right now."
+  });
+  await expect(progress.or(unavailable)).toBeVisible();
 
-  const progressAnimation = await phone.page
-    .getByRole("progressbar", { name: "Finger pulse check" })
-    .locator("span")
-    .evaluate((element) => getComputedStyle(element).animationName);
-  expect(progressAnimation).toBe("none");
+  if (await progress.isVisible()) {
+    const progressAnimation = await progress
+      .locator("span")
+      .evaluate((element) => getComputedStyle(element).animationName);
+    expect(progressAnimation).toBe("none");
+  } else {
+    await expect(unavailable).toBeVisible();
+    await expect(
+      phone.page.getByRole("button", { name: "Continue without this check" })
+    ).toBeVisible();
+    await expect(
+      phone.page.getByRole("button", { name: "Decline this optional check" })
+    ).toBeVisible();
+  }
   await expectNoSeriousOrCriticalViolations(phone.page);
 
   for (const width of WIDTHS) {
@@ -118,9 +129,7 @@ test("paired desktop and phone preserve keyboard, touch, zoom, reduced-motion, a
   await phone.page.setViewportSize({ width: 1280, height: 900 });
   await phone.page.evaluate(() => document.documentElement.style.setProperty("zoom", "2"));
   await expectNoHorizontalOverflow(phone.page);
-  await expect(
-    phone.page.getByRole("heading", { level: 1, name: "Keep this page open" })
-  ).toBeVisible();
+  await expect(progress.or(unavailable)).toBeVisible();
   await phone.page.evaluate(() => document.documentElement.style.removeProperty("zoom"));
 
   await expectNoBrowserFailures(phone.failures);

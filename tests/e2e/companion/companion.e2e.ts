@@ -28,7 +28,7 @@ test.beforeEach(async ({ page }) => {
     "Hosted companion checks require HOMEROUNDS_HOSTED_DEMO_ACCESS_SECRET"
   ).toBeTruthy();
   const origin = new URL(hostedBaseUrl!).origin;
-  const response = await page.request.post(`${origin}/api/demo/access`, {
+  const response = await page.request.post(`${origin}/api/demo/session`, {
     headers: { origin },
     data: {
       accessCode: hostedAccessSecret,

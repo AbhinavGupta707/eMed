@@ -14,6 +14,12 @@ import {
 import { useMemo } from "react";
 
 import { ActionPanel } from "./action-panel";
+import { CareActionPanel } from "./care-action-panel";
+import {
+  createBrowserCareActionTransport,
+  createEmptyCareActionTransport,
+  type ClinicianCareActionTransport
+} from "./care-action-transport";
 import { AuditTimeline, EvidenceBoundary, EvidenceChain } from "./evidence-chain";
 import type { ClinicianDensity, ClinicianMutationKind, ClinicianTaskDetail } from "./model";
 import {
@@ -32,6 +38,7 @@ export type ClinicianCockpitProps = {
   roundIds: readonly string[];
   invalidRoundIdCount?: number;
   transport?: ClinicianTransport;
+  careActionTransport?: ClinicianCareActionTransport;
 };
 
 function CockpitHeader({
@@ -285,11 +292,13 @@ function TaskDetailHeader({ detail }: { detail: ClinicianTaskDetail }) {
 function TaskWorkspace({
   state,
   onReload,
-  actionProps
+  actionProps,
+  careActionTransport
 }: {
   state: DetailState;
   onReload: () => void;
   actionProps: Omit<React.ComponentProps<typeof ActionPanel>, "detail">;
+  careActionTransport: ClinicianCareActionTransport;
 }) {
   if (state.status === "idle") {
     return (
@@ -330,6 +339,7 @@ function TaskWorkspace({
       <EvidenceBoundary detail={state.detail} />
       <EvidenceChain detail={state.detail} />
       <AuditTimeline detail={state.detail} />
+      <CareActionPanel roundId={state.detail.task.roundId} transport={careActionTransport} />
       <ActionPanel detail={state.detail} {...actionProps} />
     </div>
   );
@@ -338,7 +348,8 @@ function TaskWorkspace({
 export function ClinicianCockpit({
   roundIds,
   invalidRoundIdCount = 0,
-  transport
+  transport,
+  careActionTransport
 }: ClinicianCockpitProps) {
   const roundIdsKey = roundIds.join(",");
   const resolvedTransport = useMemo(
@@ -346,6 +357,12 @@ export function ClinicianCockpit({
       transport ??
       createBrowserClinicianTransport(roundIdsKey === "" ? [] : roundIdsKey.split(",")),
     [roundIdsKey, transport]
+  );
+  const resolvedCareActionTransport = useMemo(
+    () =>
+      careActionTransport ??
+      (transport ? createEmptyCareActionTransport() : createBrowserCareActionTransport()),
+    [careActionTransport, transport]
   );
   const controller = useClinicianCockpit(resolvedTransport);
 
@@ -389,6 +406,7 @@ export function ClinicianCockpit({
             onRequestMutation: controller.requestMutation,
             pendingKind: controller.pendingKind
           }}
+          careActionTransport={resolvedCareActionTransport}
           onReload={controller.reloadDetail}
           state={controller.detailState}
         />

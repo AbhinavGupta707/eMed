@@ -814,7 +814,8 @@ export function handleVitalLensProxy(request: Request, runtime: ServerRuntime): 
       rateLimit: { bucket: "vitallens-proxy", limit: 3, windowMs: 60_000 },
       readInput: vitalLensInputReader,
       outputSchema: VitalLensProxyResponseSchema,
-      handle: async (_context, input) => runtime.vitalLens.infer(input)
+      handle: async (context, input) =>
+        runtime.vitalLens.infer({ ...input, signal: context.request.signal })
     }
   );
 }

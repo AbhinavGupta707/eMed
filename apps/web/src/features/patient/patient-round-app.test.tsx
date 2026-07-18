@@ -462,16 +462,12 @@ function renderRound(
 }
 
 async function acceptInvitation(): Promise<void> {
-  expect(
-    await screen.findByText("Synthetic demonstration — not clinically validated")
-  ).toBeVisible();
+  expect(await screen.findByText("Sample profile · Not medical care")).toBeVisible();
   fireEvent.click(
-    screen.getByLabelText(
-      /I understand this is a synthetic demonstration, not clinically validated/i
-    )
+    screen.getByLabelText(/I understand this check does not diagnose a condition/i)
   );
-  fireEvent.click(screen.getByRole("button", { name: "Start the check" }));
-  await screen.findByRole("heading", { name: "Tell us what is happening now" });
+  fireEvent.click(screen.getByRole("button", { name: "Start my check-in" }));
+  await screen.findByRole("heading", { name: "Three questions before we talk." });
 }
 
 function choose(groupName: string, answer: string): void {
@@ -483,6 +479,8 @@ async function completeTextReport(chestPain = "No"): Promise<void> {
   choose("Are you having chest pain now?", chestPain);
   choose("Are you severely short of breath now?", "No");
   choose("Have you fainted?", "No");
+  fireEvent.click(screen.getByRole("button", { name: "Continue to conversation" }));
+  await screen.findByRole("heading", { name: "Tell me what’s changed." });
   choose("How weak do you feel?", "Mild");
   choose("Are you noticing a racing, pounding, or fluttering feeling?", "Comes and goes");
   expect(screen.queryByRole("button", { name: "Start voice" })).not.toBeInTheDocument();
@@ -490,11 +488,28 @@ async function completeTextReport(chestPain = "No"): Promise<void> {
     target: { value: "I feel a little weak today." }
   });
   fireEvent.click(screen.getByRole("button", { name: "Confirm this text" }));
+  fireEvent.click(screen.getByRole("button", { name: "Review my report" }));
+  await screen.findByRole("heading", { name: "Let’s make sure I understood." });
+  fireEvent.click(
+    screen.getByLabelText(/I reviewed every field and confirm these are my answers/i)
+  );
   fireEvent.click(screen.getByRole("button", { name: "Confirm and continue" }));
 }
 
+async function continueRecommendationWhenOffered(): Promise<void> {
+  await waitFor(() => {
+    const nextControl =
+      screen.queryByRole("button", { name: "Continue to this check" }) ??
+      screen.queryByRole("button", { name: "Continue on this computer" }) ??
+      screen.queryByRole("button", { name: "Start 7-second capture" });
+    expect(nextControl).not.toBeNull();
+  });
+  const continueButton = screen.queryByRole("button", { name: "Continue to this check" });
+  if (continueButton) fireEvent.click(continueButton);
+}
+
 describe("patient round app", () => {
-  it("adds a frozen-contract Round Map without changing the invitation workflow", async () => {
+  it("shows the recommendation only after the report and hides unrelated sensors", async () => {
     const api = new UiApi();
     render(
       createElement(PatientRoundApp, {
@@ -510,10 +525,14 @@ describe("patient round app", () => {
       })
     );
 
-    expect(await screen.findByRole("heading", { name: "Round Map" })).toBeVisible();
-    expect(screen.getByText("Maya · synthetic happy path")).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Your two-minute check is ready" })).toBeVisible();
-    expect(api.calls.submitReport).not.toHaveBeenCalled();
+    expect(await screen.findByRole("heading", { name: "Ready when you are, Maya." })).toBeVisible();
+    expect(screen.queryByText("Medication label review")).not.toBeInTheDocument();
+    await acceptInvitation();
+    await completeTextReport();
+    expect(await screen.findByRole("heading", { name: /most useful next step/i })).toBeVisible();
+    expect(screen.queryByText("Medication label review")).not.toBeInTheDocument();
+    expect(screen.queryByText("Optional remote camera check")).not.toBeInTheDocument();
+    expect(api.calls.submitReport).toHaveBeenCalledTimes(1);
   });
 
   it("shows clinician completion from the persisted round after refresh", async () => {
@@ -523,39 +542,38 @@ describe("patient round app", () => {
     renderRound(api);
 
     expect(
-      await screen.findByRole("heading", { name: "Synthetic review completed" })
+      await screen.findByRole("heading", { name: "Review finished" })
     ).toBeVisible();
     expect(
-      screen.getByText("The fictional clinician completed this saved demo task.")
+      screen.getByText("The saved sample review was marked complete inside HomeRounds.")
     ).toBeVisible();
-    expect(screen.getByText("Completed in clinician cockpit")).toBeVisible();
-    expect(screen.getByText("This task status comes from persisted task data.")).toBeVisible();
+    expect(screen.getByText("Completed in HomeRounds")).toBeVisible();
+    expect(screen.getByText(/saved status belongs only to the sample HomeRounds profile/i)).toBeVisible();
   });
 
   it("completes the no-key text path through passing capture and explicit action confirmation", async () => {
     const { api } = renderRound();
     await acceptInvitation();
     await completeTextReport();
+    await continueRecommendationWhenOffered();
 
-    await screen.findByRole("heading", { name: "Next, prepare a short camera pulse check" });
-    fireEvent.click(screen.getByRole("button", { name: "Check this device" }));
+    await screen.findByRole("heading", { name: "A pulse check is the most useful next step." });
+    fireEvent.click(screen.getByRole("button", { name: "Continue on this computer" }));
     await screen.findByRole("heading", {
       name: /Your device is ready/i
     });
-    fireEvent.click(screen.getByLabelText(/I consent to this synthetic-demo camera check/i));
+    fireEvent.click(screen.getByLabelText(/I agree to use the camera for this check/i));
     fireEvent.click(screen.getByRole("button", { name: "Start camera check" }));
 
-    await screen.findByRole("heading", { name: "Confirm the next demo step" });
-    expect(screen.getByText(/Demo pulse estimate:/)).toHaveTextContent(/103\s*bpm/);
-    fireEvent.click(
-      screen.getByLabelText(/I confirm creation of one synthetic programme-review task/i)
-    );
-    fireEvent.click(screen.getByRole("button", { name: "Create synthetic review task" }));
+    await screen.findByRole("heading", { name: "Choose what happens next." });
+    expect(screen.getByText(/Pulse reading:/)).toHaveTextContent(/103\s*bpm/);
+    fireEvent.click(screen.getByLabelText(/I want to save one sample review request/i));
+    fireEvent.click(screen.getByRole("button", { name: "Save review request" }));
 
     await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Programme review requested" })).toBeVisible()
+      expect(screen.getByRole("heading", { name: "Your review request is saved" })).toBeVisible()
     );
-    expect(screen.getByText("One synthetic task created")).toBeVisible();
+    expect(screen.getByText("One sample request saved")).toBeVisible();
     expect(api.calls.submitReport).toHaveBeenCalledTimes(1);
     expect(api.calls.submitAssessment).toHaveBeenCalledTimes(1);
   });
@@ -565,7 +583,7 @@ describe("patient round app", () => {
     await acceptInvitation();
     await completeTextReport("Yes");
 
-    await screen.findByRole("heading", { name: "Stop this demo round" });
+    await screen.findByRole("heading", { name: "Stop this check-in." });
     expect(screen.getByText(/ended the ordinary flow before any camera check/i)).toBeVisible();
     expect(screen.queryByRole("button", { name: "Check this device" })).not.toBeInTheDocument();
     expect(api.calls.startAssessment).not.toHaveBeenCalled();
@@ -577,17 +595,20 @@ describe("patient round app", () => {
     renderRound(api);
     await acceptInvitation();
     await completeTextReport();
+    await continueRecommendationWhenOffered();
 
     expect(
       await screen.findByRole("heading", { name: "Sustained-vowel research signal" })
     ).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Check this device" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Continue on this computer" })
+    ).not.toBeInTheDocument();
     fireEvent.click(
       screen.getByLabelText(/I consent to one separate local sustained-vowel capture/i)
     );
     fireEvent.click(screen.getByRole("button", { name: "Start 7-second capture" }));
 
-    await screen.findByRole("heading", { name: "Next, prepare a short camera pulse check" });
+    await screen.findByRole("heading", { name: "A pulse check is the most useful next step." });
     expect(api.calls.submitVoiceBiomarker).toHaveBeenCalledTimes(1);
     expect(api.calls.startAssessment).not.toHaveBeenCalled();
   });
@@ -598,8 +619,9 @@ describe("patient round app", () => {
     renderRound(new UiApi(), provider);
     await acceptInvitation();
     await completeTextReport();
-    await screen.findByRole("heading", { name: "Next, prepare a short camera pulse check" });
-    fireEvent.click(screen.getByRole("button", { name: "Check this device" }));
+    await continueRecommendationWhenOffered();
+    await screen.findByRole("heading", { name: "A pulse check is the most useful next step." });
+    fireEvent.click(screen.getByRole("button", { name: "Continue on this computer" }));
 
     await screen.findByRole("heading", { name: "The selected camera check is unavailable" });
     expect(screen.getByText("Camera permission was not granted")).toBeVisible();
@@ -607,6 +629,6 @@ describe("patient round app", () => {
     expect(screen.queryByText(/103 bpm/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Continue without a measurement" }));
-    await screen.findByRole("heading", { name: "Confirm the next demo step" });
+    await screen.findByRole("heading", { name: "Choose what happens next." });
   });
 });

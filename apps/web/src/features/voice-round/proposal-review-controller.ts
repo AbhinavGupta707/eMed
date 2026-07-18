@@ -210,7 +210,7 @@ export class VoiceProposalReviewController {
       ...this.#snapshot,
       status: "confirming",
       announcement:
-        "Submitting the patient-reviewed fields. Deterministic safety checks remain in control.",
+        "Submitting the answers you reviewed. Required safety answers remain in control.",
       firstIncompleteField: null,
       canConfirm: false
     });
@@ -222,7 +222,7 @@ export class VoiceProposalReviewController {
         ...this.#snapshot,
         status: "confirmed",
         announcement:
-          "Reviewed report confirmed. Any yes, unsure, or unknown answer was preserved exactly for deterministic review.",
+          "Reviewed report confirmed. Every yes, unsure, or unknown answer was preserved exactly.",
         focusToken: this.#snapshot.focusToken + 1,
         canConfirm: false
       });

@@ -87,7 +87,7 @@ export default function StyleguidePage() {
           <a href="#patterns">Patterns</a>
           <a href="#shells">Responsive shells</a>
         </nav>
-        <StatusChip variant="information">Synthetic demonstration</StatusChip>
+        <StatusChip variant="information">Sample system</StatusChip>
       </header>
 
       <section className={styles.hero} id="top">
@@ -113,7 +113,7 @@ export default function StyleguidePage() {
 
       <section className={styles.section} id="foundations">
         <SectionHeader
-          description="True-white working surfaces, mineral-sage structure, and semantic states with readable labels."
+          description="Bone working surfaces, forest structure, terracotta action, and semantic states with readable labels."
           number="01"
           title="Foundations"
         />
@@ -124,32 +124,32 @@ export default function StyleguidePage() {
               <div>
                 <span className={`${styles.swatch} ${styles.swatchInk}`} />
                 <strong>Ink</strong>
-                <small>#14231D</small>
+                <small>#26312D</small>
               </div>
               <div>
                 <span className={`${styles.swatch} ${styles.swatchForest}`} />
                 <strong>Forest</strong>
-                <small>#075F46</small>
+                <small>#173C32</small>
               </div>
               <div>
                 <span className={`${styles.swatch} ${styles.swatchMineral}`} />
-                <strong>Mineral</strong>
-                <small>#F4F8F5</small>
+                <strong>Bone</strong>
+                <small>#F8F3EA</small>
               </div>
               <div>
                 <span className={`${styles.swatch} ${styles.swatchInformation}`} />
-                <strong>Information</strong>
-                <small>#285F91</small>
+                <strong>Terracotta</strong>
+                <small>#B34A2D</small>
               </div>
               <div>
                 <span className={`${styles.swatch} ${styles.swatchWarning}`} />
-                <strong>Attention</strong>
-                <small>#7A4A05</small>
+                <strong>Sage</strong>
+                <small>#9DAE9E</small>
               </div>
               <div>
                 <span className={`${styles.swatch} ${styles.swatchDanger}`} />
-                <strong>Action</strong>
-                <small>#9A2F2F</small>
+                <strong>Critical</strong>
+                <small>#A52A2A</small>
               </div>
             </div>
           </article>
@@ -220,7 +220,7 @@ export default function StyleguidePage() {
             <h3>Fields and text areas</h3>
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="synthetic-reference">Synthetic reference</FieldLabel>
+                <FieldLabel htmlFor="synthetic-reference">Sample reference</FieldLabel>
                 <Input
                   aria-describedby="synthetic-reference-help"
                   defaultValue="Participant 014"
@@ -299,24 +299,24 @@ export default function StyleguidePage() {
             <TranscriptConfirmation defaultValue="I felt more tired than usual after walking upstairs this week." />
             <div className={styles.bannerStack}>
               <Banner title="Information" variant="information">
-                This is a synthetic design-system example.
+                This is a sample design-system state.
               </Banner>
               <Banner title="Programme review requested" variant="warning">
                 The fictional care team has been asked to review this round.
               </Banner>
               <Banner title="Action required" variant="danger">
-                Some information needs attention before the demo can continue.
+                Some information needs attention before the example can continue.
               </Banner>
               <Banner title="Update saved" variant="success">
-                The synthetic record was updated successfully.
+                The sample record was updated successfully.
               </Banner>
             </div>
           </div>
 
           <div className={styles.qualityGrid}>
             <MeasurementQuality
-              details={<p className={styles.qualityDetail}>Demo quality score: 0.91</p>}
-              reasons={["Signal duration and stability passed the configured demo quality gate."]}
+              details={<p className={styles.qualityDetail}>Sample quality score: 0.91</p>}
+              reasons={["Signal duration and stability passed the configured quality gate."]}
               status="pass"
             />
             <MeasurementQuality
@@ -421,7 +421,7 @@ export default function StyleguidePage() {
           title="Evidence panel"
         />
         <EvidencePanel
-          description="Synthetic facts for component demonstration only."
+          description="Sample facts for component illustration only."
           footer="A failed or uncertain optical capture must not appear here as a numeric measurement."
           items={[
             {
@@ -431,8 +431,8 @@ export default function StyleguidePage() {
             },
             {
               label: "Capture quality",
-              value: "Passed configured demo gate",
-              source: "finger_ppg_hr_v1 fixture"
+              value: "Passed configured quality gate",
+              source: "labelled finger pulse sample"
             },
             {
               label: "Protocol outcome",
@@ -454,7 +454,7 @@ export default function StyleguidePage() {
           <AppShell
             contentAs="section"
             contentLabel="Comfortable patient shell example"
-            footer="Synthetic demonstration · Not clinically validated"
+            footer="Sample profile · Not medical care"
             header={
               <div className={styles.shellHeader}>
                 <strong>HomeRounds</strong>
@@ -475,7 +475,7 @@ export default function StyleguidePage() {
             <AppShell
               contentAs="section"
               contentLabel="320 pixel mobile shell example"
-              footer="Synthetic demo"
+              footer="Sample profile"
               header={
                 <div className={styles.shellHeader}>
                   <strong>HomeRounds</strong>
@@ -498,7 +498,7 @@ export default function StyleguidePage() {
 
       <footer className={styles.pageFooter}>
         <strong>HomeRounds visual system</strong>
-        <p>Synthetic demonstration. Not clinically validated. Not for real-world use.</p>
+        <p>Sample system. Not clinically validated. Not for real-world use.</p>
       </footer>
     </main>
   );

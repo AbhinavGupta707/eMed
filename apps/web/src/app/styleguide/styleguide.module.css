@@ -13,7 +13,7 @@
   min-height: 4.5rem;
   padding: var(--space-3) clamp(var(--space-4), 4vw, var(--space-10));
   border-bottom: 1px solid var(--border);
-  background: rgb(255 255 255 / 0.96);
+  background: rgb(248 243 234 / 0.96);
   backdrop-filter: blur(12px);
 }
 
@@ -220,7 +220,7 @@
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: var(--space-3);
 }
 
 .swatchGrid strong,
@@ -254,11 +254,11 @@
 }
 
 .swatchInformation {
-  background: var(--information);
+  background: var(--accent);
 }
 
 .swatchWarning {
-  background: var(--warning);
+  background: var(--secondary);
 }
 
 .swatchDanger {
@@ -276,6 +276,7 @@
 }
 
 .typeDisplay {
+  font-family: var(--font-display);
   font-size: 2.5rem;
   font-weight: 750;
   line-height: 1;

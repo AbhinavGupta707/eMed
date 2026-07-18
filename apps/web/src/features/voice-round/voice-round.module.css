@@ -1,34 +1,38 @@
 .historyCard,
 .reviewPanel {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-5);
   width: min(100%, 56rem);
   min-width: 0;
-  padding: clamp(1rem, 3vw, 1.5rem);
-  border: 1px solid #aebfc7;
-  border-radius: 1rem;
-  background: #ffffff;
-  color: #17262c;
+  padding: clamp(var(--space-5), 3vw, var(--space-8));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--shadow-1);
 }
 
 .headingRow,
 .fieldHeading {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 0.8rem;
+  gap: var(--space-3);
   align-items: flex-start;
   justify-content: space-between;
 }
 
 .headingRow h2 {
   margin: 0;
-  font-size: clamp(1.3rem, 4vw, 1.8rem);
-  line-height: 1.25;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 5vw, 2.75rem);
+  font-weight: 550;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
 }
 
 .eyebrow {
   margin: 0 0 0.25rem;
-  color: #315d6d;
+  color: var(--terracotta-strong);
   font-size: 0.875rem;
   font-weight: 750;
   letter-spacing: 0.03em;
@@ -40,22 +44,22 @@
 .safetyLabel,
 .unresolvedLabel {
   padding: 0.35rem 0.65rem;
-  border: 1px solid #6d8b96;
+  border: 1px solid var(--information-border);
   border-radius: 999px;
-  background: #f1f7f8;
+  background: var(--information-surface);
   font-size: 0.8125rem;
   font-weight: 750;
 }
 
 .draftBadge,
 .unresolvedLabel {
-  border-color: #8b5c1b;
-  background: #fff8e8;
+  border-color: var(--warning-border);
+  background: var(--warning-surface);
 }
 
 .safetyLabel {
-  border-color: #8b4242;
-  background: #fff3f2;
+  border-color: var(--danger-border);
+  background: var(--danger-surface);
 }
 
 .contextList {
@@ -67,9 +71,9 @@
 .contextList > div {
   display: grid;
   grid-template-columns: minmax(7rem, 10rem) minmax(0, 1fr);
-  gap: 0.25rem 1rem;
+  gap: var(--space-3) 1rem;
   padding-bottom: 0.8rem;
-  border-bottom: 1px solid #d5dfe3;
+  border-bottom: 1px solid var(--border);
 }
 
 .contextList dt {
@@ -86,7 +90,7 @@
 
 .sourceLabel,
 .reviewSummary {
-  color: #455b64;
+  color: var(--muted-foreground);
   font-size: 0.875rem;
 }
 
@@ -95,31 +99,32 @@
 .status {
   margin: 0;
   padding: 0.85rem 1rem;
-  border-left: 4px solid #35778c;
-  background: #f1f7f8;
+  border-left: 4px solid var(--information);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: var(--information-surface);
   line-height: 1.5;
 }
 
 .safetyReview {
-  border-left-color: #a33636;
-  background: #fff3f2;
+  border-left-color: var(--danger);
+  background: var(--danger-surface);
 }
 
 .reviewGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
-  gap: 0.8rem;
+  gap: var(--space-4);
 }
 
 .reviewField {
   display: grid;
   align-content: start;
-  gap: 0.55rem;
+  gap: var(--space-3);
   min-width: 0;
-  padding: 0.9rem;
-  border: 1px solid #c7d2d6;
-  border-radius: 0.7rem;
-  background: #fbfdfd;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
 }
 
 .reviewField label {
@@ -137,9 +142,9 @@
   width: 100%;
   min-height: 44px;
   padding: 0.65rem 0.75rem;
-  border: 2px solid #667e87;
-  border-radius: 0.6rem;
-  background: #ffffff;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-md);
+  background: var(--card);
   color: inherit;
   font: inherit;
 }
@@ -147,7 +152,7 @@
 .confirmationRow {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.7rem;
+  gap: var(--space-3);
   align-items: start;
   line-height: 1.5;
 }
@@ -163,19 +168,19 @@
   min-width: 44px;
   min-height: 44px;
   padding: 0.7rem 1rem;
-  border: 2px solid #21586b;
-  border-radius: 0.7rem;
-  background: #21586b;
-  color: #ffffff;
+  border: 1px solid var(--primary);
+  border-radius: 0.8rem;
+  background: var(--primary);
+  color: var(--primary-foreground);
   font: inherit;
   font-weight: 750;
   cursor: pointer;
 }
 
 .primaryButton:disabled {
-  border-color: #879399;
-  background: #e8edef;
-  color: #45575e;
+  border-color: var(--border);
+  background: var(--muted);
+  color: var(--muted-foreground);
   cursor: not-allowed;
 }
 
@@ -183,7 +188,7 @@
 .confirmationRow input:focus-visible,
 .primaryButton:focus-visible,
 .status:focus-visible {
-  outline: 4px solid #f0a33a;
+  outline: 3px solid var(--ring);
   outline-offset: 3px;
 }
 
@@ -192,13 +197,13 @@
 }
 
 .status[data-tone="error"] {
-  border-left-color: #a33636;
-  background: #fff3f2;
+  border-left-color: var(--danger);
+  background: var(--danger-surface);
 }
 
 .status[data-tone="success"] {
-  border-left-color: #237051;
-  background: #eff8f3;
+  border-left-color: var(--success);
+  background: var(--success-surface);
 }
 
 .visuallyHidden {

@@ -1,4 +1,3 @@
-import { StatusChip } from "@homerounds/ui";
 import Link from "next/link";
 
 import {
@@ -9,38 +8,7 @@ import { deterministicUuid } from "@/server/crypto";
 
 import styles from "./home.module.css";
 
-const stories: ReadonlyArray<{
-  id: PatientScenarioId;
-  eyebrow: string;
-  title: string;
-  description: string;
-  proof: string;
-}> = [
-  {
-    id: "maya-happy-text",
-    eyebrow: "Primary demo",
-    title: "Calm text-first round",
-    description:
-      "Confirm structured symptoms, try the selected optical check, review the deterministic result, and create one auditable task.",
-    proof: "Works without a voice API key"
-  },
-  {
-    id: "maya-poor-quality",
-    eyebrow: "Resilience story",
-    title: "Poor signal, honest recovery",
-    description:
-      "See one coached retry, no invented number, then choose a visibly labelled recorded synthetic recovery or abstain for review.",
-    proof: "No raw media or silent fallback"
-  },
-  {
-    id: "maya-red-flag",
-    eyebrow: "Safety story",
-    title: "Structured red-flag hard stop",
-    description:
-      "A patient-confirmed answer ends ordinary capture before voice or a model can soften, skip, or reinterpret the safety gate.",
-    proof: "Deterministic authority boundary"
-  }
-];
+const PRIMARY_SCENARIO: PatientScenarioId = "maya-happy-text";
 
 function clinicianHref(): string {
   const query = new URLSearchParams();
@@ -50,133 +18,159 @@ function clinicianHref(): string {
   return `/clinician?${query.toString()}`;
 }
 
-function protectedDemoHref(role: "patient" | "clinician", destination: string): string {
+function protectedHref(role: "patient" | "clinician", destination: string): string {
   if (process.env.APP_ENV !== "demo") return destination;
   const query = new URLSearchParams({ role, next: destination });
   return `/access?${query.toString()}`;
 }
 
+function BaselineIllustration() {
+  return (
+    <figure className={styles.baseline}>
+      <figcaption>
+        <span>Your recent pattern</span>
+        <strong>A small change is worth checking</strong>
+      </figcaption>
+      <svg
+        aria-labelledby="baseline-title baseline-description"
+        className={styles.baselineGraph}
+        role="img"
+        viewBox="0 0 680 190"
+      >
+        <title id="baseline-title">Illustrative seven-day pattern</title>
+        <desc id="baseline-description">
+          A calm sample trend with Saturday highlighted as the point to revisit.
+        </desc>
+        <path
+          className={styles.baselineBand}
+          d="M18 88 C95 54 144 116 224 92 C304 66 365 110 444 75 C514 44 584 99 662 68 L662 132 C584 160 512 105 444 136 C366 169 302 126 224 150 C143 175 91 112 18 146 Z"
+        />
+        <path
+          className={styles.baselineLine}
+          d="M18 115 C95 82 144 142 224 119 C304 92 365 137 444 105 C514 73 584 130 662 98"
+        />
+        {[18, 125, 232, 339, 446, 553, 662].map((x, index) => (
+          <circle
+            className={index === 5 ? styles.baselinePointActive : styles.baselinePoint}
+            cx={x}
+            cy={[115, 119, 117, 122, 104, 94, 98][index]}
+            key={x}
+            r={index === 5 ? 10 : 6}
+          />
+        ))}
+      </svg>
+      <ol aria-hidden="true" className={styles.days}>
+        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+          <li key={day}>{day}</li>
+        ))}
+      </ol>
+    </figure>
+  );
+}
+
 export default function HomePage() {
+  const roundHref = protectedHref("patient", `/round?scenario=${PRIMARY_SCENARIO}`);
+
   return (
     <main className={styles.page}>
-      <section className={styles.hero}>
-        <nav aria-label="HomeRounds demo destinations" className={styles.nav}>
-          <Link className={styles.brand} href="/">
-            <span aria-hidden="true">H</span>
-            <strong>HomeRounds</strong>
-          </Link>
-          <div className={styles.navLinks}>
-            <Link href="/styleguide">System</Link>
-            <Link href={protectedDemoHref("clinician", clinicianHref())}>Clinician cockpit</Link>
-          </div>
+      <header className={styles.header}>
+        <Link className={styles.brand} href="/">
+          HomeRounds
+        </Link>
+        <nav aria-label="Home navigation" className={styles.navigation}>
+          <a href="#how-it-works">How it works</a>
+          <Link href={protectedHref("clinician", clinicianHref())}>Clinician view</Link>
         </nav>
+      </header>
 
+      <section aria-labelledby="welcome-title" className={styles.hero}>
         <div className={styles.heroGrid}>
-          <div className={styles.heroCopy}>
-            <div className={styles.chips}>
-              <StatusChip variant="information">Synthetic demonstration</StatusChip>
-              <StatusChip variant="attention">Not clinically validated</StatusChip>
-            </div>
-            <p className={styles.kicker}>Adaptive asynchronous clinical rounds</p>
-            <h1>One short check-in. One evidence chain. One clear next owner.</h1>
+          <div className={styles.welcome}>
+            <p className={styles.eyebrow}>Your home round</p>
+            <h1 id="welcome-title">Good morning, Maya.</h1>
             <p className={styles.lede}>
-              HomeRounds turns fictional patient-confirmed answers and quality-gated sensor evidence
-              into a deterministic, auditable programme workflow—without diagnosis or model-led
-              urgency.
+              A short check-in is ready when you are. We’ll ask what changed, review it with you,
+              then offer one useful next step.
             </p>
-            <div className={styles.heroActions}>
-              <Link
-                className={styles.primaryAction}
-                href={protectedDemoHref("patient", "/round?scenario=maya-happy-text")}
-              >
-                Start the primary demo
+
+            <BaselineIllustration />
+
+            <div className={styles.actions}>
+              <Link className={styles.primaryAction} href={roundHref}>
+                <span aria-hidden="true" className={styles.actionMark} />
+                Start a check-in
               </Link>
-              <Link
-                className={styles.secondaryAction}
-                href={protectedDemoHref("clinician", clinicianHref())}
-              >
-                Open clinician view
-              </Link>
+              <a className={styles.textAction} href="#recent-context">
+                See what HomeRounds remembers
+              </a>
             </div>
           </div>
 
-          <aside className={styles.boundary} aria-labelledby="boundary-title">
-            <p className={styles.boundaryNumber}>02:00</p>
-            <h2 id="boundary-title">Designed to finish calmly</h2>
-            <dl>
-              <div>
-                <dt>Patient authority</dt>
-                <dd>Structured answers and explicit confirmation</dd>
-              </div>
-              <div>
-                <dt>Sensor authority</dt>
-                <dd>Passing quality or no numeric measurement</dd>
-              </div>
-              <div>
-                <dt>Workflow authority</dt>
-                <dd>Versioned rules and audited persistence</dd>
-              </div>
-            </dl>
-            <p>
-              Synthetic hackathon prototype. It is not a medical service and must not be used for
-              medical decisions.
+          <aside aria-labelledby="context-title" className={styles.context} id="recent-context">
+            <p className={styles.contextEyebrow}>For this check-in</p>
+            <h2 id="context-title">What I already know</h2>
+            <ul>
+              <li>
+                <span aria-hidden="true">01</span>
+                <div>
+                  <strong>Your usual baseline</strong>
+                  <p>Used only to keep this round focused.</p>
+                </div>
+              </li>
+              <li>
+                <span aria-hidden="true">02</span>
+                <div>
+                  <strong>Recent medication history</strong>
+                  <p>You will confirm anything used in this round.</p>
+                </div>
+              </li>
+              <li>
+                <span aria-hidden="true">03</span>
+                <div>
+                  <strong>Your saved progress</strong>
+                  <p>Only confirmed structured information is restored.</p>
+                </div>
+              </li>
+            </ul>
+            <p className={styles.limitNote}>
+              HomeRounds cannot diagnose a condition or contact a clinic. Voice and camera checks
+              stay optional, with a complete text path available.
             </p>
           </aside>
         </div>
       </section>
 
-      <section className={styles.stories} aria-labelledby="stories-title">
-        <header className={styles.sectionHeader}>
-          <p className={styles.kicker}>Three deterministic stories</p>
-          <h2 id="stories-title">Choose what you want the product to prove</h2>
-          <p>
-            Each path uses a separate reset-safe synthetic round and the same production boundary.
-          </p>
-        </header>
-        <div className={styles.storyGrid}>
-          {stories.map((story, index) => (
-            <article className={styles.story} key={story.id}>
-              <div className={styles.storyTopline}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <p>{story.eyebrow}</p>
-              </div>
-              <h3>{story.title}</h3>
-              <p>{story.description}</p>
-              <strong>{story.proof}</strong>
-              <Link href={protectedDemoHref("patient", `/round?scenario=${story.id}`)}>
-                Launch this story
-              </Link>
-            </article>
-          ))}
+      <section aria-labelledby="how-title" className={styles.how} id="how-it-works">
+        <div>
+          <p className={styles.eyebrow}>One thing at a time</p>
+          <h2 id="how-title">A calm path from conversation to next step.</h2>
         </div>
+        <ol>
+          <li>
+            <span>1</span>
+            <div>
+              <strong>Tell me what changed</strong>
+              <p>Speak or type, then check the words and structured answers yourself.</p>
+            </div>
+          </li>
+          <li>
+            <span>2</span>
+            <div>
+              <strong>Do one selected check</strong>
+              <p>Use your phone when available, or continue on this computer when supported.</p>
+            </div>
+          </li>
+          <li>
+            <span>3</span>
+            <div>
+              <strong>Choose what happens next</strong>
+              <p>No action is created until you see it and confirm it.</p>
+            </div>
+          </li>
+        </ol>
       </section>
 
-      <section className={styles.multimodal} aria-labelledby="multimodal-title">
-        <div>
-          <p className={styles.kicker}>Multimodal, with bounded authority</p>
-          <h2 id="multimodal-title">Voice can help. Text can always finish.</h2>
-        </div>
-        <ul>
-          <li>
-            <strong>Voice</strong>
-            ElevenLabs is optional; editable confirmation preserves parity with the no-key text
-            path.
-          </li>
-          <li>
-            <strong>Optical</strong>
-            Finger PPG and VitalLens share one contract; release evidence decides which claim ships.
-          </li>
-          <li>
-            <strong>Rules</strong>A versioned deterministic protocol—not a model—owns follow-up and
-            allowlisted action.
-          </li>
-          <li>
-            <strong>Operations</strong>
-            Clinician notes, contact, acknowledgement, completion, and audit provenance persist
-            together.
-          </li>
-        </ul>
-      </section>
+      <footer className={styles.footer}>Sample profile · Not medical care</footer>
     </main>
   );
 }

@@ -154,11 +154,11 @@ export function roundMapStatusDescription(module: RoundMapModule): string {
     case "selected":
       return "This eligible step is ready to start.";
     case "skipped":
-      return "The deterministic route does not need this step now.";
+      return "Your saved route does not need this step now.";
     case "unavailable":
       return availabilityReason(module.candidate);
     case "next":
-      return "This step remains available if the deterministic route needs it.";
+      return "This step remains available if your saved route needs it.";
   }
 }
 
@@ -166,15 +166,15 @@ function availabilityReason(candidate: EvidenceModuleCandidate): string {
   if (candidate.availability.status === "available") return candidate.description;
   switch (candidate.availability.reason) {
     case "not_needed":
-      return "The deterministic route does not need this module.";
+      return "Your saved route does not need this check.";
     case "unsupported_device":
       return "This device does not support this module.";
     case "permission_denied":
       return "Required permission was not granted.";
     case "missing_configuration":
-      return "This module is not configured for this demo.";
+      return "This check is not available right now.";
     case "provider_unavailable":
-      return "The selected provider is unavailable.";
+      return "This check is temporarily unavailable.";
     case "burden_exceeded":
       return "The remaining round time does not allow this module.";
   }
@@ -186,10 +186,10 @@ function deterministicRationale(experience: RoundMapExperience): string {
     experience.modules.find(({ status }) => status === "selected") ??
     experience.modules.find(({ status }) => status === "next");
   if (!nextModule) {
-    return "The deterministic round plan keeps your confirmed information and does not add another evidence step.";
+    return "Your confirmed information is enough to continue without another evidence step.";
   }
   const facts = nextModule.candidate.producesFactKeys.map((key) => factLabels[key]);
-  return `${nextModule.candidate.label} is next in the deterministic plan because it is available to collect ${facts.join(" and ")}.`;
+  return `Based on your confirmed answers, ${nextModule.candidate.label.toLowerCase()} can add ${facts.join(" and ")}.`;
 }
 
 function acceptedPresentation(
@@ -213,9 +213,9 @@ function acceptedPresentation(
   if (decision.decision === "abstain") {
     return {
       kind: "abstained",
-      title: "AI abstained; the safe route continues",
+      title: "Your usual next step is still available",
       description:
-        "No AI-selected module was used. The deterministic plan keeps control of the next step.",
+        "No personalised recommendation was used. Your saved route still has a safe way forward.",
       rationale: decision.rationale,
       rationaleSource: "ai_checked",
       uncertainty: decision.uncertainty,
@@ -229,9 +229,9 @@ function acceptedPresentation(
   if (!selected || selected.candidate.availability.status !== "available") {
     return {
       kind: "rejected",
-      title: "The AI suggestion was not eligible",
+      title: "That suggestion did not fit this round",
       description:
-        "The suggestion cannot change this round. HomeRounds kept the deterministic route.",
+        "It was not one of the available choices, so your saved route was left unchanged.",
       rationale: deterministicRationale(experience),
       rationaleSource: "deterministic_template",
       uncertainty: null,
@@ -241,9 +241,9 @@ function acceptedPresentation(
   }
   return {
     kind: "accepted",
-    title: `${selected.candidate.label} was selected`,
+    title: `${selected.candidate.label} is the most useful next step.`,
     description:
-      "AI proposed this eligible module; deterministic checks accepted it for presentation only.",
+      "It can clarify one piece of your confirmed check-in without adding unnecessary tasks.",
     rationale: decision.rationale,
     rationaleSource: "ai_checked",
     uncertainty: decision.uncertainty,
@@ -268,9 +268,9 @@ function fallbackPresentation(
       return {
         ...shared,
         kind: "unavailable",
-        title: "AI selection is unavailable",
+        title: "A personalised recommendation is unavailable",
         description:
-          "Your confirmed progress is safe. HomeRounds is using the complete deterministic route.",
+          "Your confirmed progress is safe. HomeRounds can continue with the usual next step.",
         retryable: outcome.failure?.retryable ?? false
       };
     case "invalid_proposal":
@@ -278,9 +278,9 @@ function fallbackPresentation(
       return {
         ...shared,
         kind: "rejected",
-        title: "The AI suggestion was rejected",
+        title: "That suggestion did not fit this round",
         description:
-          "It was not eligible for this saved round, so it cannot change the evidence route.",
+          "It was not one of the available choices, so it cannot change your saved route.",
         retryable: outcome.failure?.retryable ?? true
       };
     case "stale_round":
@@ -295,9 +295,8 @@ function fallbackPresentation(
       return {
         ...shared,
         kind: "safety_fallback",
-        title: "The safety gate kept control",
-        description:
-          "AI selection did not run because the deterministic red-flag state was not clear.",
+        title: "The safety check needs your attention",
+        description: "No recommendation was made while a required safety answer remained unclear.",
         retryable: false
       };
   }
@@ -311,8 +310,8 @@ export function roundMapSelectionPresentation(
     case "not_requested":
       return {
         kind: "deterministic",
-        title: "Your deterministic round plan",
-        description: "No AI selection is needed to continue this complete route.",
+        title: "Your next useful step",
+        description: "Your confirmed answers already point to one available next check.",
         rationale: deterministicRationale(experience),
         rationaleSource: "deterministic_template",
         uncertainty: null,
@@ -322,8 +321,8 @@ export function roundMapSelectionPresentation(
     case "loading":
       return {
         kind: "loading",
-        title: "Checking eligible evidence modules",
-        description: "Confirmed progress remains visible while the bounded selection is checked.",
+        title: "Choosing the smallest useful next step",
+        description: "Your confirmed progress stays saved while the available choices are checked.",
         rationale: deterministicRationale(experience),
         rationaleSource: "deterministic_template",
         uncertainty: null,
@@ -333,8 +332,8 @@ export function roundMapSelectionPresentation(
     case "retrying":
       return {
         kind: "retrying",
-        title: "Retrying the bounded selection",
-        description: "Confirmed progress remains saved; no previous result is being reused.",
+        title: "Checking the next step again",
+        description: "Your confirmed progress remains saved; an older suggestion is not reused.",
         rationale: deterministicRationale(experience),
         rationaleSource: "deterministic_template",
         uncertainty: null,

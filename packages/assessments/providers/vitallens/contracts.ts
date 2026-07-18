@@ -1,7 +1,7 @@
 import { CaptureQualitySchema } from "@homerounds/contracts/assessment";
 import { z } from "zod";
 
-export const VITALLENS_ALGORITHM_VERSION = "vitallens_face_rppg_v1";
+export const VITALLENS_ALGORITHM_VERSION = "vitallens_face_rppg_rgb24_v2";
 
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
@@ -23,7 +23,7 @@ export const VitalLensProviderConfigurationSchema = z
       ),
     providerVersion: z.string().min(1).max(120),
     consentVersion: z.string().min(1).max(120),
-    captureDurationMs: z.number().int().min(1_000).max(60_000),
+    captureDurationMs: z.number().int().min(5_000).max(60_000),
     requestTimeoutMs: z.number().int().min(250).max(30_000),
     maxPayloadBytes: z.number().int().min(1).max(5_000_000)
   })
@@ -66,8 +66,8 @@ export const VitalLensPayloadMetadataSchema = z
   .object({
     contentType: z.literal("application/octet-stream"),
     byteLength: z.number().int().positive().max(5_000_000),
-    durationMs: z.number().int().positive().max(60_000),
-    frameCount: z.number().int().positive().max(3_600),
+    durationMs: z.number().int().min(5_000).max(60_000),
+    frameCount: z.number().int().min(16).max(900),
     width: z.number().int().positive().max(640),
     height: z.number().int().positive().max(640),
     audioIncluded: z.literal(false)

@@ -214,9 +214,12 @@ export type VitalLensProxyServiceInput = {
   consentGrantedAt: string;
   metadata: unknown;
   bytes: Uint8Array;
+  signal?: AbortSignal;
 };
 
 export class VitalLensProxyService {
+  readonly #seenRequestIds = new Set<string>();
+
   constructor(
     private readonly config: {
       enabled: boolean;
@@ -226,69 +229,105 @@ export class VitalLensProxyService {
       maxPayloadBytes: number;
       requestTimeoutMs?: number;
       minimumHeartRateConfidence?: number;
+      maximumConsentAgeMs?: number;
+      requestHistorySize?: number;
     },
     private readonly transport: VitalLensInferenceTransport,
     private readonly now: () => string = () => new Date().toISOString()
   ) {}
 
   async infer(input: VitalLensProxyServiceInput): Promise<VitalLensProxyResponse> {
-    const metadata = VitalLensPayloadMetadataSchema.parse(input.metadata);
-    z.uuid().parse(input.requestId);
-    z.iso.datetime().parse(input.consentGrantedAt);
-    if (!this.config.enabled || !this.config.apiKey) {
-      input.bytes.fill(0);
-      return VitalLensProxyResponseSchema.parse({
-        status: "unavailable",
-        reason: "provider_unavailable"
-      });
-    }
-    if (
-      input.providerVersion !== this.config.providerVersion ||
-      input.consentVersion !== this.config.consentVersion ||
-      metadata.byteLength !== input.bytes.byteLength ||
-      metadata.byteLength > this.config.maxPayloadBytes ||
-      metadata.width !== 40 ||
-      metadata.height !== 40 ||
-      metadata.byteLength !== metadata.frameCount * metadata.width * metadata.height * 3
-    ) {
-      input.bytes.fill(0);
-      return VitalLensProxyResponseSchema.parse({ status: "failed", code: "processing_failed" });
-    }
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.config.requestTimeoutMs ?? 15_000);
     try {
-      const provider = await this.transport.infer({
-        apiKey: this.config.apiKey,
-        providerVersion: this.config.providerVersion,
-        bytes: input.bytes,
-        metadata,
-        signal: controller.signal
-      });
-      return this.#normalize(provider, metadata);
-    } catch (error: unknown) {
-      if (error instanceof ProviderTransportError && error.code === "quota") {
-        return VitalLensProxyResponseSchema.parse({ status: "unavailable", reason: "quota" });
-      }
-      if (
-        controller.signal.aborted ||
-        (error instanceof ProviderTransportError && error.code === "network")
-      ) {
+      const apiKey = this.config.apiKey;
+      if (!this.config.enabled || !apiKey) {
         return VitalLensProxyResponseSchema.parse({
           status: "unavailable",
           reason: "provider_unavailable"
         });
       }
-      return VitalLensProxyResponseSchema.parse({ status: "failed", code: "processing_failed" });
+
+      const metadata = VitalLensPayloadMetadataSchema.safeParse(input.metadata);
+      const requestId = z.uuid().safeParse(input.requestId);
+      const consentGrantedAt = z.iso.datetime().safeParse(input.consentGrantedAt);
+      const now = Date.parse(this.now());
+      const consentAt = consentGrantedAt.success ? Date.parse(consentGrantedAt.data) : Number.NaN;
+      const consentAgeMs = now - consentAt;
+      if (
+        !metadata.success ||
+        !requestId.success ||
+        !consentGrantedAt.success ||
+        !Number.isFinite(now) ||
+        !Number.isFinite(consentAt) ||
+        consentAgeMs < -30_000 ||
+        consentAgeMs > (this.config.maximumConsentAgeMs ?? 10 * 60_000) ||
+        input.providerVersion !== this.config.providerVersion ||
+        input.consentVersion !== this.config.consentVersion ||
+        metadata.data.byteLength !== input.bytes.byteLength ||
+        metadata.data.byteLength > this.config.maxPayloadBytes ||
+        metadata.data.width !== 40 ||
+        metadata.data.height !== 40 ||
+        metadata.data.byteLength !==
+          metadata.data.frameCount * metadata.data.width * metadata.data.height * 3 ||
+        this.#seenRequestIds.has(input.requestId)
+      ) {
+        return VitalLensProxyResponseSchema.parse({ status: "failed", code: "processing_failed" });
+      }
+
+      this.#rememberRequest(input.requestId);
+      const controller = new AbortController();
+      const cancel = (): void => controller.abort();
+      input.signal?.addEventListener("abort", cancel, { once: true });
+      if (input.signal?.aborted) controller.abort();
+      const timeout = setTimeout(() => controller.abort(), this.config.requestTimeoutMs ?? 15_000);
+      try {
+        const provider = await this.transport.infer({
+          apiKey,
+          providerVersion: this.config.providerVersion,
+          bytes: input.bytes,
+          metadata: metadata.data,
+          signal: controller.signal
+        });
+        return this.#normalize(provider, metadata.data);
+      } catch (error: unknown) {
+        if (error instanceof ProviderTransportError && error.code === "quota") {
+          return VitalLensProxyResponseSchema.parse({ status: "unavailable", reason: "quota" });
+        }
+        if (
+          controller.signal.aborted ||
+          (error instanceof ProviderTransportError &&
+            (error.code === "network" || error.code === "configuration"))
+        ) {
+          return VitalLensProxyResponseSchema.parse({
+            status: "unavailable",
+            reason: "provider_unavailable"
+          });
+        }
+        return VitalLensProxyResponseSchema.parse({ status: "failed", code: "processing_failed" });
+      } finally {
+        clearTimeout(timeout);
+        input.signal?.removeEventListener("abort", cancel);
+      }
     } finally {
-      clearTimeout(timeout);
       input.bytes.fill(0);
     }
+  }
+
+  #rememberRequest(requestId: string): void {
+    const historySize = Math.max(1, this.config.requestHistorySize ?? 256);
+    if (this.#seenRequestIds.size >= historySize) {
+      const oldest = this.#seenRequestIds.values().next().value;
+      if (oldest !== undefined) this.#seenRequestIds.delete(oldest);
+    }
+    this.#seenRequestIds.add(requestId);
   }
 
   #normalize(
     provider: VitalLensProviderResponse,
     metadata: VitalLensPayloadMetadata
   ): VitalLensProxyResponse {
+    if (provider.model_used !== this.config.providerVersion) {
+      return VitalLensProxyResponseSchema.parse({ status: "failed", code: "processing_failed" });
+    }
     const heartRate = provider.vitals.heart_rate;
     const confidence = heartRate.confidence ?? 0;
     const passes =

@@ -226,11 +226,38 @@ describe("VitalLens provider configuration and availability", () => {
         serverProxy: true,
         rawMediaRetention: false,
         audioCapture: false,
-        heartRateOnly: true
+        heartRateOnly: true,
+        freeTierFrameBudgetAware: true
       }
     });
     expect(harness.consent.requestConsent).not.toHaveBeenCalled();
     expect(harness.camera.openFrontCamera).not.toHaveBeenCalled();
+  });
+
+  it("exposes prompt versus granted camera permission without requesting consent", async () => {
+    const prompt = makeHarness({
+      capability: { available: true, frontCamera: true, permissionState: "prompt" }
+    });
+    const granted = makeHarness({
+      capability: { available: true, frontCamera: true, permissionState: "granted" }
+    });
+
+    await expect(prompt.provider.checkAvailability()).resolves.toMatchObject({
+      available: true,
+      capabilities: {
+        cameraPermissionGranted: false,
+        cameraPermissionPromptRequired: true
+      }
+    });
+    await expect(granted.provider.checkAvailability()).resolves.toMatchObject({
+      available: true,
+      capabilities: {
+        cameraPermissionGranted: true,
+        cameraPermissionPromptRequired: false
+      }
+    });
+    expect(prompt.consent.requestConsent).not.toHaveBeenCalled();
+    expect(granted.consent.requestConsent).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -264,7 +291,7 @@ describe("VitalLens capture normalization", () => {
         unit: "bpm",
         observedAt: "2026-07-17T09:00:00.000Z",
         durationMs: 30_000,
-        algorithmVersion: "vitallens_face_rppg_v1",
+        algorithmVersion: "vitallens_face_rppg_rgb24_v2",
         providerModelVersion: "vitallens-model-4.2",
         quality: passingQuality,
         rawMediaRef: null

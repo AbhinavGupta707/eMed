@@ -38,7 +38,8 @@ const CapabilityResponseSchema = z.discriminatedUnion("available", [
   z
     .object({
       available: z.literal(true),
-      frontCamera: z.literal(true)
+      frontCamera: z.literal(true),
+      permissionState: z.enum(["granted", "prompt", "unknown"]).optional()
     })
     .strict(),
   z
@@ -172,7 +173,14 @@ export class VitalLensAssessmentProvider implements OpticalAssessmentProvider {
           serverProxy: true,
           rawMediaRetention: false,
           audioCapture: false,
-          heartRateOnly: true
+          heartRateOnly: true,
+          freeTierFrameBudgetAware: true,
+          ...(capability.data.permissionState === undefined
+            ? {}
+            : {
+                cameraPermissionGranted: capability.data.permissionState === "granted",
+                cameraPermissionPromptRequired: capability.data.permissionState !== "granted"
+              })
         }
       };
     } catch (error: unknown) {
@@ -285,11 +293,12 @@ export class VitalLensAssessmentProvider implements OpticalAssessmentProvider {
         }),
         controller.signal
       );
-      rawBytes = rawPayload.bytes;
+      const candidateBytes: unknown = rawPayload.bytes;
+      if (candidateBytes instanceof Uint8Array) rawBytes = candidateBytes;
       const metadata = VitalLensPayloadMetadataSchema.safeParse(rawPayload.metadata);
       if (
         !metadata.success ||
-        !(rawBytes instanceof Uint8Array) ||
+        rawBytes === undefined ||
         metadata.data.byteLength !== rawBytes.byteLength ||
         metadata.data.byteLength > configuration.maxPayloadBytes ||
         metadata.data.durationMs > configuration.captureDurationMs

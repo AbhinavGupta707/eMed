@@ -25,11 +25,14 @@ describe("heart-failure showcase", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "No single alert fired. Together, the changes mattered."
+        name: "Her baseline tells us what a single reading cannot."
       })
     ).toBeVisible();
     expect(screen.getAllByText("Weight rose by 0.8 kg")).toHaveLength(2);
     expect(screen.getAllByText("Activity 21% below usual")).toHaveLength(2);
+    expect(screen.getAllByText("Previous round resolved")).toHaveLength(2);
+    expect(screen.getByText("What changed today?")).toBeVisible();
+    expect(screen.queryByText("Stairs feel harder than usual")).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "COPD ↗" })).toHaveAttribute("href", "/showcase/copd");
     expect(screen.getByRole("link", { name: "GLP-1 ↗" })).toHaveAttribute("href", "/showcase/glp1");
     expect(screen.queryByText(/deterministic cache|fixture/i)).not.toBeInTheDocument();
@@ -38,7 +41,7 @@ describe("heart-failure showcase", () => {
   it("keeps a no-microphone path to the adaptive Round Map", () => {
     render(createElement(HeartShowcase));
 
-    fireEvent.click(screen.getByRole("button", { name: "Talk it through with HomeRounds" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start today’s adaptive round" }));
     fireEvent.click(screen.getByRole("button", { name: "Type instead" }));
     fireEvent.change(screen.getByLabelText("What changed?"), {
       target: { value: "The stairs feel harder and I am more tired than usual." }

@@ -4,6 +4,8 @@ export type ContextEvent = Readonly<{
   title: string;
   detail: string;
   source: string;
+  relationship?: string;
+  evidenceStrength?: "confirmed" | "strong" | "context";
   x: number;
   y: number;
 }>;
@@ -64,6 +66,8 @@ export const HEART_CONTEXT_EVENTS: readonly ContextEvent[] = [
     title: "Weight rose by 0.8 kg",
     detail: "A modest change that remains below the configured 2 kg alert boundary.",
     source: "Confirmed home reading",
+    relationship: "Below alert boundary",
+    evidenceStrength: "confirmed",
     x: 14,
     y: 19
   },
@@ -73,6 +77,8 @@ export const HEART_CONTEXT_EVENTS: readonly ContextEvent[] = [
     title: "Activity 21% below usual",
     detail: "Compared with Maya’s compatible fourteen-day personal baseline.",
     source: "Personal baseline",
+    relationship: "Change from usual",
+    evidenceStrength: "strong",
     x: 78,
     y: 18
   },
@@ -80,17 +86,21 @@ export const HEART_CONTEXT_EVENTS: readonly ContextEvent[] = [
     id: "medication",
     when: "Yesterday",
     title: "Dose record needs reconciling",
-    detail: "A recent instruction and the pack at home do not yet establish the current dose.",
+    detail: "A recent programme instruction does not yet establish the package currently at home.",
     source: "Medication record",
+    relationship: "Open context",
+    evidenceStrength: "confirmed",
     x: 82,
     y: 72
   },
   {
-    id: "breathlessness",
-    when: "Today",
-    title: "Stairs feel harder than usual",
-    detail: "New breathlessness and fatigue completed the configured change pattern.",
-    source: "Patient report",
+    id: "previous-round",
+    when: "4 weeks ago",
+    title: "Previous round resolved",
+    detail: "The care team returned a monitoring plan and Maya confirmed understanding.",
+    source: "Clinician outcome",
+    relationship: "Known precedent",
+    evidenceStrength: "context",
     x: 12,
     y: 72
   }

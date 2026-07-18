@@ -212,6 +212,34 @@
   box-shadow: var(--shadow-2);
   isolation: isolate;
 }
+.constellationMeta {
+  position: absolute;
+  top: 1.2rem;
+  left: 1.3rem;
+  z-index: 3;
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.65rem 0.8rem;
+  background: rgb(255 253 248 / 76%);
+  border: 1px solid rgb(216 207 194 / 68%);
+  border-radius: 0.8rem;
+  backdrop-filter: blur(12px);
+}
+.constellationMeta span,
+.constellationMeta strong {
+  display: block;
+}
+.constellationMeta span {
+  color: var(--terracotta-strong);
+  font-size: 0.65rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.constellationMeta strong {
+  color: var(--primary);
+  font-size: 0.72rem;
+}
 .constellation::before {
   position: absolute;
   inset: 0;
@@ -329,12 +357,68 @@
   color: var(--muted-foreground);
   font-size: 0.66rem;
 }
+.contextNodeMeta {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  justify-content: space-between;
+}
+.contextNodeMeta i {
+  padding: 0.2rem 0.35rem;
+  color: var(--success);
+  font-size: 0.54rem;
+  font-style: normal;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--success-surface);
+  border-radius: 999px;
+}
 .contextNode strong {
   display: block;
   margin-block: 0.25rem;
   color: var(--primary);
   font-size: 0.85rem;
   line-height: 1.25;
+}
+.contextNode em {
+  display: inline-flex;
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  color: var(--terracotta-strong);
+  font-size: 0.6rem;
+  font-style: normal;
+  font-weight: 750;
+  border-top: 1px solid var(--border);
+}
+.openQuestionNode {
+  position: absolute;
+  left: 50%;
+  bottom: 1.2rem;
+  z-index: 4;
+  width: min(74%, 22rem);
+  display: grid;
+  gap: 0.22rem;
+  padding: 0.85rem 1rem;
+  text-align: center;
+  background: rgb(23 60 50 / 94%);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 1rem;
+  box-shadow: 0 18px 42px rgb(23 60 50 / 20%);
+  transform: translateX(-50%);
+}
+.openQuestionNode span,
+.openQuestionNode small {
+  color: rgb(255 255 255 / 62%);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.openQuestionNode strong {
+  color: white;
+  font-family: var(--font-display);
+  font-size: 1.18rem;
+  font-weight: 500;
 }
 .contextFallback {
   position: absolute;
@@ -853,6 +937,35 @@
   gap: 0.65rem;
   margin-block: 1.5rem;
 }
+.qualityDecision {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 1rem;
+  padding: 1.1rem;
+  background: var(--card);
+  border: 1px solid var(--warning-border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-1);
+}
+.qualityDecision > span {
+  color: var(--warning);
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.qualityDecision > strong {
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 500;
+}
+.qualityDecision > p {
+  margin: 0 0 0.35rem;
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
 .signalRow {
   display: flex;
   justify-content: space-between;
@@ -1088,6 +1201,27 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+}
+.captureChecklist {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.captureChecklist li {
+  position: relative;
+  padding-left: 1.35rem;
+  color: var(--surface-foreground);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+.captureChecklist li::before {
+  position: absolute;
+  left: 0;
+  content: "✓";
+  color: var(--success);
+  font-weight: 850;
 }
 .medicationStage[data-phase="reading"] .medicationPack i {
   opacity: 1;
@@ -1375,9 +1509,106 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+.handoffPreview {
+  display: grid;
+  grid-template-columns: 15rem 1fr auto;
+  gap: 1.25rem;
+  align-items: center;
+  padding: clamp(1.2rem, 3vw, 2rem);
+  background: linear-gradient(135deg, var(--primary), #244e43);
+  color: white;
+  border-radius: 1.4rem;
+  box-shadow: 0 24px 58px rgb(23 60 50 / 20%);
+}
+.handoffRecipient,
+.handoffContents > div {
+  display: grid;
+  gap: 0.25rem;
+}
+.handoffRecipient span,
+.handoffContents span {
+  color: rgb(255 255 255 / 58%);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.handoffRecipient strong {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 500;
+}
+.handoffRecipient small,
+.handoffContents small {
+  color: rgb(255 255 255 / 60%);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+.handoffContents {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8rem;
+}
+.handoffContents > div {
+  min-height: 7.5rem;
+  align-content: start;
+  padding: 0.85rem;
+  background: rgb(255 255 255 / 8%);
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 0.8rem;
+}
+.handoffContents strong {
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+.handoffPreview .primaryButton {
+  white-space: nowrap;
+}
+.dataBoundary {
+  display: grid;
+  grid-template-columns: auto 1fr auto 1fr;
+  gap: 0.65rem 1rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  font-size: 0.72rem;
+}
+.dataBoundary span {
+  color: var(--terracotta-strong);
+  font-weight: 850;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.dataBoundary strong {
+  color: var(--primary);
+  font-weight: 650;
+}
 .clinicianLayout {
   display: grid;
   gap: 2rem;
+}
+.receivedBanner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  color: var(--primary);
+  background: var(--success-surface);
+  border: 1px solid var(--success-border);
+  border-radius: 0.9rem;
+}
+.receivedBanner span {
+  color: var(--success);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.receivedBanner small {
+  color: var(--muted-foreground);
 }
 .clinicianHeader {
   display: flex;
@@ -1496,6 +1727,40 @@
   color: var(--muted-foreground);
   font-size: 0.75rem;
 }
+.clinicianResponse {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1rem;
+  background: var(--success-surface);
+  border: 1px solid var(--success-border);
+  border-radius: 1rem;
+}
+.clinicianResponse > span {
+  color: var(--success);
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.clinicianResponse > strong {
+  color: var(--primary);
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 500;
+}
+.clinicianResponse ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.2rem;
+  padding: 0;
+  margin: 0.2rem 0;
+  color: var(--surface-foreground);
+  font-size: 0.76rem;
+  list-style-position: inside;
+}
+.clinicianResponse .primaryButton {
+  justify-self: start;
+}
 .auditTrail,
 .resolutionTimeline {
   display: flex;
@@ -1507,6 +1772,52 @@
   background: var(--surface);
   border-radius: 0.8rem;
   font-size: 0.72rem;
+}
+.patientOutcome {
+  width: min(100%, 54rem);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.8rem;
+  text-align: left;
+}
+.patientOutcome > div {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  box-shadow: var(--shadow-1);
+}
+.patientOutcome span,
+.graphMemoryUpdate span,
+.adaptivePacks > span {
+  color: var(--terracotta-strong);
+  font-size: 0.64rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.patientOutcome strong {
+  color: var(--primary);
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+.graphMemoryUpdate {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 1rem;
+  padding: 1rem 1.2rem;
+  color: var(--primary);
+  background: var(--success-surface);
+  border: 1px solid var(--success-border);
+  border-radius: 1rem;
+}
+.adaptivePacks {
+  display: grid;
+  gap: 0.8rem;
+  justify-items: center;
 }
 .auditTrail i,
 .resolutionTimeline i {
@@ -1672,6 +1983,24 @@
   display: grid;
   gap: 0.75rem;
   margin-top: 1.5rem;
+}
+.phoneDecision {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  text-align: left;
+  background: var(--warning-surface);
+  border: 1px solid var(--warning-border);
+  border-radius: 1rem;
+}
+.phoneDecision strong {
+  color: var(--primary);
+}
+.phoneDecision span {
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 .phonePrivacy {
   display: grid;
@@ -1866,6 +2195,15 @@
   .clinicianGrid {
     grid-template-columns: 1fr;
   }
+  .handoffPreview {
+    grid-template-columns: 1fr;
+  }
+  .handoffContents {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .receivedBanner {
+    grid-template-columns: 1fr;
+  }
   .queuePanel {
     display: none;
   }
@@ -1926,6 +2264,18 @@
   .contextNode small {
     display: none;
   }
+  .contextNodeMeta i,
+  .contextNode em {
+    display: none;
+  }
+  .constellationMeta {
+    top: 0.75rem;
+    left: 0.75rem;
+  }
+  .openQuestionNode {
+    bottom: 0.75rem;
+    width: calc(100% - 1.5rem);
+  }
   .patientNode {
     width: 7rem;
     height: 7rem;
@@ -1950,8 +2300,13 @@
   }
   .planRail,
   .evidenceGrid,
-  .clinicianFacts {
+  .clinicianFacts,
+  .handoffContents,
+  .patientOutcome {
     grid-template-columns: 1fr;
+  }
+  .dataBoundary {
+    grid-template-columns: auto 1fr;
   }
   .planRail::before {
     display: none;
@@ -1982,6 +2337,7 @@
   }
   .clinicianHeader {
     align-items: start;
+    gap: 1rem;
   }
   .clinicianHeader h1 {
     font-size: 2.7rem;

@@ -214,14 +214,22 @@ function PrimaryButton({
 }
 
 function ContextConstellation({
+  condition = "Personal context",
   events,
-  patient
+  patient,
+  question = "What changed today?"
 }: {
+  condition?: string;
   events: readonly ContextEvent[];
   patient: string;
+  question?: string;
 }) {
   return (
     <section className={styles.constellation} aria-label={`Why this round started for ${patient}`}>
+      <div className={styles.constellationMeta}>
+        <span>Temporal health graph</span>
+        <strong>Confirmed context · source-linked</strong>
+      </div>
       <svg
         aria-hidden="true"
         className={styles.constellationLines}
@@ -265,7 +273,7 @@ function ContextConstellation({
       <div className={styles.patientNode}>
         <span>{patient.slice(0, 1)}</span>
         <strong>{patient}</strong>
-        <small>Personal context</small>
+        <small>{condition}</small>
       </div>
       {events.map((event, index) => (
         <article
@@ -277,11 +285,20 @@ function ContextConstellation({
             animationDelay: `${180 + index * 180}ms`
           }}
         >
-          <span>{event.when}</span>
+          <div className={styles.contextNodeMeta}>
+            <span>{event.when}</span>
+            {event.evidenceStrength ? <i>{event.evidenceStrength}</i> : null}
+          </div>
           <strong>{event.title}</strong>
           <small>{event.source}</small>
+          {event.relationship ? <em>{event.relationship}</em> : null}
         </article>
       ))}
+      <div className={styles.openQuestionNode}>
+        <span>Today’s open question</span>
+        <strong>{question}</strong>
+        <small>No current symptom assumed</small>
+      </div>
       <ol className={styles.contextFallback}>
         {events.map((event) => (
           <li key={event.id}>
@@ -631,7 +648,6 @@ function SensorSequence({
     if (phase === "pair") return;
     const next: Partial<Record<SensorPhase, readonly [SensorPhase, number]>> = {
       face: ["quality", 10_000],
-      quality: ["finger", 3_500],
       finger: ["complete", 10_000]
     };
     const target = next[phase];
@@ -694,7 +710,7 @@ function SensorSequence({
             </h2>
             <p>
               {phase === "quality"
-                ? "Respiratory rate passed. Facial pulse did not. The rejected pulse is never saved as a measurement."
+                ? "Respiratory rate passed. Facial pulse did not. Review the quality decision before choosing the next check."
                 : phase === "finger"
                   ? "Finger PPG is requested only because it can answer the remaining pulse question."
                   : "Every result retains its source, quality decision and relationship to Maya’s baseline."}
@@ -720,6 +736,16 @@ function SensorSequence({
                 }
               />
             </div>
+            {phase === "quality" ? (
+              <div className={styles.qualityDecision}>
+                <span>Patient confirmation required</span>
+                <strong>Use the rear camera to answer the remaining pulse question?</strong>
+                <p>The facial camera stops here. Nothing else begins without Maya’s action.</p>
+                <PrimaryButton onClick={() => setPhase("finger")}>
+                  Continue with finger pulse
+                </PrimaryButton>
+              </div>
+            ) : null}
             {phase === "complete" ? (
               <PrimaryButton onClick={onComplete}>{nextLabel}</PrimaryButton>
             ) : null}
@@ -926,8 +952,8 @@ function MedicationPackageReview({ onComplete }: { onComplete: () => void }) {
     <div className={styles.techniqueLayout}>
       <ScreenIntro eyebrow="Medication reconciliation" title="Missing evidence remains visible.">
         <p>
-          HomeRounds asks whether the package is actually available. If it is not, no label or dose
-          fact is created.
+          Maya is asked for the box or bottle she is currently taking—not a generic medication
+          photo. If it is unavailable, no label or dose fact is created.
         </p>
       </ScreenIntro>
       <div className={styles.techniqueStage}>
@@ -987,10 +1013,15 @@ function MedicationPackageReview({ onComplete }: { onComplete: () => void }) {
             Availability is evidence. The workflow never changes medication or fills a missing
             field.
           </p>
+          <ul className={styles.captureChecklist}>
+            <li>Use the current prescribed box or bottle</li>
+            <li>Include medicine name, strength and dispensing directions</li>
+            <li>Raw package photos are not retained</li>
+          </ul>
           {phase === "ready" ? (
             <div className={styles.medicationChoices}>
               <PrimaryButton onClick={() => setPhase("reading")}>
-                Use the phone package camera
+                Photograph current medication package
               </PrimaryButton>
               <button
                 className={styles.ghostButton}
@@ -1117,8 +1148,36 @@ function HeartEvidenceSynthesis({ onContinue }: { onContinue: () => void }) {
         <strong>No diagnosis generated</strong>
         <strong>One action permitted</strong>
       </div>
-      <div className={styles.actionRow}>
-        <PrimaryButton onClick={onContinue}>Create heart-failure team review</PrimaryButton>
+      <section className={styles.handoffPreview} aria-labelledby="handoff-preview-title">
+        <div className={styles.handoffRecipient}>
+          <span>Ready to send</span>
+          <strong id="handoff-preview-title">Heart-failure team</strong>
+          <small>One owned programme review</small>
+        </div>
+        <div className={styles.handoffContents}>
+          <div>
+            <span>Evidence included</span>
+            <strong>5 source-linked passports</strong>
+            <small>2 accepted · 1 rejected · 1 supporting · 1 unresolved</small>
+          </div>
+          <div>
+            <span>Why review now</span>
+            <strong>Combined change from Maya’s personal baseline</strong>
+            <small>No single alert or diagnosis generated</small>
+          </div>
+          <div>
+            <span>Requested action</span>
+            <strong>Review the pattern and reconcile the medication instruction</strong>
+            <small>Return a monitoring and follow-up plan to Maya</small>
+          </div>
+        </div>
+        <PrimaryButton onClick={onContinue}>Send evidence pack to care team</PrimaryButton>
+      </section>
+      <div className={styles.dataBoundary}>
+        <span>Sent</span>
+        <strong>Confirmed facts, derived signals, quality decisions and uncertainty</strong>
+        <span>Not sent</span>
+        <strong>Raw video, raw audio or an AI diagnosis</strong>
       </div>
     </div>
   );
@@ -1204,12 +1263,17 @@ function HeartClinicianScene({ onComplete }: { onComplete: () => void }) {
     <div className={styles.clinicianLayout}>
       <div className={styles.clinicianHeader}>
         <div>
-          <span>Clinician cockpit</span>
-          <h1>One owned heart-failure review.</h1>
+          <span>Care team view · evidence received</span>
+          <h1>Maya’s round has one clear owner.</h1>
         </div>
         <span className={styles.livePill}>
           <i /> Persisted
         </span>
+      </div>
+      <div className={styles.receivedBanner}>
+        <span>Received from Maya’s HomeRounds</span>
+        <strong>5 evidence passports · complete provenance · no raw media</strong>
+        <small>Requested: review combined change, reconcile instruction, return a plan</small>
       </div>
       <div className={styles.clinicianGrid}>
         <aside className={styles.queuePanel}>
@@ -1264,7 +1328,16 @@ function HeartClinicianScene({ onComplete }: { onComplete: () => void }) {
               Record advice and complete review
             </PrimaryButton>
           ) : (
-            <PrimaryButton onClick={onComplete}>Return the outcome to Maya</PrimaryButton>
+            <div className={styles.clinicianResponse}>
+              <span>Outcome ready for Maya</span>
+              <strong>Medication instruction reconciled against the programme record</strong>
+              <ul>
+                <li>Monitoring plan returned</li>
+                <li>Follow-up timeframe confirmed</li>
+                <li>Change and urgent-help instructions included</li>
+              </ul>
+              <PrimaryButton onClick={onComplete}>Send outcome to Maya</PrimaryButton>
+            </div>
           )}
         </main>
       </div>
@@ -1312,7 +1385,7 @@ function ResolutionScene() {
           </Link>
         </div>
       )}
-      <p className={styles.boundary}>Synthetic profile · Supporting signals · Not medical care</p>
+      <p className={styles.boundary}>Supporting signals · Clinician-owned decisions</p>
     </div>
   );
 }
@@ -1324,13 +1397,34 @@ function HeartResolutionScene() {
       <div className={styles.resolutionMark}>
         <span>✓</span>
       </div>
-      <p className={styles.eyebrow}>Resolution Round</p>
+      <p className={styles.eyebrow}>Resolution Round · Received from the heart-failure team</p>
       <h1>{resolved ? "The episode is resolved." : "The care-team outcome is back with Maya."}</h1>
       <p>
         {resolved
           ? "Maya confirmed that she understood the plan and her concern is returning towards her usual pattern."
           : "The clinician reconciled the medication instruction, gave a clear monitoring plan, and asked HomeRounds to check understanding."}
       </p>
+      {!resolved ? (
+        <section className={styles.patientOutcome} aria-label="Maya's returned care plan">
+          <div>
+            <span>Medication</span>
+            <strong>Current instruction reconciled</strong>
+          </div>
+          <div>
+            <span>Monitoring</span>
+            <strong>Personal follow-up plan returned</strong>
+          </div>
+          <div>
+            <span>If symptoms change</span>
+            <strong>Programme contact instructions available</strong>
+          </div>
+        </section>
+      ) : (
+        <div className={styles.graphMemoryUpdate}>
+          <span>Temporal graph updated</span>
+          <strong>This outcome now becomes context for Maya’s next round.</strong>
+        </div>
+      )}
       <div className={styles.resolutionTimeline}>
         <span>Subtle change combined</span>
         <i />
@@ -1343,21 +1437,29 @@ function HeartResolutionScene() {
       {!resolved ? (
         <PrimaryButton onClick={() => setResolved(true)}>I understand the next step</PrimaryButton>
       ) : (
-        <div className={styles.finalActions}>
-          <a
-            className={styles.primaryButton}
-            href="/showcase/glp1"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Open the GLP-1 pack <span>↗</span>
-          </a>
-          <a className={styles.ghostButton} href="/showcase/copd" target="_blank" rel="noreferrer">
-            Open the COPD pack ↗
-          </a>
+        <div className={styles.adaptivePacks}>
+          <span>One adaptive engine · condition-specific rounds</span>
+          <div className={styles.finalActions}>
+            <a
+              className={styles.primaryButton}
+              href="/showcase/glp1"
+              target="_blank"
+              rel="noreferrer"
+            >
+              GLP-1 · dose and tolerance <span>↗</span>
+            </a>
+            <a
+              className={styles.ghostButton}
+              href="/showcase/copd"
+              target="_blank"
+              rel="noreferrer"
+            >
+              COPD · breathing and technique ↗
+            </a>
+          </div>
         </div>
       )}
-      <p className={styles.boundary}>Synthetic profile · Supporting signals · Not medical care</p>
+      <p className={styles.boundary}>Supporting signals · Clinician-owned decisions</p>
     </div>
   );
 }
@@ -1377,19 +1479,24 @@ export function HeartShowcase() {
         {scene === "context" ? (
           <div className={styles.contextLayout}>
             <ScreenIntro
-              eyebrow="Why HomeRounds started this round"
-              title="No single alert fired. Together, the changes mattered."
+              eyebrow="Maya · Heart-failure programme"
+              title="Her baseline tells us what a single reading cannot."
             >
               <p>
-                HomeRounds compares today with Maya’s own confirmed pattern, then asks only for
-                physical evidence that could change the next action.
+                Maya lives with stable heart failure. HomeRounds already understands her confirmed
+                weight, activity, medication context, personal vital baselines and previous care-team
+                outcomes—before asking what feels different today.
               </p>
               <div className={styles.contextActions}>
-                <PrimaryButton onClick={next}>Talk it through with HomeRounds</PrimaryButton>
-                <span>Weight remains below the configured alert boundary</span>
+                <PrimaryButton onClick={next}>Start today’s adaptive round</PrimaryButton>
+                <span>No current symptom has been assumed</span>
               </div>
             </ScreenIntro>
-            <ContextConstellation events={HEART_CONTEXT_EVENTS} patient="Maya" />
+            <ContextConstellation
+              condition="Stable heart failure · personal baseline"
+              events={HEART_CONTEXT_EVENTS}
+              patient="Maya"
+            />
           </div>
         ) : null}
         {scene === "conversation" ? (
@@ -1493,7 +1600,6 @@ export function CopdPhoneShowcase() {
   useEffect(() => {
     const next: Partial<Record<PhonePhase, readonly [PhonePhase, number]>> = {
       face: ["quality", 10_000],
-      quality: ["finger", 3_500],
       finger: ["complete", 10_000]
     };
     const target = next[phase];
@@ -1537,8 +1643,18 @@ export function CopdPhoneShowcase() {
             <h1>One signal needs a better view.</h1>
             <QualitySplitVisual />
             <p className={styles.phoneStatus}>
-              Respiratory rate accepted · pulse rejected · choosing fallback
+              Respiratory rate accepted · pulse rejected · facial camera stopped
             </p>
+            <div className={styles.phoneDecision}>
+              <strong>Continue with a finger pulse check?</strong>
+              <span>
+                This opens the rear camera for a separate 10-second check. Nothing starts until you
+                continue.
+              </span>
+            </div>
+            <PrimaryButton onClick={() => setPhase("finger")}>
+              Continue with finger pulse
+            </PrimaryButton>
           </>
         ) : null}
         {phase === "finger" ? (
@@ -1565,14 +1681,19 @@ export function CopdPhoneShowcase() {
         {phase === "medication" ? (
           <>
             <p className={styles.eyebrow}>Medication context</p>
-            <h1>Is the current package with you?</h1>
+            <h1>Do you have the medicine you are taking today?</h1>
             <p>
-              HomeRounds will never invent label or dose information when the package is
-              unavailable.
+              Use the prescribed box or bottle—not a leaflet or an old package. The photo should
+              include the medicine name, strength and dispensing directions.
             </p>
+            <div className={styles.phonePrivacy}>
+              <strong>What the camera needs</strong>
+              <span>Front of the current pack · pharmacy label · readable directions</span>
+              <span>The package photo is not retained.</span>
+            </div>
             <div className={styles.phoneChoiceGrid}>
               <PrimaryButton onClick={() => setPhase("package_available")}>
-                I have the package
+                I have the current package
               </PrimaryButton>
               <button
                 className={styles.ghostButton}
@@ -1587,7 +1708,11 @@ export function CopdPhoneShowcase() {
         {phase === "package_available" ? (
           <>
             <p className={styles.eyebrow}>Package available</p>
-            <h1>Keep it ready for the guided label step.</h1>
+            <h1>Place the box or bottle on a flat surface.</h1>
+            <p>
+              Keep the medicine name, strength and dispensing directions together inside the
+              frame.
+            </p>
             <p className={styles.phoneStatus}>
               Availability returned · no medication fact inferred yet
             </p>
@@ -1750,7 +1875,7 @@ export function GlpShowcase() {
             <a className={styles.primaryButton} href="/showcase/copd">
               Return to the main round <span>→</span>
             </a>
-            <p className={styles.boundary}>Synthetic profile · Not medical care</p>
+            <p className={styles.boundary}>Adaptive evidence · Clinician-owned decisions</p>
           </div>
         ) : null}
       </main>

@@ -97,7 +97,8 @@ export function createOpticalCandidateResult(
   const quality = {
     status: "unreviewed" as const,
     score: measurement.quality.score,
-    reasons: measurement.quality.reasons
+    reasons: measurement.quality.reasons,
+    metrics: measurement.quality.metrics
   };
 
   if (snapshot.task.kind === "finger_pulse" && measurement.provider === "finger_ppg") {
@@ -169,12 +170,14 @@ export function createVoiceCandidateResult(
         pitchVariabilitySemitones: features.pitchVariabilitySemitones,
         jitterPercent: features.jitterPercent,
         shimmerPercent: features.shimmerPercent,
-        harmonicToNoiseRatioDb: features.harmonicToNoiseRatioDb
+        harmonicToNoiseRatioDb: features.harmonicToNoiseRatioDb,
+        phonationDurationMs: features.phonationDurationMs
       },
       quality: {
         status: "unreviewed",
         score: fact.quality.score,
-        reasons: fact.quality.reasons
+        reasons: fact.quality.reasons,
+        metrics: fact.quality.metrics
       }
     }
   });

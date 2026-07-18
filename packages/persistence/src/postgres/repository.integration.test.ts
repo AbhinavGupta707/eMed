@@ -6,10 +6,13 @@ import type {
   CompanionPairingRecord,
   CompanionSessionRecord
 } from "@homerounds/companion";
+import { DerivedBaselineSeriesSchema } from "@homerounds/baselines";
 import type { ClinicalTask, DomainEvent, Round, VoiceBiomarkerFact } from "@homerounds/contracts";
+import { BoundedPersonalizationProfileSchema } from "@homerounds/personalization";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 
 import {
   SensitiveAuditPayloadError,
@@ -17,6 +20,7 @@ import {
   type CommitActionInput
 } from "../models";
 import { PostgresCompanionPairingRepository } from "./companion-repository";
+import { PostgresBaselineRepository } from "./baseline-repository";
 import { PostgresHomeRoundsRepository } from "./repository";
 import * as schema from "./schema";
 
@@ -197,6 +201,14 @@ describe("PostgreSQL repository integration", () => {
           "utf8"
         );
         await client.unsafe(companionIntegrityMigration);
+        const baselineMigration = await readFile(
+          new URL(
+            "../../../../infra/db/migrations/0005_baseline_personalization.sql",
+            import.meta.url
+          ),
+          "utf8"
+        );
+        await client.unsafe(baselineMigration);
 
         const repository = new PostgresHomeRoundsRepository<unknown, unknown>(
           drizzle(client, { schema })
@@ -204,6 +216,33 @@ describe("PostgreSQL repository integration", () => {
         await repository.createRound(round());
 
         const companionRepository = new PostgresCompanionPairingRepository(client);
+        const baselineRepository = new PostgresBaselineRepository(client);
+        const baselineSeed = z
+          .object({
+            series: z.array(DerivedBaselineSeriesSchema).min(1),
+            personalization: BoundedPersonalizationProfileSchema
+          })
+          .passthrough()
+          .parse(
+            JSON.parse(
+              await readFile(
+                new URL("../../../../data/demo/baselines/maya-history.v1.json", import.meta.url),
+                "utf8"
+              )
+            ) as unknown
+          );
+        const baselineSeries = baselineSeed.series[0];
+        if (!baselineSeries) throw new Error("Synthetic baseline seed is empty.");
+        await baselineRepository.saveSeries(baselineSeries, null);
+        await baselineRepository.saveSeries(baselineSeries, null);
+        await expect(
+          baselineRepository.getSeries(baselineSeries.patientId, baselineSeries.contextKey)
+        ).resolves.toEqual(baselineSeries);
+        await baselineRepository.saveProfile(baselineSeed.personalization, null);
+        await baselineRepository.saveProfile(baselineSeed.personalization, null);
+        await expect(
+          baselineRepository.getProfile(baselineSeed.personalization.patientId)
+        ).resolves.toEqual(baselineSeed.personalization);
         const pairing = companionPairing();
         const session = companionSession(pairing);
         await companionRepository.createPairing(pairing);

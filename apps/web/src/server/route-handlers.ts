@@ -1,5 +1,6 @@
 import {
   AssessmentSessionDataSchema,
+  BaselineDataSchema,
   ConfirmMedicationObservationDataSchema,
   ConfirmMedicationObservationRequestSchema,
   ClinicianMutationReceiptSchema,
@@ -138,6 +139,27 @@ export function handleCreateRound(request: Request, runtime: ServerRuntime): Pro
           correlationId: context.correlationId
         })
       );
+    }
+  });
+}
+
+export function handleGetBaselines(request: Request, runtime: ServerRuntime): Promise<Response> {
+  return serveApiRoute<undefined, z.infer<typeof BaselineDataSchema>>(request, runtime.hooks, {
+    method: "GET",
+    roles: ["patient"],
+    mutation: false,
+    rateLimit: { bucket: "baseline-read", limit: 60, windowMs: 60_000 },
+    readInput: emptyInputReader,
+    outputSchema: BaselineDataSchema,
+    async handle(context) {
+      const patientId = context.session.patientId;
+      if (!patientId) throw new ApiFault(403, "forbidden", "api.error.patient_scope");
+      await runtime.ensureBaselinesReady();
+      const [series, personalization] = await Promise.all([
+        runtime.baselines.listPatientSeries(patientId),
+        runtime.baselines.getPersonalizationProjection(patientId)
+      ]);
+      return { series, personalization };
     }
   });
 }

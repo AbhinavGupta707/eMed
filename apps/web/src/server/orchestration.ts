@@ -850,6 +850,7 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
     roundId: string;
     patientId: string;
     expectedStateVersion: number;
+    assessmentSessionId?: string;
   }): Promise<VoiceBiomarkerSessionResult> {
     const round = await this.getRound(input.roundId);
     if (round.patientId !== input.patientId) {
@@ -870,7 +871,7 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
     ) {
       throw new OrchestrationError("invalid_state", false);
     }
-    const assessmentSessionId = this.#createId();
+    const assessmentSessionId = z.uuid().parse(input.assessmentSessionId ?? this.#createId());
     const expiresAt = new Date(Date.parse(this.#now()) + 5 * 60_000).toISOString();
     const payload = AssessmentAttestationPayloadSchema.parse({
       assessmentSessionId,
@@ -1052,13 +1053,23 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
     skipMedicationReview: boolean;
     actorId: string;
     correlationId: string;
+    assessmentSessionId?: string;
   }): Promise<AssessmentStartResult> {
     const round = await this.getRound(input.roundId);
     if (round.patientId !== input.patientId) {
       throw new OrchestrationError("patient_mismatch", false);
     }
-    if (round.state !== "assessment_selected" && round.state !== "capture_retry") {
+    const resumableCompanionCapture =
+      round.state === "capturing" && input.assessmentSessionId !== undefined;
+    if (
+      round.state !== "assessment_selected" &&
+      round.state !== "capture_retry" &&
+      !resumableCompanionCapture
+    ) {
       throw new OrchestrationError("invalid_state", false);
+    }
+    if (resumableCompanionCapture && round.stateVersion !== input.expectedStateVersion) {
+      throw new OrchestrationError("stale_state", true);
     }
     const evidenceRoute = await this.getEvidenceRoute(round.id);
     const medicationReviewPending =
@@ -1094,18 +1105,20 @@ export class RoundOrchestrationService<TSnapshot, TFact> {
           rawMediaStored: false
         })
       : undefined;
-    const assessmentSessionId = this.#createId();
+    const assessmentSessionId = z.uuid().parse(input.assessmentSessionId ?? this.#createId());
     const expiresAt = new Date(Date.parse(this.#now()) + 5 * 60_000).toISOString();
-    const nextRound = await this.transition({
-      roundId: round.id,
-      patientId: round.patientId,
-      to: "capturing",
-      expectedStateVersion: input.expectedStateVersion,
-      actor: { kind: "patient", id: input.actorId },
-      source: "patient_ui",
-      correlationId: input.correlationId,
-      ...(skipEvent ? { additionalEvents: [skipEvent] } : {})
-    });
+    const nextRound = resumableCompanionCapture
+      ? round
+      : await this.transition({
+          roundId: round.id,
+          patientId: round.patientId,
+          to: "capturing",
+          expectedStateVersion: input.expectedStateVersion,
+          actor: { kind: "patient", id: input.actorId },
+          source: "patient_ui",
+          correlationId: input.correlationId,
+          ...(skipEvent ? { additionalEvents: [skipEvent] } : {})
+        });
     const payload = AssessmentAttestationPayloadSchema.parse({
       assessmentSessionId,
       roundId: round.id,

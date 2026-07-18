@@ -4,6 +4,7 @@ import {
   CompanionService,
   InMemoryCompanionPairingRepository,
   type CompanionPairingRepository,
+  type CompanionResultRecord,
   type CompanionRoundAuthorityPort
 } from "@homerounds/companion";
 import { connectPostgresCompanionRepository } from "@homerounds/persistence";
@@ -12,9 +13,25 @@ import type { RateLimiter } from "../rate-limit";
 import { getServerRuntime } from "../runtime";
 import { ExistingRoundCompanionAuthority } from "./authority";
 import { deriveCompanionSecret, NodeCompanionCrypto } from "./crypto";
+import { CompanionWorkflowProcessor } from "./workflow";
+
+export type CompanionWorkflowDeviceContext = Readonly<{
+  deviceClass: "phone";
+  platform: "ios" | "android" | "windows" | "macos" | "linux" | "other" | "unknown";
+}>;
+
+export type CompanionWorkflowPort = Readonly<{
+  process(input: {
+    record: CompanionResultRecord;
+    ownerPatientId: string;
+    device: CompanionWorkflowDeviceContext;
+  }): Promise<void>;
+}>;
 
 export type CompanionRouteRuntime = {
   service: CompanionService;
+  repository: CompanionPairingRepository;
+  workflow: CompanionWorkflowPort | null;
   authenticator: DemoSessionAuthenticator;
   rateLimiter: RateLimiter;
   appOrigin: string;
@@ -34,6 +51,7 @@ export type CompanionRouteRuntimeDependencies = {
   available?: boolean;
   now?: () => string;
   createId?: () => string;
+  workflow?: CompanionWorkflowPort | null;
 };
 
 export function createCompanionRouteRuntime(
@@ -51,6 +69,8 @@ export function createCompanionRouteRuntime(
       crypto,
       appBaseUrl: dependencies.appOrigin
     }),
+    repository: dependencies.repository,
+    workflow: dependencies.workflow ?? null,
     authenticator: dependencies.authenticator,
     rateLimiter: dependencies.rateLimiter,
     appOrigin: dependencies.appOrigin,
@@ -78,6 +98,7 @@ export function getCompanionRouteRuntime(): CompanionRouteRuntime {
     appOrigin: main.environment.APP_BASE_URL,
     tokenHashSecret: deriveCompanionSecret(main.environment.DEMO_ACCESS_SECRET),
     available: durableRepository !== null || main.environment.APP_ENV === "development",
+    workflow: new CompanionWorkflowProcessor(main),
     ...(main.hooks.now ? { now: main.hooks.now } : {}),
     ...(main.hooks.createId ? { createId: main.hooks.createId } : {})
   });

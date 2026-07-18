@@ -150,9 +150,15 @@ importers:
 
   packages/api-client:
     dependencies:
+      "@homerounds/baselines":
+        specifier: workspace:*
+        version: link:../baselines
       "@homerounds/contracts":
         specifier: workspace:*
         version: link:../contracts
+      "@homerounds/personalization":
+        specifier: workspace:*
+        version: link:../personalization
       zod:
         specifier: 4.4.3
         version: 4.4.3
@@ -232,12 +238,18 @@ importers:
 
   packages/persistence:
     dependencies:
+      "@homerounds/baselines":
+        specifier: workspace:*
+        version: link:../baselines
       "@homerounds/companion":
         specifier: workspace:*
         version: link:../companion
       "@homerounds/contracts":
         specifier: workspace:*
         version: link:../contracts
+      "@homerounds/personalization":
+        specifier: workspace:*
+        version: link:../personalization
       drizzle-orm:
         specifier: 0.45.2
         version: 0.45.2(postgres@3.4.9)

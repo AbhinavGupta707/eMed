@@ -13,7 +13,7 @@
         "schemaVersion": "baseline-measurement-context.v1",
         "provider": "finger_ppg",
         "providerVersion": { "status": "not_applicable" },
-        "algorithmVersion": { "status": "known", "value": "finger_ppg_local_v1" },
+        "algorithmVersion": { "status": "known", "value": "finger_ppg_hr_v1" },
         "device": {
           "schemaVersion": "device-context.v1",
           "deviceClass": "phone",
@@ -21,7 +21,7 @@
           "captureSurface": "rear_camera"
         }
       },
-      "contextKey": "baseline-context.v1:pulse_bpm:bpm:finger_ppg:not_applicable:known-finger_ppg_local_v1:phone:ios:rear_camera",
+      "contextKey": "baseline-context.v1:pulse_bpm:bpm:finger_ppg:not_applicable:known-finger_ppg_hr_v1:phone:ios:rear_camera",
       "seriesVersion": 3,
       "samples": [
         {
@@ -36,7 +36,7 @@
             "schemaVersion": "baseline-measurement-context.v1",
             "provider": "finger_ppg",
             "providerVersion": { "status": "not_applicable" },
-            "algorithmVersion": { "status": "known", "value": "finger_ppg_local_v1" },
+            "algorithmVersion": { "status": "known", "value": "finger_ppg_hr_v1" },
             "device": {
               "schemaVersion": "device-context.v1",
               "deviceClass": "phone",
@@ -69,7 +69,7 @@
             "schemaVersion": "baseline-measurement-context.v1",
             "provider": "finger_ppg",
             "providerVersion": { "status": "not_applicable" },
-            "algorithmVersion": { "status": "known", "value": "finger_ppg_local_v1" },
+            "algorithmVersion": { "status": "known", "value": "finger_ppg_hr_v1" },
             "device": {
               "schemaVersion": "device-context.v1",
               "deviceClass": "phone",
@@ -102,7 +102,7 @@
             "schemaVersion": "baseline-measurement-context.v1",
             "provider": "finger_ppg",
             "providerVersion": { "status": "not_applicable" },
-            "algorithmVersion": { "status": "known", "value": "finger_ppg_local_v1" },
+            "algorithmVersion": { "status": "known", "value": "finger_ppg_hr_v1" },
             "device": {
               "schemaVersion": "device-context.v1",
               "deviceClass": "phone",
@@ -137,7 +137,7 @@
         "schemaVersion": "baseline-measurement-context.v1",
         "provider": "local_voice_features",
         "providerVersion": { "status": "not_applicable" },
-        "algorithmVersion": { "status": "known", "value": "local_voice_features_v1" },
+        "algorithmVersion": { "status": "known", "value": "local_sustained_vowel_features_v1" },
         "device": {
           "schemaVersion": "device-context.v1",
           "deviceClass": "phone",
@@ -145,7 +145,7 @@
           "captureSurface": "microphone"
         }
       },
-      "contextKey": "baseline-context.v1:voice_harmonic_to_noise_ratio_db:dB:local_voice_features:not_applicable:known-local_voice_features_v1:phone:ios:microphone",
+      "contextKey": "baseline-context.v1:voice_harmonic_to_noise_ratio_db:dB:local_voice_features:not_applicable:known-local_sustained_vowel_features_v1:phone:ios:microphone",
       "seriesVersion": 2,
       "samples": [
         {
@@ -160,7 +160,7 @@
             "schemaVersion": "baseline-measurement-context.v1",
             "provider": "local_voice_features",
             "providerVersion": { "status": "not_applicable" },
-            "algorithmVersion": { "status": "known", "value": "local_voice_features_v1" },
+            "algorithmVersion": { "status": "known", "value": "local_sustained_vowel_features_v1" },
             "device": {
               "schemaVersion": "device-context.v1",
               "deviceClass": "phone",
@@ -193,7 +193,7 @@
             "schemaVersion": "baseline-measurement-context.v1",
             "provider": "local_voice_features",
             "providerVersion": { "status": "not_applicable" },
-            "algorithmVersion": { "status": "known", "value": "local_voice_features_v1" },
+            "algorithmVersion": { "status": "known", "value": "local_sustained_vowel_features_v1" },
             "device": {
               "schemaVersion": "device-context.v1",
               "deviceClass": "phone",
@@ -228,7 +228,7 @@
         "schemaVersion": "baseline-measurement-context.v1",
         "provider": "vitallens",
         "providerVersion": { "status": "known", "value": "vitallens_model_4.2" },
-        "algorithmVersion": { "status": "known", "value": "vitallens_face_rppg_v1" },
+        "algorithmVersion": { "status": "known", "value": "vitallens_face_rppg_rgb24_v2" },
         "device": {
           "schemaVersion": "device-context.v1",
           "deviceClass": "phone",
@@ -236,7 +236,7 @@
           "captureSurface": "front_camera"
         }
       },
-      "contextKey": "baseline-context.v1:pulse_bpm:bpm:vitallens:known-vitallens_model_4.2:known-vitallens_face_rppg_v1:phone:ios:front_camera",
+      "contextKey": "baseline-context.v1:pulse_bpm:bpm:vitallens:known-vitallens_model_4.2:known-vitallens_face_rppg_rgb24_v2:phone:ios:front_camera",
       "seriesVersion": 1,
       "samples": [
         {
@@ -251,7 +251,7 @@
             "schemaVersion": "baseline-measurement-context.v1",
             "provider": "vitallens",
             "providerVersion": { "status": "known", "value": "vitallens_model_4.2" },
-            "algorithmVersion": { "status": "known", "value": "vitallens_face_rppg_v1" },
+            "algorithmVersion": { "status": "known", "value": "vitallens_face_rppg_rgb24_v2" },
             "device": {
               "schemaVersion": "device-context.v1",
               "deviceClass": "phone",

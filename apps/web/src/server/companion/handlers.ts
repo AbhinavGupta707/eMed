@@ -26,6 +26,29 @@ import type { CompanionRouteRuntime } from "./runtime";
 
 const PairingIdSchema = z.uuid();
 
+function workflowDevice(request: Request): {
+  deviceClass: "phone";
+  platform: "ios" | "android" | "windows" | "macos" | "linux" | "other" | "unknown";
+} {
+  const hint = `${request.headers.get("sec-ch-ua-platform") ?? ""} ${
+    request.headers.get("user-agent") ?? ""
+  }`.toLowerCase();
+  const platform = /iphone|ipad|ipod|\bios\b/.test(hint)
+    ? "ios"
+    : /android/.test(hint)
+      ? "android"
+      : /windows/.test(hint)
+        ? "windows"
+        : /macintosh|macos|mac os/.test(hint)
+          ? "macos"
+          : /linux/.test(hint)
+            ? "linux"
+            : hint.trim()
+              ? "other"
+              : "unknown";
+  return { deviceClass: "phone", platform };
+}
+
 export function handleCreateCompanionPairing(
   request: Request,
   runtime: CompanionRouteRuntime
@@ -169,6 +192,17 @@ export function handleSubmitCompanionResult(
     });
     const result = await readJson(request, CompanionTaskResultRequestSchema, 16_384);
     const receipt = await runtime.service.submitResult({ sessionToken: token, result });
+    if (runtime.workflow) {
+      const record = await runtime.repository.getResult(receipt.resultId);
+      if (!record) throw new CompanionHttpError(503, "integration_unavailable", true);
+      const pairing = await runtime.repository.getPairing(record.pairingId);
+      if (!pairing) throw new CompanionHttpError(503, "integration_unavailable", true);
+      await runtime.workflow.process({
+        record,
+        ownerPatientId: pairing.ownerPatientId,
+        device: workflowDevice(request)
+      });
+    }
     return successResponse({ receipt }, correlationId);
   });
 }

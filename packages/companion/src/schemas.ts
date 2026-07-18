@@ -100,7 +100,8 @@ const QualityProposalSchema = z
   .object({
     status: z.literal("unreviewed"),
     score: z.number().min(0).max(1),
-    reasons: z.array(z.string().min(1).max(80)).max(8)
+    reasons: z.array(z.string().min(1).max(80)).max(8),
+    metrics: z.record(z.string().min(1).max(80), z.number().finite()).optional()
   })
   .strict();
 
@@ -155,7 +156,8 @@ const VoiceSignalResultSchema = ResultRequestBaseSchema.extend({
           pitchVariabilitySemitones: z.number().nonnegative().max(100),
           jitterPercent: z.number().nonnegative().max(100),
           shimmerPercent: z.number().nonnegative().max(100),
-          harmonicToNoiseRatioDb: z.number().min(-100).max(100)
+          harmonicToNoiseRatioDb: z.number().min(-100).max(100),
+          phonationDurationMs: z.number().int().positive().max(30_000).optional()
         })
         .strict(),
       quality: QualityProposalSchema
@@ -165,7 +167,7 @@ const VoiceSignalResultSchema = ResultRequestBaseSchema.extend({
 
 const MedicationFieldSchema = z
   .object({
-    field: z.enum(["product_name", "strength", "directions", "other_details"]),
+    field: z.enum(["product_name", "active_ingredient", "strength", "directions"]),
     status: z.enum(["confirmed", "unknown"]),
     value: z.string().trim().min(1).max(240).nullable()
   })

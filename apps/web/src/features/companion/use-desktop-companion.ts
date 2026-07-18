@@ -90,7 +90,10 @@ export function useDesktopCompanion(): DesktopCompanionController {
         if (current) {
           setPairingId(current.pairingId);
           setSnapshot(current);
-          if (current.reissueRequired || current.connection === "waiting_for_phone") {
+          if (
+            (current.reissueRequired && current.lastResult === null) ||
+            current.connection === "waiting_for_phone"
+          ) {
             await replaceIssue(
               await reissueCompanionPairing(
                 current.pairingId,

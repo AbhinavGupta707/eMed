@@ -13,8 +13,10 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@homerounds/baselines": "workspace:*",
     "@homerounds/companion": "workspace:*",
     "@homerounds/contracts": "workspace:*",
+    "@homerounds/personalization": "workspace:*",
     "drizzle-orm": "0.45.2",
     "postgres": "3.4.9",
     "zod": "4.4.3"

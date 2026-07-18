@@ -74,7 +74,7 @@ test("real QR handoff safely reissues, resumes, synchronizes, and acknowledges a
 
   await phone.page.reload();
   await expect(
-    phone.page.getByRole("heading", { level: 1, name: "Keep this page open" })
+    phone.page.getByRole("heading", { level: 1, name: "Finger pulse check" })
   ).toBeVisible({ timeout: 10_000 });
   await phone.context.setOffline(true);
   await expect(
@@ -83,7 +83,7 @@ test("real QR handoff safely reissues, resumes, synchronizes, and acknowledges a
   await phone.context.setOffline(false);
   await phone.page.getByRole("button", { name: "Try connection again" }).tap();
   await expect(
-    phone.page.getByRole("heading", { level: 1, name: "Keep this page open" })
+    phone.page.getByRole("heading", { level: 1, name: "Finger pulse check" })
   ).toBeVisible({ timeout: 5_000 });
 
   await phone.page.close();
@@ -93,7 +93,7 @@ test("real QR handoff safely reissues, resumes, synchronizes, and acknowledges a
   collectCompanionTraffic(resumedPhone, phoneTraffic);
   await resumedPhone.goto("/companion");
   await expect(
-    resumedPhone.getByRole("heading", { level: 1, name: "Keep this page open" })
+    resumedPhone.getByRole("heading", { level: 1, name: "Finger pulse check" })
   ).toBeVisible({ timeout: 10_000 });
 
   await restoreDesktopCompanion(page);
@@ -104,12 +104,12 @@ test("real QR handoff safely reissues, resumes, synchronizes, and acknowledges a
   await expect(numericMeasurement(page)).toHaveCount(0);
 
   const submitted = await submitUnavailablePhoneResult(resumedPhone, unavailable);
-  await expect(resumedPhone.getByRole("heading", { level: 1, name: "Sent securely" })).toBeVisible({
-    timeout: 5_000
-  });
+  await expect(
+    resumedPhone.getByRole("heading", { level: 1, name: "Check recorded as unavailable" })
+  ).toBeVisible({ timeout: 5_000 });
   await expect(
     page.getByText(
-      "The phone result was received and is waiting for the normal quality and workflow checks.",
+      "The phone result was received and checked against the normal quality and workflow rules.",
       { exact: true }
     )
   ).toBeVisible({ timeout: 5_000 });
@@ -119,10 +119,9 @@ test("real QR handoff safely reissues, resumes, synchronizes, and acknowledges a
     resumedPhone.getByRole("heading", { level: 1, name: "Your computer received it" })
   ).toBeVisible({ timeout: 5_000 });
   await expect(
-    page.getByText(
-      "The result was received. HomeRounds has not accepted it as a measurement automatically.",
-      { exact: true }
-    )
+    page.getByText("Your computer recorded the checked phone result and refreshed the round.", {
+      exact: true
+    })
   ).toBeVisible();
   await expect(numericMeasurement(page)).toHaveCount(0);
 

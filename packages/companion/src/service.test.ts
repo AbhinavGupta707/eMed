@@ -428,6 +428,12 @@ describe("secure companion service", () => {
       patientId: PATIENT_ID
     });
     expect(desktop).toMatchObject({ connection: "result_received", taskPhase: "completed" });
+    context.authority.current = {
+      ...context.authority.current,
+      roundStateVersion: context.authority.current.roundStateVersion + 1,
+      pairable: false,
+      currentTask: null
+    };
     const acknowledged = await context.service.acknowledgeResult({
       pairingId: pairing.pairingId,
       patientId: PATIENT_ID,

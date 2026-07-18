@@ -48,8 +48,8 @@ function completionCopy(snapshot: CompanionPhoneSnapshot): {
     case "derived_candidate":
       return {
         eyebrow: "Phone step complete",
-        heading: "Sent for safety checks",
-        body: "The derived result is waiting for deterministic quality and workflow validation."
+        heading: "Checked and sent",
+        body: "The derived result passed the registered quality and workflow checks before it was accepted."
       };
     case "quality_rejected":
       return {

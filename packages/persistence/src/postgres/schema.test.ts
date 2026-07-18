@@ -30,6 +30,13 @@ async function companionIntegrityMigrationSql(): Promise<string> {
   );
 }
 
+async function baselineMigrationSql(): Promise<string> {
+  return readFile(
+    new URL("../../../../infra/db/migrations/0005_baseline_personalization.sql", import.meta.url),
+    "utf8"
+  );
+}
+
 describe("PostgreSQL migration invariants", () => {
   it("defines all production persistence tables in one transactional migration", async () => {
     const sql = await migrationSql();
@@ -118,6 +125,17 @@ describe("PostgreSQL migration invariants", () => {
     expect(sql).toContain("primary key (session_id, operation_id)");
     expect(sql).toContain("companion_results_raw_media_absent");
     expect(sql).toContain("pending_deterministic_workflow");
+  });
+
+  it("adds structured synthetic baselines and bounded personalization with optimistic versions", async () => {
+    const sql = await baselineMigrationSql();
+    expect(sql.trimStart()).toMatch(/^begin;/i);
+    expect(sql.trimEnd()).toMatch(/commit;$/i);
+    expect(sql).toContain("create table baseline_series");
+    expect(sql).toContain("create table personalization_profiles");
+    expect(sql).toContain("jsonb_typeof(record) = 'object'");
+    expect(sql).toContain("dataClassification' = 'synthetic_demo'");
+    expect(sql).toContain("baseline_series_patient_updated_idx");
   });
 
   it("requires every durable companion envelope to remain a JSON object", async () => {

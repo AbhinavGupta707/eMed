@@ -10,6 +10,7 @@ import {
   createVitalLensAssessmentProvider,
   type OpticalAssessmentProvider,
   type OpticalProviderKind,
+  type VitalLensConsentGateway,
   type VitalLensProviderConfiguration,
   type VitalLensProxyTransport
 } from "@homerounds/assessments";
@@ -104,14 +105,17 @@ export function createHomeRoundsVitalLensProxyTransport(
 }
 
 /** Resolves only the provider selected by the server for this round. */
-export function createPatientOpticalProvider(kind: OpticalProviderKind): OpticalAssessmentProvider {
+export function createPatientOpticalProvider(
+  kind: OpticalProviderKind,
+  options: Readonly<{ vitalLensConsent?: VitalLensConsentGateway }> = {}
+): OpticalAssessmentProvider {
   switch (kind) {
     case "finger_ppg":
       return createFingerPpgProvider();
     case "vitallens":
       return createVitalLensAssessmentProvider({
         configuration: vitalLensBrowserConfiguration(),
-        consent: new BrowserVitalLensConsentGateway(),
+        consent: options.vitalLensConsent ?? new BrowserVitalLensConsentGateway(),
         camera: new BrowserVitalLensCameraGateway(),
         transport: createHomeRoundsVitalLensProxyTransport()
       });

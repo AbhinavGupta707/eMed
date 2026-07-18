@@ -228,8 +228,8 @@ export async function advancePhoneToProgress(page: Page): Promise<void> {
   await page.getByRole("button", { name: "I understand and want to continue" }).tap();
   await expect(page.getByRole("heading", { level: 1, name: "Finger pulse check" })).toBeVisible();
   await page.getByRole("button", { name: "I’m ready" }).tap();
-  await expect(page.getByRole("heading", { level: 1, name: "Keep this page open" })).toBeVisible();
-  await expect(page.getByRole("progressbar", { name: "Finger pulse check" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Finger pulse check" })).toBeVisible();
+  await expect(page.getByText("Selected for this round", { exact: true })).toBeVisible();
 }
 
 export async function readPhoneApi(page: Page): Promise<CompanionPhoneSnapshot> {

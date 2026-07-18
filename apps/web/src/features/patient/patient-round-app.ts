@@ -1129,9 +1129,8 @@ function MeasurementPanel({
         "Scan the code with your phone. It expires automatically and contains no patient details.",
       connected: "Your phone is connected. Continue with the guidance shown there.",
       result:
-        "The phone result was received and is waiting for the normal quality and workflow checks.",
-      acknowledged:
-        "The result was received. HomeRounds has not accepted it as a measurement automatically.",
+        "The phone result was received and checked against the normal quality and workflow rules.",
+      acknowledged: "Your computer recorded the checked phone result and refreshed the round.",
       expired: "This phone link expired or was closed. Create a new short-lived code to continue.",
       unavailable:
         "A secure phone connection is unavailable right now. You can continue on this computer."
@@ -1166,7 +1165,10 @@ function MeasurementPanel({
         : companion.status === "expired"
           ? () => void companion.reissue()
           : companion.status === "result"
-            ? () => void companion.acknowledge()
+            ? () =>
+                void companion.acknowledge().then(() => {
+                  void controller.refresh();
+                })
             : undefined;
     const phoneActionLabel =
       companion.status === "expired"

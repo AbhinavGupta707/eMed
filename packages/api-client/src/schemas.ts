@@ -17,6 +17,8 @@ import {
   VoiceServerLocationSchema
 } from "@homerounds/contracts";
 import { z } from "zod";
+import { DerivedBaselineSeriesSchema } from "@homerounds/baselines";
+import { BoundedPersonalizationProjectionSchema } from "@homerounds/personalization";
 
 export const ApiErrorCodeSchema = z.enum([
   "invalid_request",
@@ -73,6 +75,13 @@ export const CreateRoundRequestSchema = z
 
 export const CreateRoundDataSchema = z
   .object({ round: RoundSchema.strict(), created: z.boolean() })
+  .strict();
+
+export const BaselineDataSchema = z
+  .object({
+    series: z.array(DerivedBaselineSeriesSchema).max(40),
+    personalization: BoundedPersonalizationProjectionSchema.nullable()
+  })
   .strict();
 
 export const AdaptiveEvidenceRouteDataSchema = z

@@ -535,7 +535,8 @@ export class CompanionService {
     ) {
       throw new CompanionServiceError("invalid_task", false);
     }
-    await this.#assertPairingAuthority(pairing);
+    // A validated result may advance the authoritative round before the desktop acknowledges it.
+    // This receipt mutation is scoped to the server-issued result and cannot alter workflow state.
     const session = await this.#requiredSession(pairing.sessionId);
     const requestFingerprint = this.#crypto.fingerprint({
       operationId: input.operationId,
@@ -618,7 +619,9 @@ export class CompanionService {
       throw new CompanionServiceError("session_expired", false);
     }
     const pairing = await this.#requiredPairing(session.pairingId);
-    await this.#assertPairingAuthority(pairing);
+    if (session.lastResult === null) {
+      await this.#assertPairingAuthority(pairing);
+    }
     return session;
   }
 

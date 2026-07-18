@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   ApiErrorEnvelopeSchema,
   ApiSuccessEnvelopeSchema,
+  BaselineDataSchema,
   AssessmentSessionDataSchema,
   ConfirmMedicationObservationDataSchema,
   ConfirmMedicationObservationRequestSchema,
@@ -91,6 +92,10 @@ export class HomeRoundsApiClient {
 
   getRound(roundId: string) {
     return this.#json(`/api/rounds/${z.uuid().parse(roundId)}`, "GET", undefined, RoundDataSchema);
+  }
+
+  getBaselines() {
+    return this.#json("/api/baselines", "GET", undefined, BaselineDataSchema);
   }
 
   transitionRound(roundId: string, input: TransitionRoundRequest) {

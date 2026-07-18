@@ -9,7 +9,8 @@ import {
   prepareMedicationLabelImage,
   type OpticalAssessmentProvider,
   type OpticalProviderKind,
-  type PreparedMedicationLabelImage
+  type PreparedMedicationLabelImage,
+  type VitalLensConsentGateway
 } from "@homerounds/assessments";
 import type { OpticalAssessmentResult } from "@homerounds/contracts/assessment";
 import type { VoiceBiomarkerProvider } from "@homerounds/contracts";
@@ -36,14 +37,39 @@ import styles from "./companion-stations.module.css";
 type SubmitResult = (result: CompanionTaskResultRequest) => Promise<void>;
 
 export type CompanionStationFactories = Readonly<{
-  createOpticalProvider: (kind: OpticalProviderKind) => OpticalAssessmentProvider;
+  createOpticalProvider: (
+    kind: OpticalProviderKind,
+    snapshot: CompanionPhoneSnapshot
+  ) => OpticalAssessmentProvider;
   createVoiceProvider: () => VoiceBiomarkerProvider;
 }>;
 
 export const defaultCompanionStationFactories: CompanionStationFactories = {
-  createOpticalProvider: createPatientOpticalProvider,
+  createOpticalProvider: (kind, snapshot) =>
+    createPatientOpticalProvider(kind, {
+      vitalLensConsent: recordedVitalLensConsent(snapshot)
+    }),
   createVoiceProvider: () => createLocalVoiceBiomarkerProvider({ captureDurationMs: 7_000 })
 };
+
+function recordedVitalLensConsent(snapshot: CompanionPhoneSnapshot): VitalLensConsentGateway {
+  return {
+    async requestConsent(input) {
+      if (
+        snapshot.task.kind !== "face_pulse" ||
+        snapshot.consentState.status !== "granted" ||
+        snapshot.consentState.version !== input.consentVersion
+      ) {
+        return { granted: false };
+      }
+      return {
+        granted: true,
+        consentVersion: snapshot.consentState.version,
+        grantedAt: snapshot.consentState.grantedAt
+      };
+    }
+  };
+}
 
 type SelectedCompanionStationProps = Readonly<{
   snapshot: CompanionPhoneSnapshot;
@@ -141,7 +167,7 @@ function OpticalCompanionStation({
   kind: OpticalProviderKind;
   providerFactory: CompanionStationFactories["createOpticalProvider"];
 }>) {
-  const [provider] = useState(() => providerFactory(kind));
+  const [provider] = useState(() => providerFactory(kind, snapshot));
   const [captureContextId] = useState(() => dependencies.createId());
   const [phase, setPhase] = useState<OpticalPhase>("checking");
   const [feedback, setFeedback] = useState("Checking support. The camera has not started.");
@@ -423,7 +449,7 @@ const MEDICATION_FIELDS = [
   { field: "product_name", label: "Product name" },
   { field: "strength", label: "Strength" },
   { field: "directions", label: "Directions on the label" },
-  { field: "other_details", label: "Other visible details" }
+  { field: "active_ingredient", label: "Active ingredient" }
 ] as const satisfies ReadonlyArray<{ field: MedicationField; label: string }>;
 
 function MedicationCompanionStation({

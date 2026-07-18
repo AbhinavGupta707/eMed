@@ -13,6 +13,7 @@ import {
 } from "@homerounds/clinical-records";
 import {
   InMemoryHomeRoundsRepository,
+  connectPostgresBaselineRepository,
   connectPostgresRepository,
   type HomeRoundsRepository
 } from "@homerounds/persistence";
@@ -42,6 +43,11 @@ import {
 import { InMemoryRateLimiter } from "./rate-limit";
 import { SnapshotService } from "./snapshots";
 import { ClinicianService } from "./clinician";
+import {
+  BaselineServerService,
+  InMemoryBaselineServerRepository,
+  seedSyntheticBaselineHistory
+} from "./baselines";
 
 type PersistedFact = unknown;
 
@@ -58,6 +64,8 @@ export type ServerRuntime = {
   vitalLens: VitalLensProxyService;
   clinician: ClinicianService<ClinicalSnapshot, PersistedFact>;
   medicationLabel: MedicationLabelProvider;
+  baselines: BaselineServerService;
+  ensureBaselinesReady: () => Promise<void>;
 };
 
 export type ServerRuntimeOverrides = {
@@ -190,6 +198,18 @@ export function createServerRuntime(overrides: ServerRuntimeOverrides = {}): Ser
     now,
     createId
   });
+  const baselineRepository =
+    selectedRepository.profile === "postgres" && environment.DATABASE_URL
+      ? connectPostgresBaselineRepository(environment.DATABASE_URL).repository
+      : new InMemoryBaselineServerRepository();
+  const baselines = new BaselineServerService({
+    repository: baselineRepository,
+    clock: { now },
+    ids: { createId }
+  });
+  let baselineSeedPromise: Promise<void> | undefined;
+  const ensureBaselinesReady = () =>
+    (baselineSeedPromise ??= seedSyntheticBaselineHistory(baselines));
   const hooks: ApiRouteHooks = {
     authenticator: createDemoSessionAuthenticator({
       appEnvironment: environment.APP_ENV,
@@ -234,7 +254,9 @@ export function createServerRuntime(overrides: ServerRuntimeOverrides = {}): Ser
       now
     ),
     clinician: new ClinicianService({ repository: selectedRepository.repository, now }),
-    medicationLabel
+    medicationLabel,
+    baselines,
+    ensureBaselinesReady
   };
 }
 

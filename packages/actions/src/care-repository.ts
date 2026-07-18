@@ -35,6 +35,7 @@ export type PersistCareActionMutationInput = {
 };
 
 export interface CareActionRepository {
+  setAuthority(authority: CareActionAuthority): Promise<void> | void;
   getAuthority(roundId: string): Promise<CareActionAuthority | null>;
   getAction(actionId: string): Promise<SyntheticCareAction | null>;
   getActionByIdempotencyKey(idempotencyKey: string): Promise<SyntheticCareAction | null>;

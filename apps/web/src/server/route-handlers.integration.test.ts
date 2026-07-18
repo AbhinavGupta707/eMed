@@ -342,7 +342,7 @@ describe("repository-backed server API orchestration", () => {
       message: { demoOnly: true, diagnosticClaim: false }
     });
     if (firstAction.kind !== "programme_task") return;
-    expect(firstAction.task.serviceWindowLabel).toMatch(/Demo-only/i);
+    expect(firstAction.task.serviceWindowLabel).toMatch(/Illustrative review/i);
 
     const duplicate = await success(
       await handleExecuteAction(

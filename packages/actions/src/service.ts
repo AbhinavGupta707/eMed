@@ -34,6 +34,28 @@ export class ActionServiceError extends Error {
   }
 }
 
+const actionServiceErrorCodes = new Set<ActionServiceErrorCode>([
+  "round_not_found",
+  "round_patient_mismatch",
+  "stale_state",
+  "invalid_round_state",
+  "idempotency_conflict",
+  "repository_commit_failed",
+  "failure_audit_failed"
+]);
+
+export function isActionServiceError(error: unknown): error is ActionServiceError {
+  if (error instanceof ActionServiceError) return true;
+  if (typeof error !== "object" || error === null) return false;
+  const candidate = error as { name?: unknown; code?: unknown; retryable?: unknown };
+  return (
+    candidate.name === "ActionServiceError" &&
+    typeof candidate.code === "string" &&
+    actionServiceErrorCodes.has(candidate.code as ActionServiceErrorCode) &&
+    typeof candidate.retryable === "boolean"
+  );
+}
+
 export type ActionServiceDependencies<TSnapshot, TFact> = {
   repository: HomeRoundsRepository<TSnapshot, TFact>;
   now?: () => string;
@@ -138,7 +160,8 @@ export class ActionService<TSnapshot, TFact> {
         input.proposal.protocolResult.outcome === "abstain_for_review" ? "routine" : "priority",
       reasonKey: input.proposal.protocolResult.explanationKey,
       status: "open",
-      serviceWindowLabel: message.serviceWindowLabel ?? "Demo-only review; no response promised.",
+      serviceWindowLabel:
+        message.serviceWindowLabel ?? "Illustrative review window; no response is promised.",
       protocolId: input.proposal.protocolResult.protocolId,
       createdAt: occurredAt,
       updatedAt: occurredAt

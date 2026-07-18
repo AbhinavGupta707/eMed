@@ -1,4 +1,5 @@
 import type { HomeRoundsApiClient } from "@homerounds/api-client";
+import type { CareActionDetails, SyntheticCareAction } from "@homerounds/actions/care-schemas";
 import {
   ConfirmedMedicationObservationFactSchema,
   MeasurementFactSchema,
@@ -46,7 +47,8 @@ export type PatientRoundApi = Pick<
   | "submitCaptureQuality"
   | "submitFollowUp"
   | "executeAction"
->;
+> &
+  Partial<Pick<HomeRoundsApiClient, "listCareActions" | "submitCareAction">>;
 
 type AssessmentSession = Awaited<ReturnType<PatientRoundApi["startAssessment"]>>;
 type VoiceBiomarkerSession = Awaited<ReturnType<PatientRoundApi["startVoiceBiomarker"]>>;
@@ -85,6 +87,7 @@ export type PatientWorkflowState = Readonly<{
   decision: ProtocolDecision | null;
   protocolResult: ProtocolResult | null;
   action: ActionResult | null;
+  careAction: SyntheticCareAction | null;
   task: ClinicalTask | null;
   followUpAnswer: "yes" | "no" | "unsure" | null;
   selectedProvider: OpticalProviderKind | null;
@@ -179,6 +182,18 @@ function unavailableError(reason: OpticalUnavailableReason): PatientUiError {
   }
 }
 
+function reviewedCareActionFields(details: CareActionDetails): string[] {
+  const shared = ["action_kind", "confirmed_summary", "synthetic_boundary"];
+  switch (details.kind) {
+    case "synthetic_appointment_request":
+      return [...shared, "preferred_window"];
+    case "synthetic_refill_review_request":
+      return [...shared, "medication_display", "supply_state"];
+    case "synthetic_care_team_message":
+      return [...shared, "topic"];
+  }
+}
+
 function effectiveRoundState(state: PatientWorkflowState): RoundState | null {
   return state.optimisticRoundState ?? state.round?.state ?? null;
 }
@@ -186,7 +201,7 @@ function effectiveRoundState(state: PatientWorkflowState): RoundState | null {
 export function patientWorkflowView(state: PatientWorkflowState): PatientWorkflowView {
   const roundState = effectiveRoundState(state);
   if (roundState === null) return "loading";
-  if (state.action !== null || state.task !== null) return "outcome";
+  if (state.careAction !== null || state.action !== null || state.task !== null) return "outcome";
 
   switch (roundState) {
     case "invited":
@@ -286,6 +301,7 @@ export class PatientWorkflowController {
       decision: null,
       protocolResult: null,
       action: null,
+      careAction: null,
       task: null,
       followUpAnswer: null,
       selectedProvider: null,
@@ -334,11 +350,16 @@ export class PatientWorkflowController {
               task: null,
               evidenceRoute: emptyEvidenceRoute()
             };
+      const careActions =
+        result.round.state === "invited" || !this.#api.listCareActions
+          ? []
+          : await this.#api.listCareActions(result.round.id).then(({ actions }) => actions);
       if (this.#disposed) return;
       this.#update({
         round: result.round,
         protocolResult: result.protocolResult ?? null,
         task: result.task ?? null,
+        careAction: careActions[0] ?? null,
         evidenceRoute: result.evidenceRoute ?? emptyEvidenceRoute(),
         pending: null,
         interrupted: false
@@ -726,7 +747,7 @@ export class PatientWorkflowController {
     }
   }
 
-  async confirmAction(): Promise<void> {
+  async confirmAction(details?: CareActionDetails): Promise<void> {
     const round = this.#state.round;
     const protocolResult = this.#state.protocolResult;
     if (!round || !protocolResult || !this.#requireOnline()) return;
@@ -744,9 +765,26 @@ export class PatientWorkflowController {
       } catch {
         // The action response is authoritative and sufficient for the outcome screen.
       }
+      const careReceipt =
+        action.kind === "programme_task" && details && this.#api.submitCareAction
+          ? await this.#api.submitCareAction(round.id, {
+              details,
+              confirmation: {
+                confirmed: true,
+                confirmedAt: this.#now(),
+                confirmationKind: "explicit_patient_confirmation",
+                confirmationVersion: "care-action-confirmation-v1",
+                reviewedFields: reviewedCareActionFields(details),
+                syntheticBoundaryAccepted: true
+              },
+              expectedRoundVersion: refreshed.stateVersion,
+              operationKey: `patient-care:${round.id}:${details.kind}`
+            })
+          : null;
       if (this.#disposed) return;
       this.#update({
         action,
+        careAction: careReceipt?.action ?? null,
         task: action.kind === "programme_task" ? action.task : null,
         round: refreshed,
         pending: null,
@@ -768,7 +806,12 @@ export class PatientWorkflowController {
     await this.#disposeProvider();
     this.#update({ pending: "refreshing", error: null });
     try {
-      const refreshed = await this.#api.getRound(round.id);
+      const [refreshed, careActions] = await Promise.all([
+        this.#api.getRound(round.id),
+        this.#api.listCareActions
+          ? this.#api.listCareActions(round.id).then(({ actions }) => actions)
+          : Promise.resolve([])
+      ]);
       if (this.#disposed) return;
       this.#update({
         round: refreshed.round,
@@ -781,6 +824,7 @@ export class PatientWorkflowController {
         decision: null,
         protocolResult: refreshed.protocolResult ?? null,
         action: null,
+        careAction: careActions[0] ?? null,
         task: refreshed.task ?? null,
         followUpAnswer: null,
         selectedProvider: null,
@@ -1000,6 +1044,7 @@ export class PatientWorkflowController {
           decision: null,
           protocolResult: latest.protocolResult ?? null,
           action: null,
+          careAction: null,
           task: latest.task ?? null,
           selectedProvider: null,
           evidenceRoute: latest.evidenceRoute ?? emptyEvidenceRoute(),

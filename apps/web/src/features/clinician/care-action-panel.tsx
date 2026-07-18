@@ -74,7 +74,7 @@ function EvidenceCard({ action }: { action: SyntheticCareAction }) {
         <p>{action.evidence.summary}</p>
         <dl className={styles.careEvidenceValues}>
           <div>
-            <dt>Deterministic protocol</dt>
+            <dt>Safety protocol</dt>
             <dd>
               {action.evidence.protocolId} · {action.evidence.protocolVersion}
             </dd>

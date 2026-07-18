@@ -94,9 +94,11 @@ test("text path uses no-key fallback and recorded evidence only after explicit f
 
   await page.reload();
   await expect(
-    page.getByRole("heading", { level: 1, name: "Your review request is saved" })
+    page.getByRole("heading", { level: 1, name: "Care-team review message saved" })
   ).toBeVisible();
-  await expect(page.getByText("Saved request restored", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Waiting for HomeRounds review", { exact: true }).first()
+  ).toBeVisible();
   await expect(page.getByText("Sample profile · Not medical care", { exact: true })).toBeVisible();
   await expectNoBrowserFailures(failures);
 });
@@ -178,5 +180,34 @@ test("patient-confirmed red flag hard-stops before assessment", async ({ page })
     page.getByText(/No diagnosis was made and no real clinical service was contacted/i)
   ).toBeVisible();
   expect(assessmentRequests).toEqual([]);
+  await expectNoBrowserFailures(failures);
+});
+
+test("structured memory is consented, corrected, restored, and deleted by the patient", async ({
+  page
+}) => {
+  const failures = observeBrowserFailures(page);
+  await page.goto("/memory");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "What HomeRounds remembers" })
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Allow structured memory" }).click();
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Device for supported checks" })
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Remember phone" }).click();
+  await expect(page.getByText(/currently remembered: phone/i)).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByText(/currently remembered: phone/i)).toBeVisible();
+  await page.getByRole("button", { name: "Use this computer instead" }).click();
+  await expect(page.getByText(/currently remembered: this computer/i)).toBeVisible();
+  await page.getByRole("button", { name: "Forget this choice" }).click();
+  await expect(
+    page.getByText("No device choice is remembered yet.", { exact: true })
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: /Withdraw permission/i }).click();
+  await expect(page.getByRole("button", { name: "Allow structured memory" })).toBeVisible();
   await expectNoBrowserFailures(failures);
 });

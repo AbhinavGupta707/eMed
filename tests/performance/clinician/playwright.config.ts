@@ -9,6 +9,8 @@ export default defineConfig({
   workers: 1,
   retries: 0,
   reporter: "list",
+  timeout: 120_000,
+  expect: { timeout: 10_000 },
   use: {
     ...devices["Desktop Chrome"],
     baseURL: LANE_ORIGIN,

@@ -56,7 +56,7 @@ const messages = {
     recoverable: true
   },
   recorded_replay_unavailable: {
-    title: "The recorded demo capture is unavailable",
+    title: "The recorded sample capture is unavailable",
     message:
       "No replay was submitted. You can retry the live camera check or continue without a measurement.",
     recoverable: true

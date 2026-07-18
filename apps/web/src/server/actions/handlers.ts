@@ -1,51 +1,26 @@
 import {
-  CareActionAuditEventSchema,
-  CareActionDetailsSchema,
   CareActionMutationReceiptSchema,
   CareActionServiceError,
   CareActionSubmissionReceiptSchema,
-  ClinicianCareActionMutationSchema,
-  PatientCareActionConfirmationSchema,
-  SyntheticCareActionSchema,
   type ClinicianCareActionMutationKind
 } from "@homerounds/actions";
+import {
+  CareActionDetailDataSchema,
+  CareActionListDataSchema,
+  MutateCareActionRequestSchema,
+  SubmitCareActionRequestSchema
+} from "@homerounds/api-client";
 import { z } from "zod";
 
 import { ApiFault } from "../errors";
 import { emptyInputReader, jsonBodyReader, serveApiRoute } from "../http";
 import type { CareActionHandlerRuntime } from "./runtime";
 
+export { CareActionListDataSchema } from "@homerounds/api-client";
+
 const RoundIdSchema = z.uuid();
 const ActionIdSchema = z.uuid();
 const PatientIdSchema = z.string().min(1).max(120);
-
-export const SubmitCareActionRequestSchema = z
-  .object({
-    details: CareActionDetailsSchema,
-    confirmation: PatientCareActionConfirmationSchema,
-    expectedRoundVersion: z.number().int().nonnegative(),
-    operationKey: z.string().min(16).max(200)
-  })
-  .strict();
-
-export const MutateCareActionRequestSchema = z
-  .object({
-    mutation: ClinicianCareActionMutationSchema,
-    expectedVersion: z.number().int().positive(),
-    operationKey: z.string().min(16).max(200)
-  })
-  .strict();
-
-export const CareActionListDataSchema = z
-  .object({ actions: z.array(SyntheticCareActionSchema).max(20) })
-  .strict();
-
-export const CareActionDetailDataSchema = z
-  .object({
-    action: SyntheticCareActionSchema,
-    audit: z.array(CareActionAuditEventSchema).max(100)
-  })
-  .strict();
 
 function assertDurableAvailability(runtime: CareActionHandlerRuntime): void {
   if (runtime.persistence === "durable_unavailable") {

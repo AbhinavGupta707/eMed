@@ -16,9 +16,22 @@ import {
   VoiceBiomarkerFactSchema,
   VoiceServerLocationSchema
 } from "@homerounds/contracts";
+import {
+  CareActionAuditEventSchema,
+  CareActionDetailsSchema,
+  CareActionMutationReceiptSchema,
+  CareActionSubmissionReceiptSchema,
+  ClinicianCareActionMutationSchema,
+  PatientCareActionConfirmationSchema,
+  SyntheticCareActionSchema
+} from "@homerounds/actions/care-schemas";
 import { z } from "zod";
 import { DerivedBaselineSeriesSchema } from "@homerounds/baselines";
-import { BoundedPersonalizationProjectionSchema } from "@homerounds/personalization";
+import {
+  BoundedPersonalizationProjectionSchema,
+  StructuredMemoryMutationSchema,
+  StructuredMemoryProjectionSchema
+} from "@homerounds/personalization";
 
 export const ApiErrorCodeSchema = z.enum([
   "invalid_request",
@@ -83,6 +96,60 @@ export const BaselineDataSchema = z
     personalization: BoundedPersonalizationProjectionSchema.nullable()
   })
   .strict();
+
+export const StructuredMemoryUpdateRequestSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("consent"),
+      expectedStoreVersion: z.number().int().positive(),
+      mutationId: z.uuid(),
+      consent: z
+        .object({
+          status: z.enum(["granted", "declined", "withdrawn"]),
+          policyVersion: z.literal("structured-memory-consent-v1"),
+          decisionId: z.uuid(),
+          decidedAt: z.iso.datetime()
+        })
+        .strict(),
+      occurredAt: z.iso.datetime()
+    })
+    .strict(),
+  z.object({ kind: z.literal("mutate"), mutation: StructuredMemoryMutationSchema }).strict()
+]);
+
+export const StructuredMemoryDataSchema = z
+  .object({ projection: StructuredMemoryProjectionSchema })
+  .strict();
+
+export const SubmitCareActionRequestSchema = z
+  .object({
+    details: CareActionDetailsSchema,
+    confirmation: PatientCareActionConfirmationSchema,
+    expectedRoundVersion: z.number().int().nonnegative(),
+    operationKey: z.string().min(16).max(200)
+  })
+  .strict();
+
+export const MutateCareActionRequestSchema = z
+  .object({
+    mutation: ClinicianCareActionMutationSchema,
+    expectedVersion: z.number().int().positive(),
+    operationKey: z.string().min(16).max(200)
+  })
+  .strict();
+
+export const CareActionListDataSchema = z
+  .object({ actions: z.array(SyntheticCareActionSchema).max(20) })
+  .strict();
+
+export const CareActionDetailDataSchema = z
+  .object({
+    action: SyntheticCareActionSchema,
+    audit: z.array(CareActionAuditEventSchema).max(100)
+  })
+  .strict();
+
+export { CareActionMutationReceiptSchema, CareActionSubmissionReceiptSchema };
 
 export const AdaptiveEvidenceRouteDataSchema = z
   .object({
@@ -540,6 +607,9 @@ export const ElevenLabsCredentialDataSchema = z.discriminatedUnion("status", [
 ]);
 
 export type CreateRoundRequest = z.infer<typeof CreateRoundRequestSchema>;
+export type StructuredMemoryUpdateRequest = z.infer<typeof StructuredMemoryUpdateRequestSchema>;
+export type SubmitCareActionRequest = z.infer<typeof SubmitCareActionRequestSchema>;
+export type MutateCareActionRequest = z.infer<typeof MutateCareActionRequestSchema>;
 export type TransitionRoundRequest = z.infer<typeof TransitionRoundRequestSchema>;
 export type SubmitReportRequest = z.infer<typeof SubmitReportRequestSchema>;
 export type SubmitMedicationLabelImageRequest = z.infer<

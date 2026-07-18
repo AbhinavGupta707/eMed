@@ -46,7 +46,7 @@ export function AccessForm(props: { initialRole: DemoRole; destination: string }
   return (
     <form className={styles.form} onSubmit={submit}>
       <fieldset>
-        <legend>Choose the synthetic demo role</legend>
+        <legend>Choose a synthetic sample role</legend>
         <label className={role === "patient" ? styles.roleSelected : styles.role}>
           <input
             checked={role === "patient"}
@@ -76,7 +76,7 @@ export function AccessForm(props: { initialRole: DemoRole; destination: string }
       </fieldset>
 
       <label className={styles.secret}>
-        <span>Demo access code</span>
+        <span>Preview access code</span>
         <input
           autoComplete="current-password"
           autoFocus
@@ -95,7 +95,7 @@ export function AccessForm(props: { initialRole: DemoRole; destination: string }
       ) : null}
 
       <button disabled={pending} type="submit">
-        {pending ? "Starting protected session…" : "Enter synthetic demo"}
+        {pending ? "Starting protected session…" : "Enter protected preview"}
       </button>
       <Link href="/">Return to the overview</Link>
     </form>

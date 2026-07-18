@@ -43,6 +43,25 @@ export class ClinicianServiceError extends Error {
   }
 }
 
+const clinicianServiceErrorCodes = new Set<ClinicianServiceErrorCode>([
+  "task_not_found",
+  "round_not_found",
+  "stale",
+  "conflict"
+]);
+
+export function isClinicianServiceError(error: unknown): error is ClinicianServiceError {
+  if (error instanceof ClinicianServiceError) return true;
+  if (typeof error !== "object" || error === null) return false;
+  const candidate = error as { name?: unknown; code?: unknown; retryable?: unknown };
+  return (
+    candidate.name === "ClinicianServiceError" &&
+    typeof candidate.code === "string" &&
+    clinicianServiceErrorCodes.has(candidate.code as ClinicianServiceErrorCode) &&
+    typeof candidate.retryable === "boolean"
+  );
+}
+
 type Dependencies<TSnapshot, TFact> = {
   repository: HomeRoundsRepository<TSnapshot, TFact>;
   now?: () => string;

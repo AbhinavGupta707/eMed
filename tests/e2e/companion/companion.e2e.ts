@@ -109,7 +109,7 @@ test("real QR handoff safely reissues, resumes, synchronizes, and acknowledges a
   ).toBeVisible({ timeout: 5_000 });
   await expect(
     page.getByText(
-      "The phone result was received and checked against the normal quality and workflow rules.",
+      "The phone result arrived here and is waiting for you to acknowledge it before this check-in continues.",
       { exact: true }
     )
   ).toBeVisible({ timeout: 5_000 });
@@ -119,9 +119,12 @@ test("real QR handoff safely reissues, resumes, synchronizes, and acknowledges a
     resumedPhone.getByRole("heading", { level: 1, name: "Your computer received it" })
   ).toBeVisible({ timeout: 5_000 });
   await expect(
-    page.getByText("Your computer recorded the checked phone result and refreshed the round.", {
-      exact: true
-    })
+    page.getByText(
+      "The checked phone result was acknowledged and the saved check-in was refreshed.",
+      {
+        exact: true
+      }
+    )
   ).toBeVisible();
   await expect(numericMeasurement(page)).toHaveCount(0);
 

@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 
-import { ActionService } from "@homerounds/actions";
+import { ActionService, InMemoryCareActionRepository } from "@homerounds/actions";
 import {
   TransportMedicationLabelProvider,
   createDisabledMedicationLabelProvider,
@@ -48,6 +48,16 @@ import {
   InMemoryBaselineServerRepository,
   seedSyntheticBaselineHistory
 } from "./baselines";
+import {
+  InMemoryStructuredMemoryRepository,
+  connectFinalPassPostgresRepositories,
+  type StructuredMemoryRepository
+} from "./final-pass-repositories";
+import {
+  InMemoryTriggerProposalRepository,
+  type TriggerProposalRepository
+} from "./triggers/repository";
+import type { CareActionRepository } from "@homerounds/actions";
 
 type PersistedFact = unknown;
 
@@ -66,6 +76,11 @@ export type ServerRuntime = {
   medicationLabel: MedicationLabelProvider;
   baselines: BaselineServerService;
   ensureBaselinesReady: () => Promise<void>;
+  finalPass: {
+    triggerProposals: TriggerProposalRepository;
+    structuredMemory: StructuredMemoryRepository;
+    careActions: CareActionRepository;
+  };
 };
 
 export type ServerRuntimeOverrides = {
@@ -210,6 +225,10 @@ export function createServerRuntime(overrides: ServerRuntimeOverrides = {}): Ser
   let baselineSeedPromise: Promise<void> | undefined;
   const ensureBaselinesReady = () =>
     (baselineSeedPromise ??= seedSyntheticBaselineHistory(baselines));
+  const durableFinalPass =
+    selectedRepository.profile === "postgres" && environment.DATABASE_URL
+      ? connectFinalPassPostgresRepositories(environment.DATABASE_URL)
+      : null;
   const hooks: ApiRouteHooks = {
     authenticator: createDemoSessionAuthenticator({
       appEnvironment: environment.APP_ENV,
@@ -256,7 +275,14 @@ export function createServerRuntime(overrides: ServerRuntimeOverrides = {}): Ser
     clinician: new ClinicianService({ repository: selectedRepository.repository, now }),
     medicationLabel,
     baselines,
-    ensureBaselinesReady
+    ensureBaselinesReady,
+    finalPass: {
+      triggerProposals:
+        durableFinalPass?.triggerProposals ?? new InMemoryTriggerProposalRepository(),
+      structuredMemory:
+        durableFinalPass?.structuredMemory ?? new InMemoryStructuredMemoryRepository(),
+      careActions: durableFinalPass?.careActions ?? new InMemoryCareActionRepository()
+    }
   };
 }
 

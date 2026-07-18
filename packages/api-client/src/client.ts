@@ -4,6 +4,13 @@ import {
   ApiErrorEnvelopeSchema,
   ApiSuccessEnvelopeSchema,
   BaselineDataSchema,
+  StructuredMemoryDataSchema,
+  StructuredMemoryUpdateRequestSchema,
+  CareActionListDataSchema,
+  CareActionMutationReceiptSchema,
+  CareActionSubmissionReceiptSchema,
+  MutateCareActionRequestSchema,
+  SubmitCareActionRequestSchema,
   AssessmentSessionDataSchema,
   ConfirmMedicationObservationDataSchema,
   ConfirmMedicationObservationRequestSchema,
@@ -48,7 +55,10 @@ import {
   type SubmitMedicationLabelImageRequest,
   type SubmitReportRequest,
   type SubmitVoiceBiomarkerRequest,
-  type TransitionRoundRequest
+  type TransitionRoundRequest,
+  type StructuredMemoryUpdateRequest,
+  type MutateCareActionRequest,
+  type SubmitCareActionRequest
 } from "./schemas";
 
 export class HomeRoundsApiError extends Error {
@@ -78,7 +88,7 @@ export class HomeRoundsApiClient {
 
   constructor(options: HomeRoundsApiClientOptions) {
     this.#baseUrl = new URL(z.url().parse(options.baseUrl));
-    this.#fetcher = options.fetcher ?? fetch;
+    this.#fetcher = options.fetcher ?? fetch.bind(globalThis);
   }
 
   createRound(input: CreateRoundRequest) {
@@ -96,6 +106,46 @@ export class HomeRoundsApiClient {
 
   getBaselines() {
     return this.#json("/api/baselines", "GET", undefined, BaselineDataSchema);
+  }
+
+  getStructuredMemory() {
+    return this.#json("/api/memory", "GET", undefined, StructuredMemoryDataSchema);
+  }
+
+  updateStructuredMemory(input: StructuredMemoryUpdateRequest) {
+    return this.#json(
+      "/api/memory",
+      "POST",
+      StructuredMemoryUpdateRequestSchema.parse(input),
+      StructuredMemoryDataSchema
+    );
+  }
+
+  listCareActions(roundId: string) {
+    return this.#json(
+      `/api/rounds/${z.uuid().parse(roundId)}/actions/care`,
+      "GET",
+      undefined,
+      CareActionListDataSchema
+    );
+  }
+
+  submitCareAction(roundId: string, input: SubmitCareActionRequest) {
+    return this.#json(
+      `/api/rounds/${z.uuid().parse(roundId)}/actions/care`,
+      "POST",
+      SubmitCareActionRequestSchema.parse(input),
+      CareActionSubmissionReceiptSchema
+    );
+  }
+
+  mutateCareAction(roundId: string, actionId: string, input: MutateCareActionRequest) {
+    return this.#json(
+      `/api/rounds/${z.uuid().parse(roundId)}/actions/care/${z.uuid().parse(actionId)}`,
+      "POST",
+      MutateCareActionRequestSchema.parse(input),
+      CareActionMutationReceiptSchema
+    );
   }
 
   transitionRound(roundId: string, input: TransitionRoundRequest) {

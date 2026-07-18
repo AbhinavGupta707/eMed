@@ -1,6 +1,5 @@
 import {
   CareActionAuthoritySchema,
-  InMemoryCareActionRepository,
   SYNTHETIC_CARE_ACTION_ALLOWLIST,
   SyntheticCareActionService,
   type CareActionAuthority
@@ -11,7 +10,7 @@ import type { ServerRuntime } from "../runtime";
 
 export type CareActionHandlerRuntime = {
   hooks: ApiRouteHooks;
-  persistence: "current_process" | "durable_unavailable";
+  persistence: "current_process" | "durable" | "durable_unavailable";
   service: SyntheticCareActionService;
   prepareAuthority(roundId: string): Promise<CareActionAuthority | null>;
 };
@@ -22,7 +21,7 @@ export function createServerCareActionRuntime(runtime: ServerRuntime): CareActio
   const existing = runtimeCache.get(runtime);
   if (existing) return existing;
 
-  const repository = new InMemoryCareActionRepository();
+  const repository = runtime.finalPass.careActions;
   const service = new SyntheticCareActionService({
     repository,
     ...(runtime.hooks.now ? { now: runtime.hooks.now } : {}),
@@ -30,7 +29,7 @@ export function createServerCareActionRuntime(runtime: ServerRuntime): CareActio
   });
   const careRuntime: CareActionHandlerRuntime = {
     hooks: runtime.hooks,
-    persistence: runtime.runtimeProfile === "postgres" ? "durable_unavailable" : "current_process",
+    persistence: runtime.runtimeProfile === "postgres" ? "durable" : "current_process",
     service,
     async prepareAuthority(roundId) {
       const round = await runtime.repository.getRound(roundId);
@@ -65,8 +64,8 @@ export function createServerCareActionRuntime(runtime: ServerRuntime): CareActio
             ? {
                 summary:
                   protocolResult.outcome === "abstain_for_review"
-                    ? "The deterministic workflow requested human review because confirmed evidence was insufficient."
-                    : "The deterministic workflow requested review of the patient-confirmed structured evidence.",
+                    ? "The safety workflow requested human review because confirmed evidence was insufficient."
+                    : "The safety workflow requested review of the patient-confirmed structured evidence.",
                 protocolId: protocolResult.protocolId,
                 protocolVersion: protocolResult.protocolVersion,
                 protocolOutcome: protocolResult.outcome,
@@ -85,7 +84,7 @@ export function createServerCareActionRuntime(runtime: ServerRuntime): CareActio
               }
             : null
       });
-      repository.setAuthority(authority);
+      await repository.setAuthority(authority);
       return authority;
     }
   };

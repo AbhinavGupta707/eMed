@@ -145,7 +145,7 @@ describe("audited action service", () => {
     expect(first.created).toBe(true);
     expect(second.created).toBe(false);
     expect(second.task.id).toBe(first.task.id);
-    expect(second.message.serviceWindowLabel).toMatch(/Demo-only/i);
+    expect(second.message.serviceWindowLabel).toMatch(/Illustrative review/i);
     expect(await repository.listTasksForRound(ROUND_ID)).toHaveLength(1);
     expect(
       (await repository.listActionAttempts(first.task.idempotencyKey)).map(({ outcome }) => outcome)

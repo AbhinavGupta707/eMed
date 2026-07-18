@@ -32,7 +32,7 @@ import {
   TransitionRoundRequestSchema,
   VoiceBiomarkerSessionDataSchema
 } from "@homerounds/api-client";
-import { ActionServiceError } from "@homerounds/actions";
+import { isActionServiceError } from "@homerounds/actions";
 import {
   VitalLensPayloadMetadataSchema,
   VitalLensProxyResponseSchema
@@ -42,9 +42,9 @@ import { ProtocolResultSchema } from "@homerounds/contracts";
 import { z } from "zod";
 
 import { ApiFault } from "./errors";
-import { ClinicianServiceError } from "./clinician";
+import { isClinicianServiceError } from "./clinician";
 import { emptyInputReader, jsonBodyReader, serveApiRoute } from "./http";
-import { OrchestrationError } from "./orchestration";
+import { isOrchestrationError } from "./orchestration";
 import type { VitalLensProxyServiceInput } from "./providers";
 import type { ServerRuntime } from "./runtime";
 
@@ -56,7 +56,7 @@ async function serviceCall<T>(operation: () => Promise<T>): Promise<T> {
   try {
     return await operation();
   } catch (error: unknown) {
-    if (error instanceof OrchestrationError) {
+    if (isOrchestrationError(error)) {
       switch (error.code) {
         case "round_not_found":
           throw new ApiFault(404, "not_found", "api.error.round_not_found");
@@ -81,7 +81,7 @@ async function serviceCall<T>(operation: () => Promise<T>): Promise<T> {
           throw new ApiFault(409, "conflict", `api.error.${error.code}`);
       }
     }
-    if (error instanceof ActionServiceError) {
+    if (isActionServiceError(error)) {
       switch (error.code) {
         case "round_not_found":
           throw new ApiFault(404, "not_found", "api.error.round_not_found");
@@ -97,7 +97,7 @@ async function serviceCall<T>(operation: () => Promise<T>): Promise<T> {
           throw new ApiFault(503, "unavailable", "api.error.action_temporarily_unavailable");
       }
     }
-    if (error instanceof ClinicianServiceError) {
+    if (isClinicianServiceError(error)) {
       switch (error.code) {
         case "task_not_found":
         case "round_not_found":

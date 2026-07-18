@@ -167,7 +167,7 @@ describe("clinician cockpit", () => {
     expect(screen.getAllByText("Abstained").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/hydration_status/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Stale: activity_observation_stale/i)).toBeVisible();
-    expect(screen.getByText(/deterministic workflow abstained/i)).toBeVisible();
+    expect(screen.getByText(/safety workflow requested human review/i)).toBeVisible();
     expect(screen.getByText("No numeric measurement accepted")).toBeVisible();
     expect(screen.getByText(/weak signal, motion/i)).toBeVisible();
   });

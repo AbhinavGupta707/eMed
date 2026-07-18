@@ -6,10 +6,14 @@ import {
 } from "@/features/shared-round/patient-round-config";
 import { readSyntheticBaselineSeed } from "@/server/baselines/demo-seed";
 import { deterministicUuid } from "@/server/crypto";
+import { getServerRuntime } from "@/server/runtime";
+import { ensureSyntheticProactiveRound } from "@/server/triggers/proactive-round";
 
 import styles from "./home.module.css";
 
 const PRIMARY_SCENARIO: PatientScenarioId = "maya-happy-text";
+
+export const dynamic = "force-dynamic";
 
 function clinicianHref(): string {
   const query = new URLSearchParams();
@@ -69,9 +73,20 @@ function BaselineIllustration() {
   );
 }
 
-export default function HomePage() {
-  const roundHref = protectedHref("patient", `/round?scenario=${PRIMARY_SCENARIO}`);
-  const savedDevice = readSyntheticBaselineSeed().personalization.defaultDevice;
+export default async function HomePage() {
+  const runtime = getServerRuntime();
+  const [proactiveInvitation, personalization] = await Promise.all([
+    ensureSyntheticProactiveRound(runtime).catch(() => null),
+    runtime
+      .ensureBaselinesReady()
+      .then(() => runtime.baselines.getPersonalizationProjection("synthetic-maya"))
+      .catch(() => null)
+  ]);
+  const roundQuery = new URLSearchParams({ scenario: PRIMARY_SCENARIO });
+  if (proactiveInvitation) roundQuery.set("triggerId", proactiveInvitation.triggerId);
+  const roundHref = protectedHref("patient", `/round?${roundQuery.toString()}`);
+  const savedDevice =
+    personalization?.defaultDevice ?? readSyntheticBaselineSeed().personalization.defaultDevice;
   const savedDeviceLabel =
     savedDevice.status === "set"
       ? savedDevice.value === "phone"
@@ -96,19 +111,29 @@ export default function HomePage() {
       <section aria-labelledby="welcome-title" className={styles.hero}>
         <div className={styles.heroGrid}>
           <div className={styles.welcome}>
-            <p className={styles.eyebrow}>A check-in is ready</p>
+            <p className={styles.eyebrow}>
+              {proactiveInvitation ? "A check-in is ready" : "Start when you’re ready"}
+            </p>
             <h1 id="welcome-title">Good morning, Maya.</h1>
             <p className={styles.lede}>
-              A recent confirmed update in your sample profile looks a little different from your
-              usual pattern. We can check what changed, gather only what helps, and agree one next
-              step together.
+              {proactiveInvitation
+                ? "A recent confirmed update in your sample profile looks a little different from your usual pattern. We can check what changed, gather only what helps, and agree one next step together."
+                : "You can start a short check-in, gather only what helps, and agree one next step together."}
             </p>
 
             <div className={styles.invitationNote} role="note">
               <span className={styles.invitationPulse} aria-hidden="true" />
               <div>
-                <strong>Invited after a recent sample-profile update</strong>
-                <p>Your check-in is saved and ready. Start now or come back when it suits you.</p>
+                <strong>
+                  {proactiveInvitation
+                    ? "Invited after a recent sample-profile update"
+                    : "An on-demand check-in is available"}
+                </strong>
+                <p>
+                  {proactiveInvitation
+                    ? "The bounded change check has been saved once and is ready when you are."
+                    : "Start now or come back when it suits you."}
+                </p>
               </div>
             </div>
 
@@ -117,11 +142,14 @@ export default function HomePage() {
             <div className={styles.actions}>
               <Link className={styles.primaryAction} href={roundHref}>
                 <span aria-hidden="true" className={styles.actionMark} />
-                Continue invited check-in
+                {proactiveInvitation ? "Continue invited check-in" : "Start my check-in"}
               </Link>
               <Link className={styles.textAction} href={roundHref}>
                 Start a check-in on demand
               </Link>
+              <p className={styles.safetyNote}>
+                HomeRounds cannot diagnose a condition or contact a medical service.
+              </p>
             </div>
           </div>
 
@@ -155,6 +183,9 @@ export default function HomePage() {
               Voice and camera stay optional. You can complete the conversation by typing and change
               the device for any supported check.
             </p>
+            <Link className={styles.memoryLink} href={protectedHref("patient", "/memory")}>
+              Review or change remembered choices
+            </Link>
           </aside>
         </div>
       </section>

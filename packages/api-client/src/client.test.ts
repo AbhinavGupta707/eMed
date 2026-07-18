@@ -51,6 +51,32 @@ const voiceRoute = {
 };
 
 describe("typed HomeRounds API client", () => {
+  it("binds the native fetch implementation to the global browser scope", async () => {
+    const nativeFetch = vi.fn<typeof fetch>(async function (this: unknown) {
+      expect(this).toBe(globalThis);
+      return new Response(JSON.stringify({ data: { round, created: true }, meta }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    });
+    vi.stubGlobal("fetch", nativeFetch);
+
+    try {
+      const client = new HomeRoundsApiClient({ baseUrl: "http://localhost:3000" });
+      await expect(
+        client.createRound({
+          patientId: "synthetic-maya",
+          triggerId: "trigger-1",
+          purpose: "Synthetic programme round",
+          protocolId: "cardiometabolic_demo",
+          burdenSeconds: 90
+        })
+      ).resolves.toEqual({ round, created: true });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("validates request and response envelopes", async () => {
     const fetcher = vi.fn<typeof fetch>(async (_url, init) => {
       expect(init?.method).toBe("POST");

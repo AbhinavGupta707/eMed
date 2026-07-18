@@ -100,6 +100,37 @@ export class OrchestrationError extends Error {
   }
 }
 
+const orchestrationErrorCodes = new Set<OrchestrationErrorCode>([
+  "round_not_found",
+  "round_conflict",
+  "patient_mismatch",
+  "stale_state",
+  "invalid_state",
+  "invalid_transition",
+  "snapshot_unavailable",
+  "assessment_attestation_invalid",
+  "assessment_provider_mismatch",
+  "measurement_conflict",
+  "report_missing",
+  "medication_confirmation_required",
+  "medication_proposal_missing",
+  "medication_fact_conflict",
+  "voice_biomarker_confirmation_required",
+  "voice_biomarker_fact_conflict"
+]);
+
+export function isOrchestrationError(error: unknown): error is OrchestrationError {
+  if (error instanceof OrchestrationError) return true;
+  if (typeof error !== "object" || error === null) return false;
+  const candidate = error as { name?: unknown; code?: unknown; retryable?: unknown };
+  return (
+    candidate.name === "OrchestrationError" &&
+    typeof candidate.code === "string" &&
+    orchestrationErrorCodes.has(candidate.code as OrchestrationErrorCode) &&
+    typeof candidate.retryable === "boolean"
+  );
+}
+
 type IdFactory = () => string;
 
 type CommonDependencies<TSnapshot, TFact> = {
@@ -270,8 +301,7 @@ function evidenceModuleCandidates(input: {
           input.selectedProvider === "finger_ppg"
             ? "Quality-gated finger pulse check"
             : "Consent-based VitalLens pulse check",
-        description:
-          "A pulse estimate is accepted only when the deterministic capture-quality gate passes.",
+        description: "A pulse estimate is accepted only when the capture-quality gate passes.",
         producesFactKeys: ["pulse_bpm"],
         availability: input.pulseAvailable
           ? { status: "available" }

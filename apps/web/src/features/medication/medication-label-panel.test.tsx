@@ -123,7 +123,7 @@ async function enableImageConsent(): Promise<void> {
     expect(screen.getByRole("button", { name: "Upload label image" })).toBeDisabled()
   );
   fireEvent.click(
-    screen.getByLabelText(/I will use only a synthetic, identifier-free demo label/i)
+    screen.getByLabelText(/I will use only a synthetic, identifier-free sample label/i)
   );
   await waitFor(() =>
     expect(screen.getByRole("button", { name: "Upload label image" })).toBeEnabled()
@@ -416,8 +416,11 @@ describe("medication label panel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Take label photo" }));
 
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(message));
-    expect(document.activeElement).toBe(screen.getByRole("alert"));
+    await waitFor(() => {
+      const alert = screen.getByRole("alert");
+      expect(alert).toHaveTextContent(message);
+      expect(document.activeElement).toBe(alert);
+    });
     expect(screen.getByRole("group", { name: "Option 2: complete text entry" })).toBeEnabled();
   });
 
@@ -468,7 +471,7 @@ describe("medication label panel", () => {
     expect(handle.clear).toHaveBeenCalled();
     expect(screen.queryByAltText("Temporary medication label preview")).not.toBeInTheDocument();
     expect(
-      screen.getByLabelText(/I will use only a synthetic, identifier-free demo label/i)
+      screen.getByLabelText(/I will use only a synthetic, identifier-free sample label/i)
     ).not.toBeChecked();
   });
 

@@ -149,7 +149,7 @@ function opticalReasonText(result: OpticalAssessmentResult): string {
     if (reasons.includes("saturation")) return "Reduce pressure or move away from harsh light.";
     if (reasons.includes("insufficient_duration")) return "Keep the position for the full check.";
     if (reasons.includes("cancelled")) return "Capture cancelled. No result was retained.";
-    return "The deterministic quality check did not accept this capture.";
+    return "The capture quality check did not accept this result.";
   }
   return "A quality-passing derived candidate is ready for workflow validation.";
 }

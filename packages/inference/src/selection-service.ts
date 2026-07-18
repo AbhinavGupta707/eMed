@@ -34,7 +34,7 @@ export type AdaptiveSelectionAuthorityReader = (
 
 function fallbackRationale(input: AdaptiveSelectionInput): string {
   const fallback = input.candidates.find(({ id }) => id === input.deterministicFallbackModuleId);
-  return `We’ll continue with ${fallback?.label ?? "the deterministic evidence route"}, the safe route available for this round.`;
+  return `We’ll continue with ${fallback?.label ?? "the usual evidence route"}, the safe route available for this round.`;
 }
 
 export function createAdaptiveSelectionFallback(

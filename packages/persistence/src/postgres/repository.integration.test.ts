@@ -209,6 +209,14 @@ describe("PostgreSQL repository integration", () => {
           "utf8"
         );
         await client.unsafe(baselineMigration);
+        const finalPassMigration = await readFile(
+          new URL(
+            "../../../../infra/db/migrations/0006_proactive_memory_care_actions.sql",
+            import.meta.url
+          ),
+          "utf8"
+        );
+        await client.unsafe(finalPassMigration);
 
         const repository = new PostgresHomeRoundsRepository<unknown, unknown>(
           drizzle(client, { schema })

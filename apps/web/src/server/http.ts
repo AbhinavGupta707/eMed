@@ -6,7 +6,7 @@ import {
 import { noOpLogger, safeLogEntry, type SafeStructuredLogger } from "@homerounds/audit";
 import { z } from "zod";
 
-import { ApiFault } from "./errors";
+import { ApiFault, isApiFault } from "./errors";
 import type { DemoSession, DemoSessionAuthenticator } from "./identity";
 import type { RateLimiter } from "./rate-limit";
 
@@ -53,7 +53,7 @@ function zodIssues(error: z.ZodError): string[] {
 }
 
 function statusFor(error: unknown): ApiFault {
-  if (error instanceof ApiFault) return error;
+  if (isApiFault(error)) return error;
   if (error instanceof z.ZodError) {
     return new ApiFault(400, "invalid_request", "api.error.invalid_request", zodIssues(error));
   }

@@ -37,6 +37,16 @@ async function baselineMigrationSql(): Promise<string> {
   );
 }
 
+async function finalPassMigrationSql(): Promise<string> {
+  return readFile(
+    new URL(
+      "../../../../infra/db/migrations/0006_proactive_memory_care_actions.sql",
+      import.meta.url
+    ),
+    "utf8"
+  );
+}
+
 describe("PostgreSQL migration invariants", () => {
   it("defines all production persistence tables in one transactional migration", async () => {
     const sql = await migrationSql();
@@ -136,6 +146,27 @@ describe("PostgreSQL migration invariants", () => {
     expect(sql).toContain("jsonb_typeof(record) = 'object'");
     expect(sql).toContain("dataClassification' = 'synthetic_demo'");
     expect(sql).toContain("baseline_series_patient_updated_idx");
+  });
+
+  it("adds durable proactive proposals, consented memory, and append-only care actions", async () => {
+    const sql = await finalPassMigrationSql();
+    expect(sql.trimStart()).toMatch(/^begin;/i);
+    expect(sql.trimEnd()).toMatch(/commit;$/i);
+    for (const table of [
+      "proactive_trigger_proposals",
+      "structured_memory_stores",
+      "synthetic_care_action_authorities",
+      "synthetic_care_actions",
+      "synthetic_care_action_events",
+      "synthetic_care_action_mutations"
+    ]) {
+      expect(sql).toContain(`create table ${table}`);
+    }
+    expect(sql).toContain("proactive_trigger_proposals_synthetic_only");
+    expect(sql).toContain("structured_memory_stores_synthetic_only");
+    expect(sql).toContain("synthetic_care_actions_not_delivered");
+    expect(sql).toContain("synthetic_care_action_events_privacy_flags");
+    expect(sql).toContain("synthetic_care_action_events are append-only");
   });
 
   it("requires every durable companion envelope to remain a JSON object", async () => {

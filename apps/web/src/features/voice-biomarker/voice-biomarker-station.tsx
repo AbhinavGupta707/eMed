@@ -173,7 +173,7 @@ function VoiceBiomarkerStationSession(props: VoiceBiomarkerStationProps) {
               ))}
             </ul>
           ) : (
-            <p>The capture did not meet the deterministic quality gate.</p>
+            <p>The capture did not meet the quality requirements.</p>
           )}
         </section>
       ) : null}

@@ -81,16 +81,23 @@ export function createCompanionRouteRuntime(
   };
 }
 
-let singleton: CompanionRouteRuntime | undefined;
+type HomeRoundsCompanionGlobalRuntime = typeof globalThis & {
+  __homeRoundsCompanionRouteRuntime?: CompanionRouteRuntime;
+};
+
+function companionRuntimeScope(): HomeRoundsCompanionGlobalRuntime {
+  return globalThis as HomeRoundsCompanionGlobalRuntime;
+}
 
 export function getCompanionRouteRuntime(): CompanionRouteRuntime {
-  if (singleton) return singleton;
+  const scope = companionRuntimeScope();
+  if (scope.__homeRoundsCompanionRouteRuntime) return scope.__homeRoundsCompanionRouteRuntime;
   const main = getServerRuntime();
   const durableRepository =
     main.runtimeProfile === "postgres" && main.environment.DATABASE_URL
       ? connectPostgresCompanionRepository(main.environment.DATABASE_URL).repository
       : null;
-  singleton = createCompanionRouteRuntime({
+  scope.__homeRoundsCompanionRouteRuntime = createCompanionRouteRuntime({
     repository: durableRepository ?? new InMemoryCompanionPairingRepository(),
     authority: new ExistingRoundCompanionAuthority(main),
     authenticator: main.hooks.authenticator,
@@ -102,9 +109,9 @@ export function getCompanionRouteRuntime(): CompanionRouteRuntime {
     ...(main.hooks.now ? { now: main.hooks.now } : {}),
     ...(main.hooks.createId ? { createId: main.hooks.createId } : {})
   });
-  return singleton;
+  return scope.__homeRoundsCompanionRouteRuntime;
 }
 
 export function installCompanionRouteRuntimeForIntegration(runtime: CompanionRouteRuntime): void {
-  singleton = runtime;
+  companionRuntimeScope().__homeRoundsCompanionRouteRuntime = runtime;
 }

@@ -5,6 +5,9 @@ import { projectBoundedTriggerInferenceHandoff } from "../../../../../packages/t
 import { readSyntheticTriggerSeed } from "./demo-seed";
 import { InMemoryTriggerProposalRepository } from "./repository";
 import { TriggerServerService } from "./service";
+import { parseServerEnvironment } from "../../env";
+import { createServerRuntime } from "../runtime";
+import { ensureSyntheticProactiveRound } from "./proactive-round";
 
 const NOW = "2026-07-18T12:00:00.000Z";
 
@@ -95,6 +98,38 @@ describe("bounded proactive trigger server seam", () => {
       evaluation: { status: "insufficient_data", proposal: null, event: null },
       committedProposal: null,
       replayed: false
+    });
+  });
+
+  it("creates exactly one authoritative round for repeated bounded invitations", async () => {
+    const runtime = createServerRuntime({
+      environment: parseServerEnvironment({
+        APP_ENV: "development",
+        APP_BASE_URL: "http://localhost:3000",
+        PERSISTENCE_PROVIDER: "memory",
+        DEMO_MODE: "true"
+      }),
+      now: () => NOW
+    });
+
+    const first = await ensureSyntheticProactiveRound(runtime);
+    const replay = await ensureSyntheticProactiveRound(runtime);
+
+    expect(first).toMatchObject({
+      roundCreated: true,
+      proposalReplayed: false,
+      continuousMonitoring: false,
+      evaluationMode: "scheduled"
+    });
+    expect(replay).toMatchObject({
+      roundId: first.roundId,
+      triggerId: first.triggerId,
+      roundCreated: false,
+      proposalReplayed: true
+    });
+    await expect(runtime.repository.getRound(first.roundId)).resolves.toMatchObject({
+      triggerId: first.triggerId,
+      state: "invited"
     });
   });
 });

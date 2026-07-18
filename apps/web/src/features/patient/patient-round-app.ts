@@ -1,5 +1,6 @@
 "use client";
 import { HomeRoundsApiClient } from "@homerounds/api-client";
+import type { CareActionDetails, SyntheticCareAction } from "@homerounds/actions/care-schemas";
 import type { MedicationLabelProvider } from "@homerounds/assessments";
 import {
   PatientReportSchema,
@@ -147,6 +148,63 @@ function devicePreferenceLabel(preference: DefaultDevicePreference): string {
         case "desktop":
           return "This computer preferred for supported checks";
       }
+  }
+}
+
+function recommendedCareAction(state: PatientWorkflowState): CareActionDetails {
+  const medicationDisplay = state.medicationFact?.reviewItems.find(
+    ({ field, disposition }) => field === "product_name" && disposition !== "not_visible"
+  )?.reviewedValue;
+  if (medicationDisplay) {
+    return {
+      kind: "synthetic_refill_review_request",
+      medicationDisplay,
+      supplyState: "review_requested",
+      confirmedSummary: "Please review the medication details I confirmed in this check-in."
+    };
+  }
+  if (state.measurement) {
+    return {
+      kind: "synthetic_appointment_request",
+      preferredWindow: "either",
+      confirmedSummary: "Please review my confirmed check-in and accepted pulse result."
+    };
+  }
+  return {
+    kind: "synthetic_care_team_message",
+    topic: "symptoms",
+    confirmedSummary: "Please review the symptoms and uncertainty I confirmed in this check-in."
+  };
+}
+
+function careActionPresentation(details: CareActionDetails): {
+  title: string;
+  savedTitle: string;
+  destination: string;
+  description: string;
+} {
+  switch (details.kind) {
+    case "synthetic_appointment_request":
+      return {
+        title: "Request an appointment review",
+        savedTitle: "Appointment review request saved",
+        destination: "HomeRounds appointment review queue",
+        description: "Selected because this round contains a quality-passing pulse result."
+      };
+    case "synthetic_refill_review_request":
+      return {
+        title: "Request a medication refill review",
+        savedTitle: "Medication refill review request saved",
+        destination: "HomeRounds medication review queue",
+        description: "Selected because you confirmed medication details in this round."
+      };
+    case "synthetic_care_team_message":
+      return {
+        title: "Send a care-team review message",
+        savedTitle: "Care-team review message saved",
+        destination: "HomeRounds care-team queue",
+        description: "Selected because the round preserved uncertainty without inventing a value."
+      };
   }
 }
 const cancellableStates = new Set<RoundState>([
@@ -1448,6 +1506,8 @@ function ActionConfirmationPanel({ state, controller }: PatientShellProps) {
   const [confirmed, setConfirmed] = useState(false);
   const result = state.protocolResult;
   if (!result) return null;
+  const recommendedAction = recommendedCareAction(state);
+  const actionPresentation = careActionPresentation(recommendedAction);
   const abstained =
     result.outcome === "abstain_for_review" || state.round?.state === "abstained_for_review";
   return createElement(
@@ -1507,14 +1567,8 @@ function ActionConfirmationPanel({ state, controller }: PatientShellProps) {
       createElement(
         CardHeader,
         null,
-        createElement(CardTitle, null, "Save a sample care-team review request"),
-        createElement(
-          CardDescription,
-          null,
-          abstained
-            ? "Some confirmed information is uncertain or incomplete, so the round can stop for review."
-            : "Your confirmed answers make a neutral sample review the next available action."
-        )
+        createElement(CardTitle, null, actionPresentation.title),
+        createElement(CardDescription, null, actionPresentation.description)
       ),
       createElement(
         CardContent,
@@ -1528,7 +1582,7 @@ function ActionConfirmationPanel({ state, controller }: PatientShellProps) {
             "div",
             null,
             createElement("dt", null, "Saved to"),
-            createElement("dd", null, "HomeRounds review queue")
+            createElement("dd", null, actionPresentation.destination)
           ),
           createElement(
             "div",
@@ -1567,7 +1621,7 @@ function ActionConfirmationPanel({ state, controller }: PatientShellProps) {
           Button,
           {
             disabled: !confirmed || state.pending !== null,
-            onClick: () => void controller.confirmAction()
+            onClick: () => void controller.confirmAction(recommendedAction)
           },
           state.pending === "confirming_action"
             ? createElement(
@@ -1668,12 +1722,92 @@ function EmergencyPanel({ state, controller }: PatientShellProps) {
       : null
   );
 }
+function PersistedCareActionOutcome({ careAction }: Readonly<{ careAction: SyntheticCareAction }>) {
+  const presentation = careActionPresentation(careAction.details);
+  const status = {
+    pending_review: "Waiting for HomeRounds review",
+    approved: "Approved inside HomeRounds",
+    contact_attempted: "Contact step recorded inside HomeRounds",
+    completed: "Completed inside HomeRounds",
+    failed: "Needs a safe retry",
+    unknown: "Status needs review"
+  }[careAction.status];
+  return createElement(
+    "section",
+    { "aria-labelledby": "outcome-title", className: styles.primaryPanel },
+    createElement(
+      "div",
+      { className: styles.introCopy },
+      createElement("h1", { id: "outcome-title" }, presentation.savedTitle),
+      createElement(
+        "p",
+        null,
+        "Your explicitly confirmed request is persisted inside HomeRounds. It was not sent to a real clinic, pharmacy, or calendar."
+      )
+    ),
+    createRequiredChildrenElement(
+      Banner,
+      { title: status, variant: careAction.status === "failed" ? "warning" : "success" },
+      createElement(
+        "p",
+        null,
+        "Reloading this page restores the same action and repeated confirmation cannot duplicate it."
+      )
+    ),
+    createElement(
+      Card,
+      null,
+      createElement(
+        CardHeader,
+        null,
+        createElement(CardTitle, null, "Confirmed next action"),
+        createElement(CardDescription, null, careAction.details.confirmedSummary)
+      ),
+      createElement(
+        CardContent,
+        null,
+        createElement(
+          "dl",
+          { className: styles.definitionList },
+          createElement(
+            "div",
+            null,
+            createElement("dt", null, "Queue"),
+            createElement("dd", null, presentation.destination)
+          ),
+          createElement(
+            "div",
+            null,
+            createElement("dt", null, "Status"),
+            createElement("dd", null, status)
+          ),
+          createElement(
+            "div",
+            null,
+            createElement("dt", null, "Owner"),
+            createElement("dd", null, careAction.ownerId ?? "Awaiting review owner")
+          ),
+          createElement(
+            "div",
+            null,
+            createElement("dt", null, "Timing"),
+            createElement("dd", null, "No real response time is promised")
+          )
+        )
+      )
+    )
+  );
+}
+
 function OutcomePanel({
   state
 }: Readonly<{
   state: PatientWorkflowState;
 }>) {
   const action = state.action;
+  if (state.careAction) {
+    return createElement(PersistedCareActionOutcome, { careAction: state.careAction });
+  }
   const projectedTask = action?.kind === "programme_task" ? action.task : state.task;
   if (projectedTask) {
     const completed = projectedTask.status === "completed";

@@ -169,7 +169,7 @@ export function createApiClinicianTransport(options: {
         ),
         protocolResult: optionalResource(
           detail.protocolResult,
-          "No deterministic protocol result was recorded for this round."
+          "No safety protocol result was recorded for this round."
         ),
         timeline: availableResource(detail.timeline),
         note: optionalResource(detail.note, "No clinician note has been recorded for this task."),

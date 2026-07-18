@@ -13,6 +13,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@homerounds/actions": "workspace:*",
     "@homerounds/baselines": "workspace:*",
     "@homerounds/contracts": "workspace:*",
     "@homerounds/personalization": "workspace:*",

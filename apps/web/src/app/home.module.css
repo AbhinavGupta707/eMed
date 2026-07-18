@@ -241,6 +241,13 @@
   margin-top: var(--space-8);
 }
 
+.safetyNote {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: var(--text-sm);
+}
+
 .primaryAction {
   display: inline-flex;
   min-height: 3.5rem;
@@ -320,6 +327,20 @@
   color: var(--muted-foreground);
   font-size: var(--text-sm);
   line-height: 1.55;
+}
+
+.memoryLink {
+  color: var(--primary);
+  display: inline-block;
+  font-weight: 700;
+  margin-top: 1rem;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.28em;
+}
+
+.memoryLink:focus-visible {
+  outline: 3px solid var(--terracotta);
+  outline-offset: 4px;
 }
 
 .journey {

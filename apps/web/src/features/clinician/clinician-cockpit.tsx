@@ -246,7 +246,7 @@ function ContextFacts({ detail }: { detail: ClinicianTaskDetail }) {
         <dd>{readableToken(detail.task.ownerRole)}</dd>
       </div>
       <div>
-        <dt>Demo-only service window</dt>
+        <dt>Illustrative service window</dt>
         <dd>{detail.task.serviceWindowLabel}</dd>
       </div>
       <div>
@@ -281,7 +281,7 @@ function TaskDetailHeader({ detail }: { detail: ClinicianTaskDetail }) {
         <strong>Synthetic hackathon prototype</strong>
         <span>
           Not clinically validated or diagnostic. Urgency and workflow authority remain with the
-          deterministic protocol and persisted service—not this UI.
+          safety protocol and persisted service—not this interface.
         </span>
       </aside>
       <ContextFacts detail={detail} />

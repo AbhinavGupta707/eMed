@@ -178,7 +178,7 @@ export class CompanionWorkflowProcessor implements CompanionWorkflowPort {
 
     const quality = record.result.derived.quality;
     if (quality.reasons.length > 0 || quality.metrics === undefined) {
-      throw new Error("Companion optical candidate did not pass deterministic quality review.");
+      throw new Error("Companion optical candidate did not pass capture-quality review.");
     }
     let measurement: MeasurementFact;
     if (record.result.taskKind === "finger_pulse") {
@@ -277,7 +277,7 @@ export class CompanionWorkflowProcessor implements CompanionWorkflowPort {
       throw new Error("Companion voice algorithm version is not registered.");
     }
     if (quality.reasons.length > 0 || quality.metrics === undefined) {
-      throw new Error("Companion voice candidate did not pass deterministic quality review.");
+      throw new Error("Companion voice candidate did not pass capture-quality review.");
     }
     const metrics = VoiceMetricsSchema.parse(quality.metrics);
     const features = record.result.derived.features;

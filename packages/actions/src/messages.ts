@@ -22,23 +22,23 @@ const templates = {
   programme_review_requested: {
     templateId: "programme_review_requested_v1",
     heading: "Programme review requested",
-    body: "Your programme team can review the confirmed information from this synthetic demo round.",
+    body: "The HomeRounds review queue can hold the confirmed information from this sample-profile round.",
     serviceWindowLabel:
-      "Demo-only illustrative same-day window — this is not a clinical or response-time promise.",
+      "Illustrative review window — this is not a clinical or response-time promise.",
     demoOnly: true,
     diagnosticClaim: false
   },
   abstain_for_review: {
     templateId: "abstain_for_review_v1",
     heading: "Programme review requested",
-    body: "This synthetic demo does not have enough confirmed information to continue automatically.",
-    serviceWindowLabel: "Demo-only review queue — no real service response is being promised.",
+    body: "This sample-profile round does not have enough confirmed information to continue automatically.",
+    serviceWindowLabel: "HomeRounds review queue — no real service response is being promised.",
     demoOnly: true,
     diagnosticClaim: false
   },
   emergency_guidance: {
     templateId: "emergency_guidance_demo_v1",
-    heading: "Stop this demo round",
+    heading: "Stop this check-in",
     body: "This prototype cannot assess an emergency. In a real situation, use the emergency help available where you are.",
     serviceWindowLabel: null,
     demoOnly: true,

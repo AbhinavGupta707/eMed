@@ -196,7 +196,10 @@ export async function confirmProgrammeTask(page: Page): Promise<void> {
   await page.getByLabel("I want to save one sample review request.").check();
   await page.getByRole("button", { name: "Save review request" }).click();
   await expect(
-    page.getByRole("heading", { level: 1, name: "Your review request is saved" })
+    page.getByRole("heading", { level: 1, name: /review (request|message) saved/i })
+  ).toBeVisible();
+  await expect(
+    page.getByText("Waiting for HomeRounds review", { exact: true }).first()
   ).toBeVisible();
 }
 

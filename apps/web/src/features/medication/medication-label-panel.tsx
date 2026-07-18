@@ -383,7 +383,7 @@ function MedicationLabelPanelSession({
       await camera.requestAccess(controller.signal);
       if (controller.signal.aborted) return;
       cameraInputRef.current?.click();
-      announce("Camera is ready. Take a synthetic-demo label photo.", "information");
+      announce("Camera is ready. Take a synthetic sample label photo.", "information");
     } catch (error: unknown) {
       const safeError =
         error instanceof MedicationCameraError
@@ -573,7 +573,7 @@ function MedicationLabelPanelSession({
             onChange={(event) => setImageConsent(event.currentTarget.checked)}
           />
           <span>
-            I will use only a synthetic, identifier-free demo label and consent to this one
+            I will use only a synthetic, identifier-free sample label and consent to this one
             temporary image extraction.
           </span>
         </label>
@@ -754,7 +754,7 @@ function MedicationLabelPanelSession({
       <fieldset className={styles.section} disabled={confirmed || confirmationPending}>
         <legend>Option 2: complete text entry</legend>
         <p id={textHelpId} className={styles.help}>
-          This path does not use an image or claim AI/model provenance. Enter only synthetic demo
+          This path does not use an image or claim AI/model provenance. Enter only synthetic sample
           details. Choose “not visible” to preserve missing information; leave unrelated fields
           unselected.
         </p>
@@ -831,7 +831,7 @@ function MedicationLabelPanelSession({
         <div className={styles.safetyBoundary}>
           <p className={styles.help}>
             This optional evidence step does not control safety or urgency. You can skip it and
-            continue to the deterministic, quality-gated pulse check.
+            continue to the safety-checked pulse step.
           </p>
           <button
             className={styles.secondaryButton}

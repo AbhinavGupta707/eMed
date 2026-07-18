@@ -178,7 +178,7 @@ function MeasurementStep({ detail }: { detail: ClinicianTaskDetail }) {
 function ProtocolStep({ detail }: { detail: ClinicianTaskDetail }) {
   const result = detail.protocolResult;
   return (
-    <ChainStep number="5" source="deterministic protocol evaluator" title="Rule and decision">
+    <ChainStep number="5" source="safety protocol evaluator" title="Rule and decision">
       {result.status === "available" ? (
         <EvidenceValues>
           <EvidenceValue
@@ -345,7 +345,7 @@ export function EvidenceBoundary({ detail }: { detail: ClinicianTaskDetail }) {
         <h3 id="review-boundary-heading">Uncertainty and review boundary</h3>
         <p>
           {abstained
-            ? "The deterministic workflow abstained and requested human review."
+            ? "The safety workflow requested human review because evidence was incomplete."
             : "No diagnosis or clinical completeness claim is made by this prototype."}
         </p>
       </div>

@@ -64,9 +64,12 @@ test("an unseen deterministic-profile context accepts the pulse route across lat
   ).toBeVisible();
   await expect(
     page.getByText(
-      "The persisted state was restored. Ephemeral camera, transcript, and decision data were not reused.",
+      "Your confirmed answers and completed steps are still here. An unfinished camera or voice step must start fresh.",
       { exact: true }
     )
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { level: 3, name: "Nothing unfinished was guessed" })
   ).toBeVisible();
   expectNoBrowserFailures(pulseFailures);
 });
@@ -96,7 +99,7 @@ test("a different unseen medication-profile context requires image review, edit,
   ).toBeVisible();
 
   await medicationPage
-    .getByLabel(/I will use only a synthetic, identifier-free demo label/i)
+    .getByLabel(/I will use only a synthetic, identifier-free sample label/i)
     .check();
   const imageRequestBodies: string[] = [];
   medicationPage.on("request", (request) => {
@@ -139,7 +142,7 @@ test("a different unseen medication-profile context requires image review, edit,
   );
 
   await medicationPage
-    .getByLabel(/I will use only a synthetic, identifier-free demo label/i)
+    .getByLabel(/I will use only a synthetic, identifier-free sample label/i)
     .check();
   await medicationPage.getByTestId("medication-upload-input").setInputFiles({
     name: "identifier-free-synthetic-label.png",

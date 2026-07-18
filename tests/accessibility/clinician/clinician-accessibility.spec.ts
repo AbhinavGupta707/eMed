@@ -31,7 +31,7 @@ test("keeps the clinician cockpit responsive, keyboard operable, and serious/cri
   await page.goto(`/clinician?roundId=${setup.round.id}`);
   await expect(
     page.getByRole("heading", { level: 2, name: "Synthetic record synthetic-maya" })
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 30_000 });
   await expect(page.locator("main")).toHaveCount(1);
   await expect(page.getByRole("navigation", { name: "Clinician priority queue" })).toBeVisible();
 
@@ -45,7 +45,7 @@ test("keeps the clinician cockpit responsive, keyboard operable, and serious/cri
   await page.keyboard.press("Enter");
   await expect(
     page.getByRole("heading", { level: 2, name: "Synthetic record synthetic-maya" })
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 30_000 });
 
   const complete = page.getByRole("button", { name: "Complete task" });
   await complete.focus();

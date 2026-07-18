@@ -1,16 +1,16 @@
 # HomeRounds orchestration state
 
-Updated: 17 July 2026 23:26 BST  
+Updated: 18 July 2026 01:15 BST  
 Master: current local Codex task `019f6d18-258a-7a41-9ddd-e5d145f2ee5d`  
-Goal: Checkpoint 8 voice-led adaptive home round and local voice-signal implementation  
+Goal: autonomously integrate and verify Checkpoints 9–11 Human Warmth final pass  
 Integration branch: `main`
 Release-candidate tag: `homerounds-v0.1.0-demo-rc2` on the final Checkpoint 7 ledger commit
-Heartbeat: none; Checkpoint 7 heartbeat was deleted after release closure
+Heartbeat: `homerounds-checkpoints-9-11-orchestration-heartbeat`, active every 15 minutes on the master task
 
 ## Current checkpoint
 
-- Checkpoint: 8 — voice-led adaptive home round and local voice signal, release pass complete
-- Status: Checkpoints 0–8 are integrated and the Checkpoint 8 code, browser, accessibility, performance, live-provider, and hosted Vercel/Neon gates pass for the exact synthetic release candidate. All managed workers are archived. Installed Chrome completed a real ElevenLabs microphone conversation through explicit proposal confirmation, and the hosted app completed live Fireworks adaptive selection. A separate hosted sustained-vowel attempt correctly produced no fact after deterministic quality rejection. Physical iPhone/Safari and live VitalLens remain pending external evidence classes.
+- Checkpoint: 9 — Human Warmth redesign and secure phone companion, pre-launch freeze
+- Status: Checkpoints 0–8 remain integrated. The owner approved the three-checkpoint final pass. All nine Human Warmth reference boards are preserved. ElevenLabs agent verification and Fireworks live exact-contract tests pass. VitalLens authentication is accepted from ignored local secret storage, while Vercel Preview propagation remains an orchestrator task before Checkpoint 10 deployment. No Checkpoint 9 worker has been launched from the dirty planning base yet.
 - Tested Checkpoint 0 commit: `b519010`
 - Tested Checkpoint 1 integration commit: `2116d4c` on `main`
 - Rehearsed application/package candidate: `99acb5b` before Checkpoint 6 evidence-led documentation updates
@@ -38,7 +38,7 @@ Heartbeat: none; Checkpoint 7 heartbeat was deleted after release closure
 - Checkpoint 8 tested Wave A integration commit: `9eea69324b36087c342609c320225a4d1e537912`
 - Checkpoint 8 Wave B worker launch base: `b6acfe0`
 - Checkpoint 8 tested/deployed application commit: `1e7a0ba`
-- Next gate: owner-only physical iPhone/Safari and optional VitalLens evidence; neither blocks the implemented browser release candidate
+- Next gate: commit the approved design/preflight launch base, retire old completed worktrees, then launch the exclusive 9A and 9B project worktrees
 - Physical iPhone gate: `pending-physical` (Xcode lists the Mac and simulators only; no physical iPhone was connected)
 - Live ElevenLabs gate: `installed-chrome-webrtc-proposal-confirmation-pass` (private authenticated agent matches the versioned prompt, 120-second bound, bounded dynamic variables, and exact two typed client tools; real microphone conversation produced a visible structured proposal that remained inert until all six fields and final confirmation were explicitly reviewed)
 - Live VitalLens gate: `pending-explicit-opt-in-and-credentials` (fixture adapter required)

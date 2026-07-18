@@ -1,7 +1,7 @@
 # HomeRounds planning package
 
 **Prepared:** 16 July 2026  
-**Status:** Checkpoints 0–6 complete for the bounded local/no-key candidate; Checkpoint 7 launch plan frozen  
+**Status:** Checkpoints 0–8 complete; Checkpoints 9–11 Human Warmth final pass approved and entering execution  
 **Scope:** hackathon prototype plus the gated path to a production clinical product
 
 ## Read this first
@@ -22,6 +22,8 @@ The source directory contains an already-extracted `HomeRounds_Source_Package`; 
 8. [07_KICKOFF_DECISIONS_AND_INTEGRATIONS.md](./07_KICKOFF_DECISIONS_AND_INTEGRATIONS.md) — resolved kickoff choices, adaptive worktree counts, account/API requirements, iPhone testing, sensor options, protocol explanation, and readiness gate.
 9. [08_VOICE_TEXT_AND_AUTONOMOUS_EXECUTION.md](./08_VOICE_TEXT_AND_AUTONOMOUS_EXECUTION.md) — voice-provider comparison, text-access contract, no-key policy, heartbeat, session choice, and autonomous control loop.
 10. [09_AI_NATIVE_CHECKPOINT_7.md](./09_AI_NATIVE_CHECKPOINT_7.md) — live Fireworks inference, model/reasoning routing, adaptive worktree waves, adversarial gates, hosted setup, and exact launch readiness.
+11. [10_VOICE_LED_ADAPTIVE_CHECKPOINT_8.md](./10_VOICE_LED_ADAPTIVE_CHECKPOINT_8.md) — live ElevenLabs conversation, explicit proposal confirmation, local sustained-vowel signal, adaptive evidence routing, and release evidence.
+12. [11_FINAL_BLUE_SKY_PASS.md](./11_FINAL_BLUE_SKY_PASS.md) — Human Warmth redesign, secure phone companion, live VitalLens gateway, repeated baselines, bounded memory, proactive synthetic triggers, closed actions, adaptive worktree lanes, and final release gates.
 
 ## Frozen recommendation
 

@@ -286,6 +286,29 @@
   background: var(--surface);
 }
 
+.qrPairing {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: center;
+  padding: var(--space-3);
+}
+
+.qrPairing svg {
+  width: min(18rem, 100%);
+  height: auto;
+  border-radius: var(--radius-sm);
+}
+
+.qrLink {
+  min-height: var(--touch-target);
+  display: inline-flex;
+  align-items: center;
+  color: var(--primary);
+  font-weight: 650;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+}
+
 .handoffStatus {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);

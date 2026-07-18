@@ -6,6 +6,7 @@ import {
   type CompanionPairingRepository,
   type CompanionRoundAuthorityPort
 } from "@homerounds/companion";
+import { connectPostgresCompanionRepository } from "@homerounds/persistence";
 import type { DemoSessionAuthenticator } from "../identity";
 import type { RateLimiter } from "../rate-limit";
 import { getServerRuntime } from "../runtime";
@@ -65,15 +66,18 @@ let singleton: CompanionRouteRuntime | undefined;
 export function getCompanionRouteRuntime(): CompanionRouteRuntime {
   if (singleton) return singleton;
   const main = getServerRuntime();
+  const durableRepository =
+    main.runtimeProfile === "postgres" && main.environment.DATABASE_URL
+      ? connectPostgresCompanionRepository(main.environment.DATABASE_URL).repository
+      : null;
   singleton = createCompanionRouteRuntime({
-    repository: new InMemoryCompanionPairingRepository(),
+    repository: durableRepository ?? new InMemoryCompanionPairingRepository(),
     authority: new ExistingRoundCompanionAuthority(main),
     authenticator: main.hooks.authenticator,
     rateLimiter: main.hooks.rateLimiter,
     appOrigin: main.environment.APP_BASE_URL,
     tokenHashSecret: deriveCompanionSecret(main.environment.DEMO_ACCESS_SECRET),
-    // Durable registration is orchestrator-owned. Hosted routes fail closed until it is wired.
-    available: main.environment.APP_ENV === "development",
+    available: durableRepository !== null || main.environment.APP_ENV === "development",
     ...(main.hooks.now ? { now: main.hooks.now } : {}),
     ...(main.hooks.createId ? { createId: main.hooks.createId } : {})
   });

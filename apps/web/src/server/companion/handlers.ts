@@ -49,6 +49,27 @@ export function handleCreateCompanionPairing(
   });
 }
 
+export function handleGetCurrentCompanionPairing(
+  request: Request,
+  runtime: CompanionRouteRuntime
+): Promise<Response> {
+  return companionBoundary(request, runtime, async (correlationId) => {
+    assertMethod(request, "GET");
+    const session = await requirePatientSession(request, runtime);
+    await consumeRateLimit(runtime, {
+      key: session.sessionId,
+      bucket: "companion-pairing-current",
+      limit: 90
+    });
+    const roundId = PairingIdSchema.parse(new URL(request.url).searchParams.get("roundId"));
+    const snapshot = await runtime.service.getCurrentDesktopSnapshot({
+      roundId,
+      patientId: session.patientId
+    });
+    return successResponse({ snapshot }, correlationId);
+  });
+}
+
 export function handleExchangeCompanionPairing(
   request: Request,
   runtime: CompanionRouteRuntime

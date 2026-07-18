@@ -32,6 +32,7 @@ import {
   StepProgress,
   type ProgressStep
 } from "@homerounds/ui";
+import { QRCodeSVG } from "qrcode.react";
 import {
   Fragment,
   createElement,
@@ -47,6 +48,10 @@ import { VoiceInteractionPanel, type VoiceAgentProposalState } from "../voice";
 import { VoiceBiomarkerStation } from "../voice-biomarker";
 import { HistoryPurposeCard, VoiceAgentProposalReview } from "../voice-round";
 import { MedicationLabelPanel } from "../medication";
+import {
+  useDesktopCompanion,
+  type DesktopCompanionController
+} from "../companion/use-desktop-companion";
 import { AdaptiveRoundMap, RoundMapExperienceSchema, type RoundMapExperience } from "../round-map";
 import { ApiMedicationLabelProvider } from "../shared-round/medication-label-api-provider";
 import type { PatientRoundLaunchConfig } from "../shared-round/patient-round-config";
@@ -345,11 +350,7 @@ function PatientHeader({
       {
         className: styles.brand
       },
-      createElement(
-        "span",
-        null,
-        "HomeRounds"
-      )
+      createElement("span", null, "HomeRounds")
     ),
     createElement(
       "div",
@@ -460,21 +461,13 @@ function InvitationPanel({ state, controller }: PatientShellProps) {
           {
             className: styles.plainList
           },
-          createElement(
-            "li",
-            null,
-            "You will answer three required safety questions first."
-          ),
+          createElement("li", null, "You will answer three required safety questions first."),
           createElement(
             "li",
             null,
             "Voice is optional, editable, and always has a complete text alternative."
           ),
-          createElement(
-            "li",
-            null,
-            "A camera reading appears only when signal quality passes."
-          ),
+          createElement("li", null, "A camera reading appears only when signal quality passes."),
           createElement(
             "li",
             null,
@@ -597,9 +590,7 @@ function ReportPanel({
     () => ({
       syntheticDataOnly: true,
       patientAlias: "Maya",
-      roundPurpose:
-        round?.purpose ??
-        "A short home check-in about how you have been feeling.",
+      roundPurpose: round?.purpose ?? "A short home check-in about how you have been feeling.",
       historySummary:
         "Your saved sample profile includes a usual baseline and recent medication context. It does not establish a diagnosis."
     }),
@@ -634,8 +625,7 @@ function ReportPanel({
     });
     void controller.submitConfirmedReport(report);
   }
-  const safetyComplete =
-    chestPain !== null && severeBreathlessness !== null && fainted !== null;
+  const safetyComplete = chestPain !== null && severeBreathlessness !== null && fainted !== null;
   const conversationComplete = weakness !== null && palpitations !== null && confirmation !== null;
   const labelFor = (options: readonly ChoiceOption[], value: string | null) =>
     options.find((option) => option.value === value)?.label ?? "Not answered";
@@ -951,9 +941,12 @@ function ReportPanel({
       )
     )
   );
-
 }
-function MeasurementPanel({ state, controller }: PatientShellProps) {
+function MeasurementPanel({
+  state,
+  controller,
+  companion
+}: PatientShellProps & { companion: DesktopCompanionController }) {
   const [consented, setConsented] = useState(false);
   const session = state.assessmentSession;
   const selectedCheckLabel =
@@ -977,11 +970,7 @@ function MeasurementPanel({ state, controller }: PatientShellProps) {
           },
           "Keep still while quality is checked"
         ),
-        createElement(
-          "p",
-          null,
-          "No reading is shown unless signal quality passes."
-        )
+        createElement("p", null, "No reading is shown unless signal quality passes.")
       ),
       createElement(FeedbackState, {
         description:
@@ -1122,14 +1111,82 @@ function MeasurementPanel({ state, controller }: PatientShellProps) {
     );
   }
   if (!session) {
+    const round = state.round;
+    const handoffStatus = {
+      idle: "ready",
+      issuing: "connecting",
+      waiting: "waiting",
+      connected: "connected",
+      result: "result",
+      acknowledged: "result",
+      expired: "unavailable",
+      unavailable: "unavailable"
+    }[companion.status] as Parameters<typeof DeviceHandoff>[0]["status"];
+    const statusDetail = {
+      idle: "Create a short-lived code, then scan it with your phone.",
+      issuing: "Creating a private link for this selected check.",
+      waiting:
+        "Scan the code with your phone. It expires automatically and contains no patient details.",
+      connected: "Your phone is connected. Continue with the guidance shown there.",
+      result:
+        "The phone result was received and is waiting for the normal quality and workflow checks.",
+      acknowledged:
+        "The result was received. HomeRounds has not accepted it as a measurement automatically.",
+      expired: "This phone link expired or was closed. Create a new short-lived code to continue.",
+      unavailable:
+        "A secure phone connection is unavailable right now. You can continue on this computer."
+    }[companion.status];
+    const pairingVisual = companion.issue
+      ? createElement(
+          "div",
+          { className: styles.qrPairing },
+          createElement(QRCodeSVG, {
+            bgColor: "#fffdf8",
+            fgColor: "#173c32",
+            level: "M",
+            size: 288,
+            title: "QR code for the short-lived HomeRounds phone link",
+            value: companion.issue.pairingLink
+          }),
+          createElement(
+            "a",
+            {
+              className: styles.qrLink,
+              href: companion.issue.pairingLink,
+              rel: "noreferrer",
+              target: "_blank"
+            },
+            "Open the secure link instead"
+          )
+        )
+      : undefined;
+    const startPhone =
+      round && ["idle", "unavailable"].includes(companion.status)
+        ? () => void companion.start(round.id, round.stateVersion)
+        : companion.status === "expired"
+          ? () => void companion.reissue()
+          : companion.status === "result"
+            ? () => void companion.acknowledge()
+            : undefined;
+    const phoneActionLabel =
+      companion.status === "expired"
+        ? "Create a new code"
+        : companion.status === "result"
+          ? "Mark result as received"
+          : companion.status === "unavailable"
+            ? "Try phone connection again"
+            : "Use my phone";
     return createElement(DeviceHandoff, {
       computerSupported: true,
-      onUseComputer: () => void controller.prepareMeasurement(),
+      onUseComputer: () => {
+        void companion.cancel().finally(() => controller.prepareMeasurement());
+      },
+      ...(startPhone ? { onUsePhone: startPhone, phoneActionLabel } : {}),
+      ...(pairingVisual ? { pairingVisual } : {}),
       rationale:
         "A short camera check can add one quality-gated piece of information. No reading is accepted when quality is uncertain.",
-      status: "unavailable",
-      statusDetail:
-        "Secure phone pairing is not connected yet. You can complete this supported check on the computer.",
+      status: handoffStatus,
+      statusDetail,
       taskTitle: "A pulse check is the most useful next step."
     });
   }
@@ -1396,7 +1453,11 @@ function ActionConfirmationPanel({ state, controller }: PatientShellProps) {
             "div",
             null,
             createElement("dt", null, "Timing"),
-            createElement("dd", null, "Saved inside HomeRounds only; no clinic response is promised")
+            createElement(
+              "dd",
+              null,
+              "Saved inside HomeRounds only; no clinic response is promised"
+            )
           )
         ),
         createElement(
@@ -1465,7 +1526,7 @@ function EmergencyPanel({ state, controller }: PatientShellProps) {
     createRequiredChildrenElement(
       Banner,
       {
-        title: "This prototype cannot assess an emergency",
+        title: "HomeRounds cannot assess an emergency",
         variant: "danger"
       },
       createElement(
@@ -1545,9 +1606,7 @@ function OutcomePanel({
           {
             id: "outcome-title"
           },
-          completed
-            ? "Review finished"
-            : "Your review request is saved"
+          completed ? "Review finished" : "Your review request is saved"
         ),
         createElement(
           "p",
@@ -1615,11 +1674,7 @@ function OutcomePanel({
               "div",
               null,
               createElement("dt", null, "Timing"),
-              createElement(
-                "dd",
-                null,
-                "No real response time is promised"
-              )
+              createElement("dd", null, "No real response time is promised")
             )
           )
         )
@@ -1645,7 +1700,11 @@ function OutcomePanel({
           },
           "This check-in has stopped"
         ),
-        createElement("p", null, "HomeRounds showed general safety guidance and did not continue to a camera check.")
+        createElement(
+          "p",
+          null,
+          "HomeRounds showed general safety guidance and did not continue to a camera check."
+        )
       ),
       createRequiredChildrenElement(
         Banner,
@@ -1979,7 +2038,8 @@ function PatientWorkflowContent({
   createId,
   now,
   medicationLabelProvider,
-  voiceBiomarkerProvider
+  voiceBiomarkerProvider,
+  companion
 }: PatientShellProps & {
   view: PatientWorkflowView;
   voiceProvider: VoiceSessionProvider;
@@ -1987,6 +2047,7 @@ function PatientWorkflowContent({
   now: () => string;
   medicationLabelProvider: MedicationLabelProvider;
   voiceBiomarkerProvider: VoiceBiomarkerProvider;
+  companion: DesktopCompanionController;
 }): ReactNode {
   switch (view) {
     case "loading":
@@ -2027,6 +2088,7 @@ function PatientWorkflowContent({
     case "capturing":
     case "capture_retry":
       return createElement(MeasurementPanel, {
+        companion,
         controller: controller,
         state: state
       });
@@ -2129,6 +2191,7 @@ export function PatientRoundApp({
     [providedRoundMapExperience, state]
   );
   const [acceptedRecommendation, setAcceptedRecommendation] = useState<string | null>(null);
+  const companion = useDesktopCompanion();
   const selectedRecommendation = state.evidenceRoute?.selectedModuleId ?? null;
   const showRecommendation =
     roundMapExperience !== undefined &&
@@ -2227,6 +2290,7 @@ export function PatientRoundApp({
               voiceProvider: voiceProvider,
               voiceBiomarkerProvider,
               medicationLabelProvider,
+              companion,
               now
             })
       )

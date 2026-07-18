@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
+import type {
+  CompanionOperationRecord,
+  CompanionPairingRecord,
+  CompanionSessionRecord
+} from "@homerounds/companion";
 import type { ClinicalTask, DomainEvent, Round, VoiceBiomarkerFact } from "@homerounds/contracts";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -11,11 +16,68 @@ import {
   TaskOptimisticConcurrencyError,
   type CommitActionInput
 } from "../models";
+import { PostgresCompanionPairingRepository } from "./companion-repository";
 import { PostgresHomeRoundsRepository } from "./repository";
 import * as schema from "./schema";
 
 const databaseUrl = process.env.DATABASE_URL;
 const databaseIt = databaseUrl ? it : it.skip;
+
+function secureHash(byte: number): string {
+  return Buffer.alloc(32, byte).toString("base64url");
+}
+
+function companionPairing(): CompanionPairingRecord {
+  return {
+    pairingId: "b1111111-1111-4111-8111-111111111111",
+    tokenHash: secureHash(1),
+    roundId: "14df34c4-8204-4810-8113-37b63c963a91",
+    ownerPatientId: "synthetic-maya",
+    role: "companion",
+    roundStateVersion: 0,
+    allowedTaskKinds: ["finger_pulse"],
+    task: { taskId: "capture.finger_ppg.pulse", kind: "finger_pulse", taskVersion: 1 },
+    taskPhase: "ready",
+    consentRequirement: { kind: "explicit_local_capture", version: "local-v1" },
+    status: "pending",
+    pairingVersion: 1,
+    issuedAt: "2026-07-17T08:00:01.000Z",
+    tokenExpiresAt: "2026-07-17T08:05:01.000Z",
+    exchangedAt: null,
+    exchangeReplayUntil: null,
+    exchangeKeyHash: null,
+    deviceBindingHash: null,
+    sessionId: null,
+    sessionExpiresAt: null,
+    lastResult: null,
+    desktopAcknowledgedAt: null,
+    revokedAt: null,
+    replacedByPairingId: null
+  };
+}
+
+function companionSession(pairing: CompanionPairingRecord): CompanionSessionRecord {
+  return {
+    sessionId: "b2222222-2222-4222-8222-222222222222",
+    sessionTokenHash: secureHash(2),
+    pairingId: pairing.pairingId,
+    roundId: pairing.roundId,
+    role: "companion",
+    roundStateVersion: pairing.roundStateVersion,
+    allowedTaskKinds: pairing.allowedTaskKinds,
+    task: pairing.task,
+    taskPhase: "ready",
+    consentRequirement: pairing.consentRequirement,
+    consentState: { status: "pending" },
+    sessionVersion: 1,
+    status: "active",
+    createdAt: "2026-07-17T08:00:02.000Z",
+    expiresAt: "2026-07-17T08:20:02.000Z",
+    lastSeenAt: "2026-07-17T08:00:02.000Z",
+    lastResult: null,
+    revokedAt: null
+  };
+}
 
 function round(): Round {
   return {
@@ -122,11 +184,69 @@ describe("PostgreSQL repository integration", () => {
           "utf8"
         );
         await client.unsafe(voiceMigration);
+        const companionMigration = await readFile(
+          new URL("../../../../infra/db/migrations/0003_companion_sessions.sql", import.meta.url),
+          "utf8"
+        );
+        await client.unsafe(companionMigration);
 
         const repository = new PostgresHomeRoundsRepository<unknown, unknown>(
           drizzle(client, { schema })
         );
         await repository.createRound(round());
+
+        const companionRepository = new PostgresCompanionPairingRepository(client);
+        const pairing = companionPairing();
+        const session = companionSession(pairing);
+        await companionRepository.createPairing(pairing);
+        await expect(
+          companionRepository.getCurrentPairingForRound(pairing.roundId)
+        ).resolves.toEqual(pairing);
+        const exchangeCommit = {
+          tokenHash: pairing.tokenHash,
+          expectedPairingVersion: pairing.pairingVersion,
+          exchangeKeyHash: secureHash(3),
+          deviceBindingHash: secureHash(4),
+          exchangedAt: "2026-07-17T08:00:02.000Z",
+          exchangeReplayUntil: "2026-07-17T08:00:32.000Z",
+          session
+        };
+        const firstExchange = await companionRepository.exchange(exchangeCommit);
+        const replayedExchange = await companionRepository.exchange(exchangeCommit);
+        expect(firstExchange.replayed).toBe(false);
+        expect(replayedExchange.replayed).toBe(true);
+        expect(replayedExchange.session).toEqual(session);
+
+        const nextSession: CompanionSessionRecord = {
+          ...session,
+          taskPhase: "permission",
+          sessionVersion: 2,
+          lastSeenAt: "2026-07-17T08:00:03.000Z"
+        };
+        const operation: CompanionOperationRecord = {
+          operationId: "b3333333-3333-4333-8333-333333333333",
+          sessionId: session.sessionId,
+          kind: "status",
+          requestFingerprint: secureHash(5),
+          committedSessionVersion: 2,
+          resultId: null,
+          occurredAt: "2026-07-17T08:00:03.000Z"
+        };
+        const companionMutation = {
+          expectedSessionVersion: 1,
+          nextSession,
+          operation,
+          result: null
+        };
+        const mutationResults = await Promise.all([
+          companionRepository.commitSessionMutation(companionMutation),
+          companionRepository.commitSessionMutation(companionMutation)
+        ]);
+        expect(mutationResults.map(({ replayed }) => replayed).sort()).toEqual([false, true]);
+        await expect(companionRepository.getSession(session.sessionId)).resolves.toEqual(
+          nextSession
+        );
+
         const voiceFact: VoiceBiomarkerFact = {
           factId: "fb99983d-cc81-454e-9c92-f8e99e0891de",
           roundId: "14df34c4-8204-4810-8113-37b63c963a91",
@@ -240,6 +360,7 @@ describe("PostgreSQL repository integration", () => {
         await client.unsafe(`drop schema if exists ${quotedSchema} cascade`);
         await client.end({ timeout: 5 });
       }
-    }
+    },
+    30_000
   );
 });

@@ -49,6 +49,10 @@ const PairingAccessInputSchema = z
   .object({ pairingId: z.uuid(), patientId: z.string().min(1).max(120) })
   .strict();
 
+const CurrentPairingAccessInputSchema = z
+  .object({ roundId: z.uuid(), patientId: z.string().min(1).max(120) })
+  .strict();
+
 const ExchangeInputSchema = CompanionExchangeRequestSchema.extend({
   deviceBinding: z.string().min(1).max(512)
 }).strict();
@@ -425,6 +429,22 @@ export class CompanionService {
   ): Promise<CompanionDesktopSnapshot> {
     const input = PairingAccessInputSchema.parse(inputValue);
     const pairing = await this.#requiredPairing(input.pairingId);
+    this.#assertOwner(pairing, input.patientId);
+    const authority = await this.#authority.read(pairing.roundId);
+    const authorityCurrent =
+      authority !== null &&
+      authority.patientId === pairing.ownerPatientId &&
+      authority.roundStateVersion === pairing.roundStateVersion &&
+      sameTask(pairing.task, authority.currentTask);
+    return this.#desktopSnapshot(pairing, this.#clock.now(), !authorityCurrent);
+  }
+
+  async getCurrentDesktopSnapshot(
+    inputValue: z.input<typeof CurrentPairingAccessInputSchema>
+  ): Promise<CompanionDesktopSnapshot | null> {
+    const input = CurrentPairingAccessInputSchema.parse(inputValue);
+    const pairing = await this.#repository.getCurrentPairingForRound(input.roundId);
+    if (!pairing) return null;
     this.#assertOwner(pairing, input.patientId);
     const authority = await this.#authority.read(pairing.roundId);
     const authorityCurrent =

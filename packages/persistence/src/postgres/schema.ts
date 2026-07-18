@@ -269,3 +269,92 @@ export const auditEvents = pgTable(
     index("audit_events_correlation_idx").on(table.correlationId)
   ]
 );
+
+export const companionPairings = pgTable(
+  "companion_pairings",
+  {
+    pairingId: uuid("pairing_id").primaryKey(),
+    tokenHash: text("token_hash").notNull(),
+    roundId: uuid("round_id")
+      .notNull()
+      .references(() => rounds.id, { onDelete: "restrict" }),
+    status: text("status").notNull(),
+    pairingVersion: integer("pairing_version").notNull(),
+    sessionId: uuid("session_id"),
+    issuedAt: timestamptz("issued_at").notNull(),
+    record: jsonb("record").notNull().$type<unknown>()
+  },
+  (table) => [
+    uniqueIndex("companion_pairings_token_hash_unique").on(table.tokenHash),
+    uniqueIndex("companion_pairings_session_id_unique").on(table.sessionId),
+    uniqueIndex("companion_pairings_one_current_round_unique")
+      .on(table.roundId)
+      .where(sql`${table.status} <> 'revoked'`),
+    index("companion_pairings_round_issued_idx").on(table.roundId, table.issuedAt)
+  ]
+);
+
+export const companionSessions = pgTable(
+  "companion_sessions",
+  {
+    sessionId: uuid("session_id").primaryKey(),
+    sessionTokenHash: text("session_token_hash").notNull(),
+    pairingId: uuid("pairing_id")
+      .notNull()
+      .references(() => companionPairings.pairingId, { onDelete: "restrict" }),
+    roundId: uuid("round_id")
+      .notNull()
+      .references(() => rounds.id, { onDelete: "restrict" }),
+    status: text("status").notNull(),
+    sessionVersion: integer("session_version").notNull(),
+    expiresAt: timestamptz("expires_at").notNull(),
+    record: jsonb("record").notNull().$type<unknown>()
+  },
+  (table) => [
+    uniqueIndex("companion_sessions_token_hash_unique").on(table.sessionTokenHash),
+    uniqueIndex("companion_sessions_pairing_id_unique").on(table.pairingId),
+    index("companion_sessions_round_expires_idx").on(table.roundId, table.expiresAt)
+  ]
+);
+
+export const companionResults = pgTable(
+  "companion_results",
+  {
+    resultId: uuid("result_id").primaryKey(),
+    pairingId: uuid("pairing_id")
+      .notNull()
+      .references(() => companionPairings.pairingId, { onDelete: "restrict" }),
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => companionSessions.sessionId, { onDelete: "restrict" }),
+    roundId: uuid("round_id")
+      .notNull()
+      .references(() => rounds.id, { onDelete: "restrict" }),
+    receivedAt: timestamptz("received_at").notNull(),
+    validationStatus: text("validation_status").notNull(),
+    record: jsonb("record").notNull().$type<unknown>()
+  },
+  (table) => [index("companion_results_round_received_idx").on(table.roundId, table.receivedAt)]
+);
+
+export const companionOperations = pgTable(
+  "companion_operations",
+  {
+    sessionId: uuid("session_id")
+      .notNull()
+      .references(() => companionSessions.sessionId, { onDelete: "restrict" }),
+    operationId: uuid("operation_id").notNull(),
+    kind: text("kind").notNull(),
+    requestFingerprint: text("request_fingerprint").notNull(),
+    committedSessionVersion: integer("committed_session_version").notNull(),
+    resultId: uuid("result_id").references(() => companionResults.resultId, {
+      onDelete: "restrict"
+    }),
+    occurredAt: timestamptz("occurred_at").notNull(),
+    record: jsonb("record").notNull().$type<unknown>()
+  },
+  (table) => [
+    primaryKey({ columns: [table.sessionId, table.operationId] }),
+    index("companion_operations_result_idx").on(table.resultId)
+  ]
+);

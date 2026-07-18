@@ -183,6 +183,23 @@ describe("secure companion service", () => {
     await expect(issue(context)).rejects.toMatchObject({ code: "repository_conflict" });
   });
 
+  it("restores only the current pairing for its authenticated patient", async () => {
+    const context = setup();
+    const pairing = await issue(context);
+    await expect(
+      context.service.getCurrentDesktopSnapshot({ roundId: ROUND_ID, patientId: PATIENT_ID })
+    ).resolves.toMatchObject({
+      pairingId: pairing.pairingId,
+      connection: "waiting_for_phone"
+    });
+    await expect(
+      context.service.getCurrentDesktopSnapshot({
+        roundId: ROUND_ID,
+        patientId: "another-person"
+      })
+    ).rejects.toMatchObject({ code: "forbidden" });
+  });
+
   it("rejects forged and expired tokens without creating a session", async () => {
     const forgedContext = setup();
     await issue(forgedContext);

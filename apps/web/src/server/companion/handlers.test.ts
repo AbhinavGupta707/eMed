@@ -6,6 +6,7 @@ import { InMemoryRateLimiter } from "../rate-limit";
 import {
   handleCreateCompanionPairing,
   handleExchangeCompanionPairing,
+  handleGetCurrentCompanionPairing,
   handleGetCompanionSession,
   handleSubmitCompanionResult
 } from "./handlers";
@@ -133,6 +134,20 @@ describe("companion route boundary", () => {
     );
     expect(conditional.status).toBe(304);
     expect(await conditional.text()).toBe("");
+  });
+
+  it("restores the authenticated desktop pairing by round without returning its token", async () => {
+    const routeRuntime = runtime();
+    const result = await paired(routeRuntime);
+    const response = await handleGetCurrentCompanionPairing(
+      new Request(`http://localhost:3000/api/companion/pairings?roundId=${ROUND_ID}`),
+      routeRuntime
+    );
+    const text = await response.text();
+    expect(response.status).toBe(200);
+    expect(text).toContain(result.createdBody.data.issue.pairingId);
+    expect(text).not.toContain(result.token);
+    expect(text).not.toContain("tokenHash");
   });
 
   it("rejects a clinician role and cross-origin pairing mutation", async () => {

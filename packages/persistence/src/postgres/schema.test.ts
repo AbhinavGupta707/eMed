@@ -16,6 +16,13 @@ async function voiceMigrationSql(): Promise<string> {
   );
 }
 
+async function companionMigrationSql(): Promise<string> {
+  return readFile(
+    new URL("../../../../infra/db/migrations/0003_companion_sessions.sql", import.meta.url),
+    "utf8"
+  );
+}
+
 describe("PostgreSQL migration invariants", () => {
   it("defines all production persistence tables in one transactional migration", async () => {
     const sql = await migrationSql();
@@ -84,5 +91,25 @@ describe("PostgreSQL migration invariants", () => {
     expect(sql).toContain("voice_biomarker_facts_raw_media_absent");
     expect(sql).toContain("voice_biomarker_facts_round_observed_idx");
     expect(sql).toContain("voice_biomarker_facts_patient_observed_idx");
+  });
+
+  it("adds durable scoped companion state with concurrency and raw-media constraints", async () => {
+    const sql = await companionMigrationSql();
+    expect(sql.trimStart()).toMatch(/^begin;/i);
+    expect(sql.trimEnd()).toMatch(/commit;$/i);
+    for (const table of [
+      "companion_pairings",
+      "companion_sessions",
+      "companion_results",
+      "companion_operations"
+    ]) {
+      expect(sql).toContain(`create table ${table}`);
+    }
+    expect(sql).toContain("companion_pairings_one_current_round_unique");
+    expect(sql).toContain("where status <> 'revoked'");
+    expect(sql).toContain("session_token_hash text not null unique");
+    expect(sql).toContain("primary key (session_id, operation_id)");
+    expect(sql).toContain("companion_results_raw_media_absent");
+    expect(sql).toContain("pending_deterministic_workflow");
   });
 });
